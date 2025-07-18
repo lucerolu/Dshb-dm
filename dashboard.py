@@ -25,20 +25,19 @@ with open("config_colores.json", "r", encoding="utf-8") as f:
 colores_sucursales = config["sucursales"]
 
 
-# --- FUNCIONES ---
 def conectar_bd():
-    # Ruta del certificado
+    # Ruta del certificado (relativa al script)
     ssl_ca_path = os.path.join(os.path.dirname(__file__), "certificados", "server-ca.pem")
     
     # Establecer conexión
     connection = pymysql.connect(
-        host='34.135.125.31',  # Tu IP pública
-        user=os.environ['DB_USER'],  # Variable de entorno en Streamlit
-        password=os.environ['DB_PASS'],  # Variable de entorno en Streamlit
-        db='facturas',  # Nombre de tu base de datos
+        host=st.secrets["DB_HOST"],
+        user=st.secrets["DB_USER"],
+        password=st.secrets["DB_PASS"],
+        db='facturas',
         ssl={
-            'ca': r'C:\Users\Dimasur\Documents\Dashboard\server-ca.pem',
-            'check_hostname': False  # No es crítico si estás usando IP directa y controlas el entorno
+            'ca': ssl_ca_path,
+            'check_hostname': False
         },
         cursorclass=pymysql.cursors.DictCursor
     )
