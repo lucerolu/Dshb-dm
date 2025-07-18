@@ -1,0 +1,1070 @@
+import streamlit as st
+import pandas as pd
+import pymysql
+import plotly.graph_objects as go
+import plotly.express as px
+import json
+import os
+import math
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+from matplotlib.colors import LinearSegmentedColormap
+from datetime import datetime
+from datetime import timedelta
+import locale
+import io
+
+
+# --- CONFIGURACION GENERAL ---
+st.set_page_config(page_title="Dashboard Compras 2025", layout="wide")
+
+with open("config_colores.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
+
+colores_sucursales = config["sucursales"]
+
+
+# --- FUNCIONES ---
+def conectar_bd():
+    # Ruta del certificado
+    ssl_ca_path = os.path.join(os.path.dirname(__file__), "certificados", "server-ca.pem")
+    
+    # Establecer conexión
+    connection = pymysql.connect(
+        host='34.135.125.31',  # Tu IP pública
+        user=os.environ['DB_USER'],  # Variable de entorno en Streamlit
+        password=os.environ['DB_PASS'],  # Variable de entorno en Streamlit
+        db='facturas',  # Nombre de tu base de datos
+        ssl={
+            'ca': r'C:\Users\Dimasur\Documents\Dashboard\server-ca.pem',
+            'check_hostname': False  # No es crítico si estás usando IP directa y controlas el entorno
+        },
+        cursorclass=pymysql.cursors.DictCursor
+    )
+    return connection
+
+def obtener_datos():
+    conn = conectar_bd()
+    with conn.cursor() as cursor:
+        cursor.execute("""
+            SELECT 
+                DATE_FORMAT(f.fecha, '%Y-%m') AS mes,
+                s.nombre AS sucursal,
+                SUM(f.monto) AS monto,
+                COALESCE(c_eq.codigo, c.codigo) AS codigo_normalizado,
+                f.ligado_sistema
+            FROM facturas_info f
+            JOIN cuentas c ON f.cuenta_id = c.id
+            LEFT JOIN cuentas_equivalentes ce ON c.id = ce.cuenta_4digitos_id
+            LEFT JOIN cuentas c_eq ON ce.cuenta_6digitos_id = c_eq.id
+            LEFT JOIN sucursales s ON COALESCE(c.sucursal_id, c_eq.sucursal_id) = s.id
+            WHERE YEAR(f.fecha) = 2025
+            GROUP BY mes, s.nombre, codigo_normalizado, f.ligado_sistema
+            ORDER BY mes, s.nombre;
+        """)
+        data = cursor.fetchall()
+    conn.close()
+    return pd.DataFrame(data)
+
+def obtener_estado_cuenta():
+    conn = conectar_bd()
+    with conn.cursor() as cursor:
+        # Obtener fecha de corte (última fecha_documento)
+        cursor.execute("SELECT MAX(fecha_documento) AS ultima_fecha FROM estado_cuenta;")
+        fecha_corte = cursor.fetchone()['ultima_fecha']
+
+        # Consulta principal para estado de cuenta
+        cursor.execute("""
+            SELECT
+                s.nombre AS sucursal,
+                COALESCE(c_eq.codigo, c.codigo) AS codigo_6digitos,
+                ec.fecha_exigibilidad,
+                SUM(ec.total) AS total
+            FROM estado_cuenta ec
+            JOIN cuentas c ON ec.cuenta_id = c.id
+            LEFT JOIN cuentas_equivalentes ce ON c.id = ce.cuenta_4digitos_id
+            LEFT JOIN cuentas c_eq ON ce.cuenta_6digitos_id = c_eq.id
+            LEFT JOIN sucursales s ON COALESCE(c.sucursal_id, c_eq.sucursal_id) = s.id
+            WHERE ec.fecha_documento = %s
+            GROUP BY s.nombre, codigo_6digitos, ec.fecha_exigibilidad
+            ORDER BY s.nombre, codigo_6digitos, ec.fecha_exigibilidad;
+        """, (fecha_corte,))
+        data = cursor.fetchall()
+    conn.close()
+    df = pd.DataFrame(data)
+    return df, fecha_corte
+
+
+
+# --- DATOS ---
+df = obtener_datos()
+df = df.dropna(subset=["sucursal"])
+
+# Fecha formateada
+meses_es = {
+    'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
+    'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
+    'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+}
+
+df["mes_dt"] = pd.to_datetime(df["mes"])
+df["mes_nombre"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
+df = df.sort_values("mes_dt")
+orden_meses = df["mes_nombre"].drop_duplicates().tolist()
+
+# --- PARA LAS DIVISIONES ---
+divisiones = config["divisiones"]
+mapa_codigos = {}
+colores_divisiones = {}
+for division, info in divisiones.items():
+    for codigo in info["codigos"]:
+        mapa_codigos[codigo] = division
+    colores_divisiones[division] = info["color"]
+
+# Crear columna nueva en el df
+df["division"] = df["codigo_normalizado"].map(mapa_codigos)
+df_divisiones = df.dropna(subset=["division"])  # descarta las cuentas que no tienen división asignada
+df_divisiones["mes_dt"] = df_divisiones["mes"].apply(lambda x: pd.to_datetime(x))
+df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
+
+
+# --- MENÚ LATERAL ---
+opcion = st.sidebar.selectbox("Selecciona una vista", [
+    "Resumen General",
+    "Compra por División",
+    "Compra por Cuenta",
+    "Compra por Sucursal",
+    "Vista por Sucursal",
+    "Estado de Ligado",
+    "Estado de cuenta"
+])
+
+# =============================
+# ======= RESUMEN GENERAL =====
+# =============================
+if opcion == "Resumen General":
+    st.title("Resumen General de Compras - 2025")
+
+    col1, col2 = st.columns(2) # Crear columnas lado a lado
+    with col1:  # Total del año
+        total_anual = df["monto"].sum()
+        st.metric("Total comprado en el año", f"${total_anual:,.0f}")
+
+    with col2: # Total del mes actual
+        mes_actual = datetime.now().strftime("%B %Y")  # Ej. "July 2025"
+        mes_actual_esp = meses_es.get(datetime.now().strftime("%B"), "") + " " + datetime.now().strftime("%Y")
+        total_mes_actual = df[df["mes_nombre"] == mes_actual_esp]["monto"].sum()
+        st.metric(f"Total comprado en {mes_actual_esp}", f"${total_mes_actual:,.0f}")
+
+    # Gráfica de líneas total
+    df_total_mes = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+    fig_total = go.Figure()
+    fig_total.add_trace(go.Scatter(x=df_total_mes.index, y=df_total_mes.values,
+                                   mode="lines+markers", name="Total",
+                                   line=dict(color="blue")))
+    fig_total.update_layout(title="Evolución mensual del total comprado", xaxis_title="Mes", yaxis_title="Monto")
+    st.plotly_chart(fig_total, use_container_width=True)
+    
+    # -------- Tabla de total comprado por mes --------
+    st.markdown("### Total comprado por mes")
+
+    # Agrupar y pivotear para una sola fila
+    tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+    tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T  # Transponer para tener una fila
+    tabla_horizontal_df.index = ["Total Comprado"]
+    tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.0f}")
+
+    st.dataframe(tabla_horizontal_df, use_container_width=True)
+
+
+
+# =============================
+# ==== COMPRA POR DIVISION ====
+# =============================
+elif opcion == "Compra por División":
+    st.title("Distribución de Compras por División - 2025")
+    #------- Grafico de pastel -------
+    df_agrupado = df_divisiones.groupby("division")["monto"].sum().reset_index()
+    df_agrupado["texto"] = df_agrupado.apply(
+        lambda row: f"{row['division']}<br>${row['monto']:,.0f}", axis=1
+    )
+
+    fig_pie = px.pie(
+        df_agrupado,
+        values="monto",
+        names="division",
+        color="division",
+        color_discrete_map=colores_divisiones,
+       hole=0.4
+    )
+    fig_pie.update_traces(textinfo="percent+label", textposition="inside")
+
+    fig_pie.update_layout(
+        title="Distribución porcentual del total comprado por división",
+        height=500,
+        legend=dict(
+            orientation="h",  # horizontal
+            yanchor="top",
+            y=-0.2,           # un poco debajo del gráfico
+            xanchor="center",
+            x=0.5
+        )
+    )
+
+    st.plotly_chart(fig_pie, use_container_width=True)
+
+
+    # -------- Tarjetas con total por división --------
+    col1, col2, col3 = st.columns(3)
+    divs = df_agrupado.set_index("division")
+
+    with col1:
+        monto = divs.loc["Agrícola", "monto"]
+        st.metric("Agrícola", f"${monto:,.0f}")
+
+    with col2:
+        monto = divs.loc["Construcción", "monto"]
+        st.metric("Construcción", f"${monto:,.0f}")
+
+    with col3:
+        monto = divs.loc["Jardinería y Golf", "monto"]
+        st.metric("Jardinería y Golf", f"${monto:,.0f}")
+
+    # -------- Gráfico de barras con texto integrado (monto y %) ---------
+    df_agrupado["porcentaje"] = df_agrupado["monto"] / df_agrupado["monto"].sum() * 100
+    df_agrupado["texto_barra"] = df_agrupado.apply(
+        lambda row: f"${row['monto']:,.0f}<br>{row['porcentaje']:.1f}%", axis=1
+    )
+
+    fig_bar = px.bar(
+        df_agrupado,
+        x="division",
+        y="monto",
+        color="division",
+        text="texto_barra",
+        color_discrete_map=colores_divisiones,
+        labels={"monto": "Monto Comprado", "division": "División"}
+    )
+    fig_bar.update_traces(textposition="inside", texttemplate="%{text}")
+    fig_bar.update_layout(
+        title="Monto total por División (con porcentaje)",
+        showlegend=False
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    # -------- TABLA ---------
+    tabla_pivot = df_divisiones.pivot_table(index="division", columns="mes_nombre", values="monto", aggfunc="sum", fill_value=0)
+    st.dataframe(tabla_pivot.style.format("${:,.0f}"), use_container_width=True)
+
+    # -------- Evolución mensual por división ---------------------------------------------------
+    df_mes_div = df_divisiones.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
+    df_mes_div["mes_nombre"] = pd.Categorical(df_mes_div["mes_nombre"], categories=orden_meses, ordered=True)
+    df_mes_div = df_mes_div.sort_values("mes_nombre")
+
+    fig_mes_div = px.bar(
+        df_mes_div,
+        x="mes_nombre",
+        y="monto",
+        color="division",
+        text="monto",
+        color_discrete_map=colores_divisiones,
+        labels={"mes_nombre": "Mes", "monto": "Total Comprado", "division": "División"}
+    )
+    fig_mes_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
+    fig_mes_div.update_layout(
+        title="Evolución mensual de compras por División",
+        barmode="stack",
+        xaxis=dict(tickangle=-45)
+    )
+    st.plotly_chart(fig_mes_div, use_container_width=True)
+
+    #---------- Grafico de compra por division y sucursal ---------
+    df_suc_div = df_divisiones.groupby(["sucursal", "division"])["monto"].sum().reset_index()
+
+    # Gráfico de barras apiladas por sucursal y división
+    fig_suc_div = px.bar(
+        df_suc_div,
+        x="sucursal",
+        y="monto",
+        color="division",
+        text="monto",
+        color_discrete_map=colores_divisiones,
+        labels={
+            "sucursal": "Sucursal",
+            "monto": "Total Comprado",
+            "division": "División"},
+    )
+
+    fig_suc_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
+    fig_suc_div.update_layout(
+        title="Compras por Sucursal y División",
+        barmode="stack",
+        xaxis_tickangle=-45
+    )
+    st.plotly_chart(fig_suc_div, use_container_width=True)
+
+    #---------- Tabla de compra por division y sucursal -----------
+    tabla_sucursal_division = pd.pivot_table(
+        df_divisiones,
+        values="monto",
+        index="division",       # Filas
+        columns="sucursal",     # Columnas
+        aggfunc="sum",
+        margins=True,           # Agrega totales
+        margins_name="Total",   # Nombre para los totales
+    )
+
+    # Opcional: Formatear los valores como moneda
+    tabla_formateada = tabla_sucursal_division.applymap(lambda x: "null" if pd.isna(x) else f"${x:,.0f}")
+
+    st.subheader("Monto comprado por sucursal y división")
+    st.dataframe(tabla_formateada, use_container_width=True)
+
+    #----------- Graficos de columnas de compra mensual por división y sucursal -------------
+    locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')  # Para la mayoría de Windows en español
+    with open("config_colores.json", "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    colores_divisiones = {k: v["color"] for k, v in config["divisiones"].items()}
+
+    # Agrupar datos
+    df_smd = df.groupby(["sucursal", "mes_nombre", "division"], as_index=False)["monto"].sum()
+    df_smd["sucursal"] = df_smd["sucursal"].astype(str)
+    df_smd["mes_nombre"] = df_smd["mes_nombre"].astype(str)
+    df_smd["division"] = df_smd["division"].astype(str)
+
+    sucursales = df_smd["sucursal"].unique()
+    num_sucursales = len(sucursales)
+    
+    orden_meses_con_anio = [
+        "Enero 2025", "Febrero 2025", "Marzo 2025", "Abril 2025", "Mayo 2025", "Junio 2025",
+        "Julio 2025", "Agosto 2025", "Septiembre 2025", "Octubre 2025", "Noviembre 2025", "Diciembre 2025"
+    ]
+    df_smd["fecha_mes"] = pd.to_datetime(df_smd["mes_nombre"], format="%B %Y") # Convertir mes_nombre (ej. "Junio 2025") a datetime para ordenarlo correctamente
+
+    # Obtener el mes más reciente con datos
+    max_fecha = df_smd["fecha_mes"].max()
+
+    # Filtrar meses hasta esa fecha y construir lista ordenada de nombres
+    meses_hasta_max = [
+        mes for mes in orden_meses_con_anio
+        if pd.to_datetime(mes, format="%B %Y") <= max_fecha
+    ]
+
+    # Re-categorizar con esa lista para que seaborn los ordene correctamente
+    df_smd["mes_nombre"] = pd.Categorical(df_smd["mes_nombre"], categories=meses_hasta_max, ordered=True)
+
+    # Ordenar por sucursal y mes
+    df_smd = df_smd.sort_values(["sucursal", "mes_nombre"])
+
+
+    st.title("Evolución de compras por sucursal")
+
+    # Opción para columnas: 1 o 2, para simular responsive
+    num_columnas = st.radio("Número de columnas de gráficos por fila:", options=[1, 2], index=1)
+    num_filas = math.ceil(num_sucursales / num_columnas)
+
+    # Ordenar divisiones para colores
+    divisiones_ordenadas = sorted(df_smd["division"].unique())
+    palette = [colores_divisiones.get(div, "#777777") for div in divisiones_ordenadas]
+
+    for i in range(0, num_sucursales, num_columnas):
+        cols = st.columns(num_columnas)
+
+        for j in range(num_columnas):
+           if i + j < num_sucursales:
+                suc = sucursales[i + j]
+                df_filtrado = df_smd[df_smd["sucursal"] == suc]
+
+                fig, ax = plt.subplots(figsize=(8, 4))
+                fig.patch.set_facecolor('#121212')  # fondo figura negro
+                ax.set_facecolor('#121212')          # fondo eje negro
+
+                # Gráfico de barras horizontal con paleta personalizada
+                sns.barplot(
+                    data=df_filtrado,
+                    x="monto",
+                    y="mes_nombre",
+                    hue="division",
+                    palette=palette,
+                    ax=ax,
+                    orient="h"
+                )
+                # Aquí agregas las etiquetas con formato moneda y separador de miles
+                for container in ax.containers:
+                    ax.bar_label(container, labels=[f"${x:,.0f}" for x in container.datavalues], padding=3, color='white', fontsize=9)
+
+                # Formatear el eje X con signo $ y comas
+                ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('${x:,.0f}'))
+                # Colores textos para fondo oscuro
+                ax.set_title(f"{suc} - Evolución de Compras", color="white")
+                ax.set_xlabel("Monto", color="white")
+                ax.set_ylabel("Mes", color="white")
+
+                ax.tick_params(colors="white")      # ticks color blanco
+                ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left', facecolor='#121212', edgecolor='white', labelcolor='white')
+
+                # Cambiar color textos de leyenda
+                leg = ax.get_legend()
+                for text in leg.get_texts():
+                    text.set_color("white")
+
+                cols[j].pyplot(fig)
+
+
+# =============================
+# ==== COMPRA POR CUENTA ======
+# =============================
+#----------- Grafico de barras de compra por cuenta --------------
+elif opcion == "Compra por Cuenta":
+    st.title("Compra Total por Cuenta (2025)")
+
+    # Agrupar monto total por cuenta y sucursal
+    df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
+
+    # Crear etiqueta tipo "1234 - Monterrey"
+    df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
+
+    # Ordenar de mayor a menor monto
+    df_cta = df_cta.sort_values("monto", ascending=False)
+
+    # Aplicar color por división
+    df_cta["color_div"] = df_cta["division"].map(colores_divisiones).fillna("#777777")  # gris por si falta
+
+    fig = px.bar(
+        df_cta,
+        x="monto",
+        y="cuenta_sucursal",
+        color="division",
+        color_discrete_map=colores_divisiones,
+        orientation="h",
+        labels={"monto": "Monto", "cuenta_sucursal": "Cuenta - Sucursal", "division": "División"},
+        title="Monto Total por Cuenta en 2025",
+        text_auto='.2s'  # añade el monto automáticamente con formato abreviado (puedes usar ',.0f' si prefieres exacto)
+    )
+    # Ajustes visuales
+    fig.update_layout(
+        xaxis_title="Monto (MXN)",
+        yaxis_title="Cuenta - Sucursal",
+        template="plotly_dark",
+        yaxis={'categoryorder':'total ascending'},  # barras ordenadas
+        height=800
+    )
+
+    # Formatear etiquetas de valor
+    fig.update_traces(
+        text=df_cta["monto"].apply(lambda x: f"${x:,.0f}"),
+        textposition="outside"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    #--------- Tabla de compra por cuenta y mes -------------
+    st.title("Compra mensual por Cuenta (2025)")
+
+    # Agrupar monto total por cuenta y sucursal
+    df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
+
+    # Crear cuenta_sucursal en df
+    df["cuenta_sucursal"] = df["codigo_normalizado"] + " - " + df["sucursal"]
+
+    # Crear mes_anio y orden_mes en df
+    df["mes_anio"] = df["mes_dt"].dt.strftime('%b %Y').str.capitalize()
+    df["orden_mes"] = df["mes_dt"].dt.to_period("M")
+
+    # Crear tabla pivote
+    tabla_compras = df.pivot_table(
+        index="cuenta_sucursal",
+        columns="mes_anio",
+        values="monto",
+        aggfunc="sum",
+        fill_value=0
+    )
+
+    # Ordenar columnas (meses)
+    orden_columnas = df.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
+    tabla_compras = tabla_compras[orden_columnas]
+    tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
+    tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
+
+    # Mostrar con Streamlit (usa st.dataframe o st.table)
+    tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
+    st.dataframe(tabla_compras_formateada)
+
+    # 🔽 CREAR ARCHIVO EXCEL EN MEMORIA
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        tabla_compras.to_excel(writer, index=True, sheet_name='Compras')
+    processed_data = output.getvalue()
+
+    # 🟢 BOTÓN DE DESCARGA
+    st.download_button(
+        label="📥 Descargar tabla en Excel",
+        data=processed_data,
+        file_name="compras_por_mes_por_cuenta.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    #---------- Grafico de compra por cuenta y mes ----------------
+    # Asegúrate de que la columna mes_dt existe
+    if "mes_dt" not in df_divisiones.columns:
+        df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["fecha"]).dt.to_period("M").dt.to_timestamp()
+
+    # Crear columna mes_año en formato 'Jul 2024'
+    df_divisiones["mes_anio"] = df_divisiones["mes_dt"].dt.strftime('%b %Y').str.capitalize()
+
+    # Crear columna cuenta_sucursal si no existe
+    if "cuenta_sucursal" not in df_divisiones.columns:
+        df_divisiones["cuenta_sucursal"] = df_divisiones["codigo_normalizado"] + " - " + df_divisiones["sucursal"]
+
+    # Preparar los datos para plotly (long-form)
+    df_grafico = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
+
+    # Ordenar los meses correctamente
+    orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
+    df_grafico["mes_anio"] = pd.Categorical(df_grafico["mes_anio"], categories=orden_meses, ordered=True)
+    df_grafico = df_grafico.sort_values("mes_anio")
+
+    # 🟡 SELECTOR DE CUENTAS
+    cuentas_disponibles = sorted(df_grafico["cuenta_sucursal"].unique())
+    cuentas_seleccionadas = st.multiselect("Selecciona cuentas a mostrar:", cuentas_disponibles, default=cuentas_disponibles)
+
+    # Filtrar el DataFrame según selección
+    df_filtrado = df_grafico[df_grafico["cuenta_sucursal"].isin(cuentas_seleccionadas)]
+
+    # Crear gráfico de líneas
+    fig = px.line(
+        df_filtrado,
+        x="mes_anio",
+        y="monto",
+        color="cuenta_sucursal",
+        markers=True,
+        title="Compras mensuales por cuenta"
+    )
+
+    fig.update_layout(
+        xaxis_title="Mes",
+        yaxis_title="Monto (MXN)",
+        yaxis_tickformat=",",  # Formato con comas
+        legend_title="Cuenta - Sucursal"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    
+
+# =============================
+# ==== COMPRA POR SUCURSAL ====
+# =============================
+elif opcion == "Compra por Sucursal":
+    st.title("Total de Compras por Mes y Sucursal - 2025")
+
+    df_pivot = df.pivot_table(index="mes_nombre", columns="sucursal", values="monto", aggfunc="sum").fillna(0)
+    df_pivot = df_pivot.reindex(orden_meses)
+    df_percent = df_pivot.div(df_pivot.sum(axis=1), axis=0) * 100
+
+    fig = go.Figure()
+    for sucursal in sorted(df_pivot.columns):
+        fig.add_trace(go.Bar(
+            y=df_percent.index,
+            x=df_percent[sucursal],
+            orientation='h',
+            name=sucursal,
+            marker=dict(color=colores_sucursales.get(sucursal)),
+            customdata=df_pivot[sucursal],
+            text=[
+                f"{df_percent.loc[mes, sucursal]:.1f}%<br>${df_pivot.loc[mes, sucursal]:,.0f}"
+                if df_pivot.loc[mes, sucursal] > 0 else ""
+                for mes in df_percent.index
+            ],
+            hovertemplate="<b>%{fullData.name}</b><br>%{x:.1f}%<br>$%{customdata:,.0f}<extra></extra>",
+            textposition='inside'
+        ))
+    fig.update_layout(
+        barmode='stack',
+        title='Distribución porcentual de compras por sucursal (2025)',
+        xaxis=dict(title='Porcentaje', ticksuffix='%'),
+        yaxis=dict(title='Mes'),
+        legend=dict(orientation='h', yanchor='top', y=-0.25, xanchor='center', x=0.5),
+        height=650, margin=dict(t=100)
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    #-------- Tabla --------
+    st.markdown("### Resumen total por mes y sucursal")
+    tabla = df.pivot_table(
+        index="mes_nombre",
+        columns="sucursal",
+        values="monto",
+        aggfunc="sum",
+        margins=True,
+        margins_name="Total"
+    ).fillna(0)
+
+    tabla = tabla.reindex(orden_meses + ["Total"])
+    # Cambiar el nombre del índice
+    tabla.index.name = "Mes"
+    # Formatear valores
+    tabla_formateada = tabla.applymap(lambda x: f"{x:,.0f}")
+    st.dataframe(tabla_formateada, use_container_width=True)
+
+
+    # -------- Gráfico líneas con colores de sucursal --------
+    fig_lineas = go.Figure()
+    for sucursal in df_pivot.columns:
+        fig_lineas.add_trace(go.Scatter(
+            x=df_pivot.index,
+            y=df_pivot[sucursal],
+            mode='lines+markers',
+            name=sucursal,
+            line=dict(color=colores_sucursales.get(sucursal))
+        ))
+    fig_lineas.update_layout(
+        title="Evolución de Compras por Mes y Sucursal (2025)",
+        xaxis_title="Mes",
+        yaxis_title="Total Comprado",
+        xaxis=dict(tickangle=-45),
+        height=500,
+        margin=dict(t=60)
+    )
+    st.plotly_chart(fig_lineas, use_container_width=True)
+
+    #------------ Graficas de barras ---------------
+    st.markdown("### Compras por Sucursal, mes a mes")
+
+    for mes in orden_meses:
+        df_mes = df[df["mes_nombre"] == mes].copy()
+        
+        # Agrupar solo por sucursal, sumando los montos de todas las divisiones
+        df_mes = df_mes.groupby("sucursal", as_index=False).agg({"monto": "sum"})
+
+        total_mes = df_mes["monto"].sum()
+        df_mes["porcentaje"] = df_mes["monto"] / total_mes * 100
+
+        df_mes["texto"] = df_mes.apply(
+            lambda row: f"${row['monto']:,.0f}<br>({row['porcentaje']:.1f}%)", axis=1
+        )
+
+        fig_mes = px.bar(
+            df_mes,
+            x="sucursal",
+            y="monto",
+            title=f"Compras en {mes}",
+            labels={"monto": "Total Comprado", "sucursal": "Sucursal"},
+            color="sucursal",
+            color_discrete_map=colores_sucursales,
+            text="texto"
+        )
+        fig_mes.update_traces(
+            textposition='inside',
+            texttemplate='%{text}',
+            hovertemplate=None
+        )
+        fig_mes.update_layout(showlegend=False)
+        st.plotly_chart(fig_mes, use_container_width=True, key=f"bar_{mes}")
+
+
+# =============================
+# ==== VISTA POR SUCURSAL ====
+# =============================
+elif opcion == "Vista por Sucursal":
+    st.title("Vista detallada por Sucursal")
+
+    # Recalcular df_pivot
+    df_pivot = df.pivot_table(index="mes_nombre", columns="sucursal", values="monto", aggfunc="sum").fillna(0)
+    df_pivot = df_pivot.reindex(orden_meses)
+
+    # ----------------- Selector de sucursales ---------------
+    sucursales_disponibles = sorted(df["sucursal"].unique())
+    sucursales_seleccionadas = st.multiselect("Selecciona una o varias sucursales", options=sucursales_disponibles, default=sucursales_disponibles)
+    
+    # -------------- Tarjetas resumen -----------------
+    if sucursales_seleccionadas:  # si hay selección
+        df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)]
+    else:
+        df_filtrado = df.copy()  # o un df vacío si quieres no mostrar nada
+
+    total_anual = df_filtrado["monto"].sum()
+
+    ultimo_mes = df_filtrado["mes_dt"].max()
+
+    # Validar si ultimo_mes es NaT
+    if pd.isna(ultimo_mes):
+        texto_mes = "Sin datos"
+        total_mensual = 0
+    else:
+        texto_mes = ultimo_mes.strftime('%B %Y')
+        total_mensual = df_filtrado[df_filtrado["mes_dt"] == ultimo_mes]["monto"].sum()
+
+    col1, col2 = st.columns(2)
+    col1.metric(label="Total Acumulado Anual (2025)", value=f"${total_anual:,.0f}")
+    col2.metric(label=f"Total Acumulado {texto_mes}", value=f"${total_mensual:,.0f}")
+
+    st.title("Evolución mensual de compras por sucursal")
+    
+    # === GRÁFICA DE LÍNEAS (evolución mensual) ===
+    fig_lineas = go.Figure()
+    for sucursal in sucursales_seleccionadas:
+        if sucursal in df_pivot.columns:
+            fig_lineas.add_trace(go.Scatter(
+                x=df_pivot.index,
+                y=df_pivot[sucursal],
+                mode='lines+markers',
+                name=sucursal,
+                line=dict(color=colores_sucursales.get(sucursal))
+            ))
+    fig_lineas.update_layout(
+        title="Evolución mensual por sucursal",
+        xaxis_title="Mes",
+        yaxis_title="Total Comprado"
+    )
+    st.plotly_chart(fig_lineas, use_container_width=True)
+
+    #----------- Grafica de barras por cuenta --------------
+    df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)]
+
+    # Agrupar por cuenta y sucursal
+    df_cta = df_filtrado.groupby(["codigo_normalizado", "sucursal"], as_index=False)["monto"].sum()
+
+    # Crear etiqueta tipo "1234 - Monterrey"
+    df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
+
+    # Ordenar por monto (descendente para que en horizontal queden bien)
+    df_cta = df_cta.sort_values("monto", ascending=True)
+
+    if not df_cta.empty:
+        st.markdown("### Compras acumuladas por cuenta (anual)")
+
+        fig = px.bar(
+            df_cta,
+            x="monto",
+            y="cuenta_sucursal",
+            orientation="h",
+            color="sucursal",
+            color_discrete_map=colores_sucursales,
+            labels={
+                "monto": "Monto (MXN)",
+                "cuenta_sucursal": "Cuenta - Sucursal",
+                "sucursal": "Sucursal"
+            },
+            text=df_cta["monto"].apply(lambda x: f"${x:,.0f}")
+        )
+
+        altura_grafica = max(300, min(50 * len(df_cta), 800))  # Altura entre 300 y 800 px
+
+        fig.update_layout(
+            xaxis_title="Monto (MXN)",
+            yaxis_title="Cuenta - Sucursal",
+            yaxis={"categoryorder": "total ascending"},
+            height=altura_grafica,
+            showlegend=len(sucursales_seleccionadas) > 1
+        )
+
+        fig.update_traces(textposition="outside")
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Selecciona al menos una sucursal para ver esta gráfica.")
+    
+    #======= GRAFICA DE BARRAS DE MONTO POR MES Y CUENTA =============
+
+    # Validar selección
+    if not sucursales_seleccionadas:
+        st.warning("Selecciona al menos una sucursal para ver esta gráfica.")
+    else:
+        # Filtrar por sucursales seleccionadas
+        df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)].copy()
+
+        # Crear etiqueta cuenta_sucursal
+        df_filtrado["cuenta_sucursal"] = df_filtrado["codigo_normalizado"] + " - " + df_filtrado["sucursal"]
+
+        # Agrupar por mes y cuenta_sucursal, sumando monto
+        df_mes_cta = df_filtrado.groupby(["mes_nombre", "cuenta_sucursal", "sucursal", "division"])["monto"].sum().reset_index()
+
+        # Ordenar meses según orden_meses
+        df_mes_cta["mes_nombre"] = pd.Categorical(df_mes_cta["mes_nombre"], categories=orden_meses, ordered=True)
+        df_mes_cta = df_mes_cta.sort_values("mes_nombre")
+
+        # Mostrar texto solo si seleccionó menos sucursales que las disponibles
+        mostrar_texto = len(sucursales_seleccionadas) < len(sucursales_disponibles)
+
+        # Definir colores y variable de color según cantidad de sucursales seleccionadas
+        if len(sucursales_seleccionadas) == 1:
+            # Colorear según división
+            color_columna = "division"
+            color_mapa = colores_divisiones  # asumo que tienes este dict definido con colores por división
+        else:
+            # Colorear según sucursal
+            color_columna = "sucursal"
+            color_mapa = colores_sucursales
+
+        fig = px.bar(
+            df_mes_cta,
+            x="monto",
+            y="mes_nombre",
+            color=color_columna,
+            orientation="h",
+            labels={
+                "monto": "Monto (MXN)",
+                "mes_nombre": "Mes",
+                "cuenta_sucursal": "Cuenta - Sucursal",
+                color_columna: color_columna.capitalize()
+            },
+            text=df_mes_cta["monto"].apply(lambda x: f"${x:,.0f}") if mostrar_texto else None,
+            category_orders={"mes_nombre": orden_meses},
+            color_discrete_map=color_mapa
+        )
+
+        fig.update_layout(
+            height=max(300, min(50 * len(df_mes_cta["mes_nombre"].unique()), 800)),
+            xaxis_title="Monto (MXN)",
+            yaxis_title="Mes",
+            barmode="stack"
+        )
+
+        if mostrar_texto:
+            fig.update_traces(textposition="inside")
+        else:
+            fig.update_traces(text=None)
+
+        st.plotly_chart(fig, use_container_width=True)
+
+
+
+    # === GRÁFICA DE BARRAS POR SUCURSAL ===
+    if len(sucursales_seleccionadas) == 1:
+        sucursal = sucursales_seleccionadas[0]
+        df_suc = df[df["sucursal"] == sucursal].copy()
+        df_suc = df_suc.groupby(["mes_nombre", "mes_dt"], as_index=False).agg({"monto": "sum"})
+        df_suc = df_suc.sort_values("mes_dt")  # asegurar orden
+        df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
+
+        fig_barras = px.bar(
+            df_suc,
+            x="mes_nombre",
+            y="monto",
+            text="texto",
+            color_discrete_sequence=[colores_sucursales.get(sucursal, "#636EFA")],
+            title=f"Compras mensuales de {sucursal} en 2025"
+        )
+        fig_barras.update_traces(textposition='inside', texttemplate='%{text}')
+        fig_barras.update_layout(showlegend=False, xaxis_title="Mes", yaxis_title="Total Comprado")
+        st.plotly_chart(fig_barras, use_container_width=True)
+    else:
+        st.markdown("### Compras por Sucursal, mes a mes")
+        for mes in orden_meses:
+            df_mes = df[df["mes_nombre"] == mes]
+            df_mes = df_mes[df_mes["sucursal"].isin(sucursales_seleccionadas)].copy()
+            df_mes = df_mes.groupby("sucursal", as_index=False).agg({"monto": "sum"})
+            total_mes = df_mes["monto"].sum()
+            if total_mes == 0:
+                continue
+            df_mes["porcentaje"] = df_mes["monto"] / total_mes * 100
+            df_mes["texto"] = df_mes.apply(lambda row: f"${row['monto']:,.0f}<br>({row['porcentaje']:.1f}%)", axis=1)
+
+            fig_mes = px.bar(
+                df_mes,
+                x="sucursal",
+                y="monto",
+                text="texto",
+                color="sucursal",
+                color_discrete_map=colores_sucursales,
+                title=f"Compras en {mes}"
+            )
+            fig_mes.update_traces(textposition='inside', texttemplate='%{text}')
+            fig_mes.update_layout(showlegend=False)
+            st.plotly_chart(fig_mes, use_container_width=True, key=f"mes_{mes}")
+
+
+
+# =============================
+# ====== ESTADO DE LIGADO =====
+# =============================
+elif opcion == "Estado de Ligado":
+    st.title("Estado de Ligado de Facturas")
+    # ----------- Información General - Estado de Ligado  (TARJETAS) -----------
+    st.markdown("### Información general")
+    # Filtramos el dataframe para obtener totales según el ligado_sistema
+    monto_ligado = df[df["ligado_sistema"] == 1]["monto"].sum()
+    monto_pendiente = df[df["ligado_sistema"] == 0]["monto"].sum()
+    # Mostramos en tarjetas
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("✅ Total ligado en sistema", f"${monto_ligado:,.2f}")
+
+    with col2:
+        st.metric("🕒 Pendiente de ligar", f"${monto_pendiente:,.2f}")
+
+    # ---------------- FILTRAR FACTURAS NO LIGADAS (GRAFICO DE LÍNEAS) ---------------------------------------------
+    df_no_ligado = df[df["ligado_sistema"] == 0]
+
+    # Agrupar por mes
+    monto_mensual_no_ligado = df_no_ligado.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+
+    # --- GRÁFICO ---
+    st.subheader("Monto mensual sin ligar")
+    fig = px.line(
+        monto_mensual_no_ligado,
+        x=monto_mensual_no_ligado.index,
+        y=monto_mensual_no_ligado.values,
+        labels={"x": "Mes", "y": "Monto sin ligar"},
+        markers=True,
+    )
+    fig.update_layout(xaxis_title="Mes", yaxis_title="Monto sin ligar", title="Tendencia mensual de facturas no ligadas")
+    st.plotly_chart(fig, use_container_width=True)
+
+    # --- ---------CANTIDAD SIN LIGAR MENSUAL POR SUCURSAL (GRAFICO DE BARRAS APILADAS) ---
+    # Filtrar solo facturas sin ligar
+    df_no_ligado = df[df["ligado_sistema"] == 0].copy()
+
+    # Asegurarnos que mes_dt exista y sea datetime
+    if "mes_dt" not in df_no_ligado.columns:
+        df_no_ligado["mes_dt"] = pd.to_datetime(df_no_ligado["mes"].astype(str))
+
+    # Obtener el mes actual (en formato periodo M)
+    mes_actual = pd.to_datetime("today").to_period("M")
+
+    # Agrupar monto por mes_nombre, sucursal y mes_dt (fecha)
+    monto_por_mes_sucursal = df_no_ligado.groupby(
+        ["mes_nombre", "sucursal", "mes_dt"]
+    )["monto"].sum().reset_index()
+
+    # Filtrar para excluir mes actual y posteriores
+    monto_por_mes_sucursal = monto_por_mes_sucursal[
+        monto_por_mes_sucursal["mes_dt"].dt.to_period("M") < mes_actual
+    ]
+
+    # Crear orden correcto solo con los meses filtrados
+    meses_filtrados = [m for m in orden_meses if m in monto_por_mes_sucursal["mes_nombre"].unique()]
+    monto_por_mes_sucursal["mes_nombre"] = pd.Categorical(
+        monto_por_mes_sucursal["mes_nombre"],
+        categories=meses_filtrados,
+        ordered=True
+    )
+
+    # Ordenar DataFrame por fecha para que Plotly respete el orden cronológico
+    monto_por_mes_sucursal = monto_por_mes_sucursal.sort_values("mes_dt")
+
+    # Crear gráfico de barras apiladas horizontales
+    fig = px.bar(
+        monto_por_mes_sucursal,
+        x="monto",
+        y="mes_nombre",
+        color="sucursal",
+        orientation="h",
+        title="Distribución mensual del monto sin ligar por sucursal",
+        labels={"monto": "Monto sin ligar", "mes_nombre": "Mes"},
+        category_orders={"mes_nombre": meses_filtrados}  # <- esto fuerza el orden
+    )
+
+
+    fig.update_layout(
+        barmode="stack",
+        xaxis_title="Monto sin ligar",
+        yaxis_title="Mes"
+    )
+
+    #fig.update_traces(marker_line_width=1, marker_line_color='white')
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    #------------- TABLA ------------------------------
+    tabla_resumen = monto_por_mes_sucursal.pivot_table(
+        index="mes_nombre",
+        columns="sucursal",
+        values="monto",
+        aggfunc="sum",
+        fill_value=0
+    )
+
+    # Ordenar los meses correctamente
+    tabla_resumen = tabla_resumen.reindex(meses_filtrados)
+
+    # Función para aplicar estilo condicional: pintar rojo si el valor es distinto de 0
+    def resaltar_valores(val):
+        color = 'background-color: #BC13FE' if val != 0 else ''
+        return color
+
+    # Mostrar en Streamlit con estilo
+    st.subheader("Tabla resumen del monto sin ligar por mes y sucursal")
+    st.dataframe(tabla_resumen.style
+        .applymap(resaltar_valores)
+        .format("${:,.2f}")
+    )
+
+
+# =============================
+# ====== ESTADO DE CUENTA =====
+# =============================
+elif opcion == "Estado de cuenta":
+    st.title("Cuadro de estado de cuenta")
+    #-------------------- Tabla ---------------------------------------
+    df_estado_cuenta, fecha_corte = obtener_estado_cuenta()
+
+    st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
+
+    # Pivot para matriz: filas=sucursal+cuenta, columnas=fecha_exigibilidad, valores=suma total
+    df_pivot = df_estado_cuenta.pivot_table(
+        index=["sucursal", "codigo_6digitos"],
+        columns="fecha_exigibilidad",
+        values="total",
+        aggfunc="sum",
+        fill_value=0,
+        margins=True,           # Totales fila y columna
+        margins_name="Total"
+    )
+
+    # Renombrar índice "codigo_6digitos" a "codigo"
+    df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
+
+    # Mostrar tabla estilizada
+    st.dataframe(df_pivot.style.format("{:,.2f}"))
+
+    # Función para convertir DataFrame a Excel bytes
+    def to_excel(df):
+        import io
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='EstadoCuenta')
+        return output.getvalue()
+
+    # Botón para descargar Excel
+    excel_data = to_excel(df_pivot)
+    st.download_button(
+        label="Descargar tabla en Excel",
+        data=excel_data,
+        file_name=f"estado_cuenta_{fecha_corte.strftime('%Y%m%d')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    #-------------- Tarjetas -------------------------
+    # Asegurarse de que las fechas estén en formato datetime
+    df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+
+    # Hoy
+    hoy = pd.to_datetime(datetime.today().date())
+
+    # Filtros para tarjetas
+    total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
+    por_vencer_30 = df_estado_cuenta[
+        (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
+        (df_estado_cuenta["fecha_exigibilidad"] <= hoy + timedelta(days=30))
+    ]["total"].sum()
+    por_vencer_90 = df_estado_cuenta[
+        df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
+    ]["total"].sum()
+
+    # Mostrar tarjetas en fila
+    col1, col2, col3 = st.columns(3)
+    col1.metric("🔴 Total vencido", f"${total_vencido:,.2f}")
+    col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
+    col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
+
+
+
+
+
+
+
+
+# =============================
