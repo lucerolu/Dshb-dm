@@ -31,6 +31,7 @@ def conectar_bd():
     try:
         connection = pymysql.connect(
             host=st.secrets["DB_HOST"],
+            port=3306,
             user=st.secrets["DB_USER"],
             password=st.secrets["DB_PASS"],
             db='facturas',
