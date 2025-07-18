@@ -26,22 +26,25 @@ colores_sucursales = config["sucursales"]
 
 
 def conectar_bd():
-    # Ruta del certificado (relativa al script)
     ssl_ca_path = os.path.join(os.path.dirname(__file__), "certificados", "server-ca.pem")
     
-    # Establecer conexión
-    connection = pymysql.connect(
-        host=st.secrets["DB_HOST"],
-        user=st.secrets["DB_USER"],
-        password=st.secrets["DB_PASS"],
-        db='facturas',
-        ssl={
-            'ca': ssl_ca_path,
-            'check_hostname': False
-        },
-        cursorclass=pymysql.cursors.DictCursor
-    )
-    return connection
+    try:
+        connection = pymysql.connect(
+            host=st.secrets["DB_HOST"],
+            user=st.secrets["DB_USER"],
+            password=st.secrets["DB_PASS"],
+            db='facturas',
+            ssl={
+                'ca': ssl_ca_path,
+                'check_hostname': False
+            },
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        return connection
+    except Exception as e:
+        st.error(f"Error de conexión a la base de datos: {e}")
+        return None
+
 
 def obtener_datos():
     conn = conectar_bd()
