@@ -297,7 +297,7 @@ elif opcion == "Compra por División":
     st.dataframe(tabla_formateada, use_container_width=True)
 
     #----------- Graficos de columnas de compra mensual por división y sucursal -------------
-    locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')  # Para la mayoría de Windows en español
+    locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # Para la mayoría de Windows en español
     with open("config_colores.json", "r", encoding="utf-8") as f:
         config = json.load(f)
 
@@ -800,7 +800,8 @@ elif opcion == "Vista por Sucursal":
             fig.update_traces(textposition="inside")
         else:
             fig.update_traces(text=None)
-
+            marker_line_width=1,
+            marker_line_color="black"
         st.plotly_chart(fig, use_container_width=True)
 
 
