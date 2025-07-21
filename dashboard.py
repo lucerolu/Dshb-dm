@@ -14,6 +14,7 @@ from datetime import datetime
 from datetime import timedelta
 import locale
 import io
+import requests
 
 
 # --- CONFIGURACION GENERAL ---
@@ -24,115 +25,76 @@ with open("config_colores.json", "r", encoding="utf-8") as f:
 
 colores_sucursales = config["sucursales"]
 
+API_BASE = "https://fastapi-api-454780168370.us-central1.run.app"
 
-def conectar_bd():
-    ssl_ca_path = os.path.join(os.path.dirname(__file__), "certificados", "server-ca.pem")
-    
+def obtener_datos_api():
+    url = f"{API_BASE}/datos"
     try:
-        connection = pymysql.connect(
-            host=st.secrets["DB_HOST"],
-            port=3306,
-            user=st.secrets["DB_USER"],
-            password=st.secrets["DB_PASS"],
-            db='facturas',
-            ssl={
-                'ca': ssl_ca_path,
-                'check_hostname': False
-            },
-            cursorclass=pymysql.cursors.DictCursor
-        )
-        return connection
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        return pd.DataFrame(data)
     except Exception as e:
-        st.error(f"Error de conexión a la base de datos: {e}")
-        return None
+        st.error(f"Error al obtener datos de la API: {e}")
+        return pd.DataFrame()
+
+def obtener_estado_cuenta_api():
+    url = f"{API_BASE}/estado_cuenta"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        # EXTRAER los datos correctamente
+        lista_datos = data.get("datos", [])
+        fecha_corte = pd.to_datetime(data.get("fecha_corte"))
+
+        df = pd.DataFrame(lista_datos)
+
+        if df.empty:
+            return pd.DataFrame(), None
+
+        return df, fecha_corte
+
+    except Exception as e:
+        st.error(f"Error al obtener estado de cuenta de la API: {e}")
+        return pd.DataFrame(), None
 
 
-def obtener_datos():
-    conn = conectar_bd()
-    with conn.cursor() as cursor:
-        cursor.execute("""
-            SELECT 
-                DATE_FORMAT(f.fecha, '%Y-%m') AS mes,
-                s.nombre AS sucursal,
-                SUM(f.monto) AS monto,
-                COALESCE(c_eq.codigo, c.codigo) AS codigo_normalizado,
-                f.ligado_sistema
-            FROM facturas_info f
-            JOIN cuentas c ON f.cuenta_id = c.id
-            LEFT JOIN cuentas_equivalentes ce ON c.id = ce.cuenta_4digitos_id
-            LEFT JOIN cuentas c_eq ON ce.cuenta_6digitos_id = c_eq.id
-            LEFT JOIN sucursales s ON COALESCE(c.sucursal_id, c_eq.sucursal_id) = s.id
-            WHERE YEAR(f.fecha) = 2025
-            GROUP BY mes, s.nombre, codigo_normalizado, f.ligado_sistema
-            ORDER BY mes, s.nombre;
-        """)
-        data = cursor.fetchall()
-    conn.close()
-    return pd.DataFrame(data)
+# === OBTENER DATOS ===
+df = obtener_datos_api()
+if not df.empty:
+    df = df.dropna(subset=["sucursal"])
 
-def obtener_estado_cuenta():
-    conn = conectar_bd()
-    with conn.cursor() as cursor:
-        # Obtener fecha de corte (última fecha_documento)
-        cursor.execute("SELECT MAX(fecha_documento) AS ultima_fecha FROM estado_cuenta;")
-        fecha_corte = cursor.fetchone()['ultima_fecha']
+    meses_es = {
+        'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
+        'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
+        'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+    }
 
-        # Consulta principal para estado de cuenta
-        cursor.execute("""
-            SELECT
-                s.nombre AS sucursal,
-                COALESCE(c_eq.codigo, c.codigo) AS codigo_6digitos,
-                ec.fecha_exigibilidad,
-                SUM(ec.total) AS total
-            FROM estado_cuenta ec
-            JOIN cuentas c ON ec.cuenta_id = c.id
-            LEFT JOIN cuentas_equivalentes ce ON c.id = ce.cuenta_4digitos_id
-            LEFT JOIN cuentas c_eq ON ce.cuenta_6digitos_id = c_eq.id
-            LEFT JOIN sucursales s ON COALESCE(c.sucursal_id, c_eq.sucursal_id) = s.id
-            WHERE ec.fecha_documento = %s
-            GROUP BY s.nombre, codigo_6digitos, ec.fecha_exigibilidad
-            ORDER BY s.nombre, codigo_6digitos, ec.fecha_exigibilidad;
-        """, (fecha_corte,))
-        data = cursor.fetchall()
-    conn.close()
-    df = pd.DataFrame(data)
-    return df, fecha_corte
+    df["mes_dt"] = pd.to_datetime(df["mes"])
+    df["mes_nombre"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
+    df = df.sort_values("mes_dt")
+    orden_meses = df["mes_nombre"].drop_duplicates().tolist()
+
+    # --- DIVISIONES ---
+    divisiones = config["divisiones"]
+    mapa_codigos = {}
+    colores_divisiones = {}
+    for division, info in divisiones.items():
+        for codigo in info["codigos"]:
+            mapa_codigos[codigo] = division
+        colores_divisiones[division] = info["color"]
+
+    df["division"] = df["codigo_normalizado"].map(mapa_codigos)
+    df_divisiones = df.dropna(subset=["division"])  # descarta cuentas sin división
+    df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["mes"])
+    df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
+else:
+    st.warning("No hay datos disponibles para mostrar.")
 
 
-
-# --- DATOS ---
-df = obtener_datos()
-df = df.dropna(subset=["sucursal"])
-
-# Fecha formateada
-meses_es = {
-    'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
-    'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
-    'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
-}
-
-df["mes_dt"] = pd.to_datetime(df["mes"])
-df["mes_nombre"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
-df = df.sort_values("mes_dt")
-orden_meses = df["mes_nombre"].drop_duplicates().tolist()
-
-# --- PARA LAS DIVISIONES ---
-divisiones = config["divisiones"]
-mapa_codigos = {}
-colores_divisiones = {}
-for division, info in divisiones.items():
-    for codigo in info["codigos"]:
-        mapa_codigos[codigo] = division
-    colores_divisiones[division] = info["color"]
-
-# Crear columna nueva en el df
-df["division"] = df["codigo_normalizado"].map(mapa_codigos)
-df_divisiones = df.dropna(subset=["division"])  # descarta las cuentas que no tienen división asignada
-df_divisiones["mes_dt"] = df_divisiones["mes"].apply(lambda x: pd.to_datetime(x))
-df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
-
-
-# --- MENÚ LATERAL ---
+# --- MENU LATERAL ---
 opcion = st.sidebar.selectbox("Selecciona una vista", [
     "Resumen General",
     "Compra por División",
@@ -1001,73 +963,63 @@ elif opcion == "Estado de Ligado":
 # =============================
 elif opcion == "Estado de cuenta":
     st.title("Cuadro de estado de cuenta")
-    #-------------------- Tabla ---------------------------------------
-    df_estado_cuenta, fecha_corte = obtener_estado_cuenta()
+    
+    df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
+    if df_estado_cuenta.empty or fecha_corte is None:
+        st.warning("No hay datos de estado de cuenta.")
+    else:
+        st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
+        
+        df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+        
+        df_pivot = df_estado_cuenta.pivot_table(
+            index=["sucursal", "codigo_6digitos"],
+            columns="fecha_exigibilidad",
+            values="total",
+            aggfunc="sum",
+            fill_value=0,
+            margins=True,
+            margins_name="Total"
+        )
+        df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
+        df_pivot_reset = df_pivot.reset_index()
+        numeric_cols = df_pivot_reset.select_dtypes(include="number").columns.tolist()
+        # Asegura que todas las columnas excepto el índice sean numéricas
+        cols_to_format = df_pivot.columns
+        df_pivot[cols_to_format] = df_pivot[cols_to_format].apply(pd.to_numeric, errors='coerce')
 
-    st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
-
-    # Pivot para matriz: filas=sucursal+cuenta, columnas=fecha_exigibilidad, valores=suma total
-    df_pivot = df_estado_cuenta.pivot_table(
-        index=["sucursal", "codigo_6digitos"],
-        columns="fecha_exigibilidad",
-        values="total",
-        aggfunc="sum",
-        fill_value=0,
-        margins=True,           # Totales fila y columna
-        margins_name="Total"
-    )
-
-    # Renombrar índice "codigo_6digitos" a "codigo"
-    df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
-
-    # Mostrar tabla estilizada
-    st.dataframe(df_pivot.style.format("{:,.2f}"))
-
-    # Función para convertir DataFrame a Excel bytes
-    def to_excel(df):
-        import io
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='EstadoCuenta')
-        return output.getvalue()
-
-    # Botón para descargar Excel
-    excel_data = to_excel(df_pivot)
-    st.download_button(
-        label="Descargar tabla en Excel",
-        data=excel_data,
-        file_name=f"estado_cuenta_{fecha_corte.strftime('%Y%m%d')}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-    #-------------- Tarjetas -------------------------
-    # Asegurarse de que las fechas estén en formato datetime
-    df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-
-    # Hoy
-    hoy = pd.to_datetime(datetime.today().date())
-
-    # Filtros para tarjetas
-    total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
-    por_vencer_30 = df_estado_cuenta[
-        (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
-        (df_estado_cuenta["fecha_exigibilidad"] <= hoy + timedelta(days=30))
-    ]["total"].sum()
-    por_vencer_90 = df_estado_cuenta[
-        df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
-    ]["total"].sum()
-
-    # Mostrar tarjetas en fila
-    col1, col2, col3 = st.columns(3)
-    col1.metric("🔴 Total vencido", f"${total_vencido:,.2f}")
-    col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
-    col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
-
-
-
-
-
-
-
+        # Mostrar con formato correcto
+        st.dataframe(df_pivot_reset.style.format("{:,.2f}", subset=numeric_cols))
+        
+        def to_excel(df):
+            import io
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name='EstadoCuenta')
+            return output.getvalue()
+        
+        excel_data = to_excel(df_pivot)
+        st.download_button(
+            label="Descargar tabla en Excel",
+            data=excel_data,
+            file_name=f"estado_cuenta_{fecha_corte.strftime('%Y%m%d')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        
+        hoy = pd.to_datetime(datetime.today().date())
+        
+        total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
+        por_vencer_30 = df_estado_cuenta[
+            (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
+            (df_estado_cuenta["fecha_exigibilidad"] <= hoy + timedelta(days=30))
+        ]["total"].sum()
+        por_vencer_90 = df_estado_cuenta[
+            df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
+        ]["total"].sum()
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("🔴 Total vencido", f"${total_vencido:,.2f}")
+        col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
+        col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
 # =============================

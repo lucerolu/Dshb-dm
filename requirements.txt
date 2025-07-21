@@ -4,3 +4,4 @@ pymysql
 plotly
 matplotlib
 seaborn
+requests
