@@ -74,6 +74,7 @@ if not df.empty:
 
     df["mes_dt"] = pd.to_datetime(df["mes"])
     df["mes_nombre"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
+    df["mes_period"] = df["mes_dt"].dt.to_period("M")
     df = df.sort_values("mes_dt")
     orden_meses = df["mes_nombre"].drop_duplicates().tolist()
 
@@ -111,16 +112,21 @@ opcion = st.sidebar.selectbox("Selecciona una vista", [
 if opcion == "Resumen General":
     st.title("Resumen General de Compras - 2025")
 
-    col1, col2 = st.columns(2) # Crear columnas lado a lado
-    with col1:  # Total del año
-        total_anual = df["monto"].sum()
-        st.metric("Total comprado en el año", f"${total_anual:,.0f}")
+    ahora = datetime.now()
+    ahora_pd = pd.Timestamp(ahora)  # Convertir a pandas Timestamp
+    mes_actual_period = ahora_pd.to_period("M")
+    mes_actual_esp = meses_es.get(ahora.strftime("%B"), "") + " " + str(ahora.year)
 
-    with col2: # Total del mes actual
-        mes_actual = datetime.now().strftime("%B %Y")  # Ej. "July 2025"
-        mes_actual_esp = meses_es.get(datetime.now().strftime("%B"), "") + " " + datetime.now().strftime("%Y")
-        total_mes_actual = df[df["mes_nombre"] == mes_actual_esp]["monto"].sum()
-        st.metric(f"Total comprado en {mes_actual_esp}", f"${total_mes_actual:,.0f}")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        total_anual = df["monto"].sum()
+        st.metric("Total comprado en el año", f"${total_anual:,.2f}")
+
+    with col2:
+        total_mes_actual = df[df["mes_period"] == mes_actual_period]["monto"].sum()
+        mes_actual_esp = meses_es.get(ahora.strftime("%B"), "") + " " + str(ahora.year)
+        st.metric(f"Total comprado en {mes_actual_esp}", f"${total_mes_actual:,.2f}")
 
     # Gráfica de líneas total
     df_total_mes = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
@@ -130,7 +136,11 @@ if opcion == "Resumen General":
                                    line=dict(color="blue")))
     fig_total.update_layout(title="Evolución mensual del total comprado", xaxis_title="Mes", yaxis_title="Monto")
     st.plotly_chart(fig_total, use_container_width=True)
+
     
+    col1, col2 = st.columns(2)
+  
+
     # -------- Tabla de total comprado por mes --------
     st.markdown("### Total comprado por mes")
 
