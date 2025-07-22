@@ -249,13 +249,14 @@ elif opcion == "Compra por División":
     )
     fig_mes_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
     fig_mes_div.update_layout(
-        title="Evolución mensual de compras por División",
+        title=dict(text="Evolución mensual de compras por División", x=0.5, xanchor="center"),
         barmode="stack",
         xaxis=dict(tickangle=-45),
+        margin=dict(t=60, b=100),  # Aumenta margen superior e inferior
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=-0.3,
+            y=-0.5,
             xanchor="center",
             x=0.5
         )
@@ -280,13 +281,14 @@ elif opcion == "Compra por División":
 
     fig_suc_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
     fig_suc_div.update_layout(
-        title="Compras por Sucursal y División",
+        title=dict(text="Compra anual por Sucursal y División", x=0.5, xanchor="center"),
         barmode="stack",
         xaxis_tickangle=-45,
+        margin=dict(t=60, b=100),
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=-0.3,
+            y=-0.5,
             xanchor="center",
             x=0.5
         )
