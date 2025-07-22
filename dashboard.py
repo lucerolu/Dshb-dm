@@ -9,6 +9,7 @@ import math
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import matplotlib.colors as mcolors
 from matplotlib.colors import LinearSegmentedColormap
 from datetime import datetime
 from datetime import timedelta
@@ -795,6 +796,15 @@ elif opcion == "Vista por Sucursal":
             color_columna = "sucursal"
             color_mapa = colores_sucursales
 
+        def es_color_claro(hex_color):
+            """Devuelve True si el color es claro, False si es oscuro."""
+            r, g, b = mcolors.to_rgb(hex_color)
+            brillo = (r * 299 + g * 587 + b * 114) / 1000
+            return brillo > 0.6
+
+        colores_barras = df_mes_cta[color_columna].map(color_mapa)
+        colores_texto = colores_barras.apply(lambda c: "black" if es_color_claro(c) else "white")
+
         fig = px.bar(
             df_mes_cta,
             x="monto",
@@ -822,7 +832,8 @@ elif opcion == "Vista por Sucursal":
         if mostrar_texto:
             fig.update_traces(
                 textposition="inside",
-                textfont=dict(color="white", size=12),
+                textfont_size=12,
+                textfont_color=colores_texto,
                 insidetextanchor='middle',
                 marker_line_width=1,
                 marker_line_color="black"
