@@ -160,6 +160,8 @@ if opcion == "Resumen General":
 # ==========================================================================================================
 elif opcion == "Compra por División":
     st.title("Distribución de Compras por División - 2025")
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
     #------------------------- GRÁFICO DE PASTEL ---------------------------------------------------------
     df_agrupado = df_divisiones.groupby("division")["monto"].sum().reset_index()
     df_agrupado["texto"] = df_agrupado.apply(
@@ -266,7 +268,19 @@ elif opcion == "Compra por División":
             x=0.5
         )
     )
-    st.plotly_chart(fig_mes_div, use_container_width=True)
+    st.plotly_chart(
+        fig_mes_div, 
+        use_container_width=True,
+        config={
+            "modeBarButtonsToKeep": [
+                "toImage",           # Descargar imagen
+                "zoom2d",            # Zoom
+                "autoScale2d",       # Restablecer zoom
+                "toggleFullscreen"   # Pantalla completa
+            ],
+            "displaylogo": False
+        }
+    )
     st.markdown("<br><br>", unsafe_allow_html=True)
 
 
