@@ -802,9 +802,9 @@ elif opcion == "Vista por Sucursal":
                 r, g, b = mcolors.to_rgb(hex_color)
                 brillo = (r * 299 + g * 587 + b * 114) / 1000
                 return brillo > 0.6
-            except ValueError:
-                return False  # por si hay un color inválido
-            
+            except Exception:
+                return False  # color inválido, lo tratamos como oscuro
+
         # Crear gráfica
         fig = px.bar(
             df_mes_cta,
@@ -832,7 +832,7 @@ elif opcion == "Vista por Sucursal":
 
         if mostrar_texto:
             # Solo calcular colores si se mostrarán textos
-            colores_barras = df_mes_cta[color_columna].map(color_mapa).fillna("#666666")  # default oscuro
+            colores_barras = df_mes_cta[color_columna].map(color_mapa).fillna("#666666")  # fallback color
             colores_texto = colores_barras.apply(lambda c: "black" if es_color_claro(c) else "white")
 
             fig.update_traces(
@@ -849,6 +849,7 @@ elif opcion == "Vista por Sucursal":
                 marker_line_width=1,
                 marker_line_color="black"
             )
+
             
         st.plotly_chart(fig, use_container_width=True)
 
