@@ -850,7 +850,7 @@ elif opcion == "Vista por Sucursal":
             text=df_cta["monto"].apply(lambda x: f"${x:,.0f}")
         )
 
-        altura_grafica = max(300, min(50 * len(df_cta), 800))  # Altura entre 300 y 800 px
+        altura_grafica = max(300, min(50 * len(df_cta), 1000))  # Altura entre 300 y 800 px
 
         fig.update_layout(
             xaxis_title="Monto (MXN)",
@@ -968,7 +968,6 @@ elif opcion == "Vista por Sucursal":
             }
         )
 
-
     # === GRÁFICA DE BARRAS POR SUCURSAL ===
     if len(sucursales_seleccionadas) == 1:
         sucursal = sucursales_seleccionadas[0]
@@ -1014,7 +1013,6 @@ elif opcion == "Vista por Sucursal":
             st.plotly_chart(fig_mes, use_container_width=True, key=f"mes_{mes}")
 
 
-
 # ==========================================================================================================
 # ================================ ESTADO DE LIGADO ========================================
 # ==========================================================================================================
@@ -1052,7 +1050,7 @@ elif opcion == "Estado de Ligado":
     fig.update_layout(xaxis_title="Mes", yaxis_title="Monto sin ligar", title="Tendencia mensual de facturas no ligadas")
     st.plotly_chart(fig, use_container_width=True)
 
-    # --- ---------CANTIDAD SIN LIGAR MENSUAL POR SUCURSAL (GRAFICO DE BARRAS APILADAS) ---
+    # --- ---------CANTIDAD SIN LIGAR MENSUAL POR SUCURSAL (GRAFICO DE BARRAS APILADAS) -----------------------------------------------
     # Filtrar solo facturas sin ligar
     df_no_ligado = df[df["ligado_sistema"] == 0].copy()
 
