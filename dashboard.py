@@ -272,11 +272,15 @@ elif opcion == "Compra por División":
         fig_mes_div, 
         use_container_width=True,
         config={
-            "modeBarButtonsToKeep": [
-                "toImage",           # Descargar imagen
-                "zoom2d",            # Zoom
-                "autoScale2d",       # Restablecer zoom
-                "toggleFullscreen"   # Pantalla completa
+            "modeBarButtonsToRemove": [
+                "pan2d",
+                "select2d",
+                "lasso2d",
+                "zoomIn2d",
+                "zoomOut2d",
+                "resetScale2d",
+                "hoverClosestCartesian",
+                "hoverCompareCartesian"
             ],
             "displaylogo": False
         }
