@@ -297,7 +297,7 @@ elif opcion == "Compra por División":
     st.dataframe(tabla_formateada, use_container_width=True)
 
     #----------- Graficos de columnas de compra mensual por división y sucursal -------------
-    locale.setlocale(locale.LC_TIME, 'es_ES')  # Para la mayoría de Windows en español
+    #locale.setlocale(locale.LC_TIME, 'es_ES')  # Para la mayoría de Windows en español
     with open("config_colores.json", "r", encoding="utf-8") as f:
         config = json.load(f)
 
