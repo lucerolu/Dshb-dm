@@ -1013,7 +1013,8 @@ elif opcion == "Estado de cuenta":
     else:
         st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
         
-        df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+        #df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+        df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"]).dt.strftime("%d/%m/%Y")
         
         df_pivot = df_estado_cuenta.pivot_table(
             index=["sucursal", "codigo_6digitos"],
