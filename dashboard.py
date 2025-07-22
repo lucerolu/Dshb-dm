@@ -1013,18 +1013,31 @@ elif opcion == "Estado de cuenta":
     else:
         st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
         
-        #df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-        df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"]).dt.strftime("%d/%m/%Y")
+        df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+        df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
         
         df_pivot = df_estado_cuenta.pivot_table(
             index=["sucursal", "codigo_6digitos"],
-            columns="fecha_exigibilidad",
+            columns="fecha_exigibilidad_str",
             values="total",
             aggfunc="sum",
             fill_value=0,
             margins=True,
             margins_name="Total"
         )
+        # Ordenar columnas por fecha real (aunque están en formato string)
+        cols_ordenadas = sorted(
+            [col for col in df_pivot.columns if col != "Total"],
+            key=lambda x: datetime.strptime(x, "%d/%m/%Y")
+        )
+
+        # Añadir la columna 'Total' al final
+        if "Total" in df_pivot.columns:
+            cols_ordenadas.append("Total")
+
+        # Reordenar columnas del pivot
+        df_pivot = df_pivot[cols_ordenadas]
+
         df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
         df_pivot_reset = df_pivot.reset_index()
         numeric_cols = df_pivot_reset.select_dtypes(include="number").columns.tolist()
