@@ -189,6 +189,8 @@ elif opcion == "Compra por División":
     )
 
     st.plotly_chart(fig_pie, use_container_width=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
 
 
     # ------------------------- TARJETAS: TOTAL COMPRADO POR DIVISIÓN ------------------------------
@@ -206,6 +208,7 @@ elif opcion == "Compra por División":
     with col3:
         monto = divs.loc["Jardinería y Golf", "monto"]
         st.metric("Jardinería y Golf", f"${monto:,.2f}")
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     # --------------- GRÁFICO DE BARRAS DEL TOTAL ANUAL COMPRADO POR DIVISIÓN ----------------------------------------------
     df_agrupado["porcentaje"] = df_agrupado["monto"] / df_agrupado["monto"].sum() * 100
@@ -228,10 +231,12 @@ elif opcion == "Compra por División":
         showlegend=False
     )
     st.plotly_chart(fig_bar, use_container_width=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ---------------- TABLA: TOTAL MENSUAL COMPRADO POR DIVISIÓN ---------------------------------------------------------------------------
     tabla_pivot = df_divisiones.pivot_table(index="division", columns="mes_nombre", values="monto", aggfunc="sum", fill_value=0)
     st.dataframe(tabla_pivot.style.format("${:,.2f}"), use_container_width=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
     df_mes_div = df_divisiones.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
@@ -262,6 +267,8 @@ elif opcion == "Compra por División":
         )
     )
     st.plotly_chart(fig_mes_div, use_container_width=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
 
     #----------------- GRÁFICA DE BARRAS AGRUPADAS: COMPRA POR SUCURSAL Y DIVISIÓN ------------------------------------------------------------
     df_suc_div = df_divisiones.groupby(["sucursal", "division"])["monto"].sum().reset_index()
@@ -294,6 +301,8 @@ elif opcion == "Compra por División":
         )
     )
     st.plotly_chart(fig_suc_div, use_container_width=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
 
     #---------- Tabla de compra por division y sucursal -----------
     tabla_sucursal_division = pd.pivot_table(
@@ -311,6 +320,8 @@ elif opcion == "Compra por División":
 
     st.subheader("Monto anual comprado por sucursal y división")
     st.dataframe(tabla_formateada, use_container_width=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
 
     #----------- Graficos de columnas de compra mensual por división y sucursal -------------
     with open("config_colores.json", "r", encoding="utf-8") as f:
