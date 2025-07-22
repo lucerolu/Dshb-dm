@@ -804,7 +804,17 @@ elif opcion == "Vista por Sucursal":
 
         colores_barras = df_mes_cta[color_columna].map(color_mapa)
         colores_texto = colores_barras.apply(lambda c: "black" if es_color_claro(c) else "white")
-
+        
+        def es_color_claro(hex_color):
+            """Devuelve True si el color es claro, False si es oscuro."""
+            try:
+                r, g, b = mcolors.to_rgb(hex_color)
+                brillo = (r * 299 + g * 587 + b * 114) / 1000
+                return brillo > 0.6
+            except ValueError:
+                return False  # por si hay un color inválido
+            
+        # Crear gráfica
         fig = px.bar(
             df_mes_cta,
             x="monto",
@@ -830,6 +840,10 @@ elif opcion == "Vista por Sucursal":
         )
 
         if mostrar_texto:
+            # Solo calcular colores si se mostrarán textos
+            colores_barras = df_mes_cta[color_columna].map(color_mapa).fillna("#666666")  # default oscuro
+            colores_texto = colores_barras.apply(lambda c: "black" if es_color_claro(c) else "white")
+
             fig.update_traces(
                 textposition="inside",
                 textfont_size=12,
