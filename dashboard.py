@@ -764,7 +764,7 @@ elif opcion == "Vista por Sucursal":
     else:
         st.info("Selecciona al menos una sucursal para ver esta gráfica.")
     
-    #======= GRAFICA DE BARRAS DE MONTO POR MES Y CUENTA =============
+    #=================== GRAFICA DE BARRAS DE MONTO POR MES Y CUENTA ========================
 
     # Validar selección
     if not sucursales_seleccionadas:
@@ -831,29 +831,24 @@ elif opcion == "Vista por Sucursal":
         )
 
         if mostrar_texto:
-            # Solo calcular colores si se mostrarán textos
-            colores_barras = df_mes_cta[color_columna].map(color_mapa).fillna("#666666")  # fallback color
+            colores_barras = df_mes_cta[color_columna].map(color_mapa).fillna("#666666")
             colores_texto = colores_barras.apply(lambda c: "black" if es_color_claro(c) else "white")
+            df_mes_cta["color_texto"] = colores_texto.values
 
-            fig.update_traces(
-                textposition="inside",
-                textfont_size=12,
-                textfont_color=colores_texto,
-                insidetextanchor='middle',
-                marker_line_width=1,
-                marker_line_color="black"
-            )
+            for trace in fig.data:
+                barras_colores_texto = df_mes_cta[df_mes_cta[color_columna] == trace.name]["color_texto"].tolist()
+                trace.textfont = dict(color=barras_colores_texto)
+                trace.textposition = "inside"
+                trace.insidetextanchor = "middle"
+                trace.marker.line.width = 1
+                trace.marker.line.color = "black"
         else:
-            fig.update_traces(
-                text=None,
-                marker_line_width=1,
-                marker_line_color="black"
-            )
+            for trace in fig.data:
+                trace.text = None
+                trace.marker.line.width = 1
+                trace.marker.line.color = "black"
 
-            
         st.plotly_chart(fig, use_container_width=True)
-
-
 
     # === GRÁFICA DE BARRAS POR SUCURSAL ===
     if len(sucursales_seleccionadas) == 1:
