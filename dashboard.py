@@ -17,8 +17,9 @@ import locale
 import io
 import requests
 
-
-# --- CONFIGURACION GENERAL ---
+#==========================================================================================================
+# -------------- CONFIGURACION GENERAL --------------------------------------------------------------------
+#==========================================================================================================
 st.set_page_config(page_title="Dashboard Compras 2025", layout="wide")
 
 with open("config_colores.json", "r", encoding="utf-8") as f:
@@ -62,7 +63,7 @@ def obtener_estado_cuenta_api():
         return pd.DataFrame(), None
 
 
-# === OBTENER DATOS ===
+# --------------- OBTENER DATOS -------------------------------------------------------------------------------
 df = obtener_datos_api()
 if not df.empty:
     df = df.dropna(subset=["sucursal"])
@@ -79,7 +80,7 @@ if not df.empty:
     df = df.sort_values("mes_dt")
     orden_meses = df["mes_nombre"].drop_duplicates().tolist()
 
-    # --- DIVISIONES ---
+    # -------------------- DIVISIONES ----------------------------------------------------
     divisiones = config["divisiones"]
     mapa_codigos = {}
     colores_divisiones = {}
@@ -96,7 +97,7 @@ else:
     st.warning("No hay datos disponibles para mostrar.")
 
 
-# --- MENU LATERAL ---
+# ------------------- MENU LATERAL -------------------------------------------------
 opcion = st.sidebar.selectbox("Selecciona una vista", [
     "Resumen General",
     "Compra por División",
@@ -107,12 +108,12 @@ opcion = st.sidebar.selectbox("Selecciona una vista", [
     "Estado de cuenta"
 ])
 
-# =============================
+# ==========================================================================================================
 # ======= RESUMEN GENERAL =====
-# =============================
+# ==========================================================================================================
 if opcion == "Resumen General":
     st.title("Resumen General de Compras - 2025")
-
+    #--------------- TARJETAS: total comprado en el año y en el mes corriente  ------------------------------------------
     ahora = datetime.now()
     ahora_pd = pd.Timestamp(ahora)  # Convertir a pandas Timestamp
     mes_actual_period = ahora_pd.to_period("M")
@@ -129,7 +130,7 @@ if opcion == "Resumen General":
         mes_actual_esp = meses_es.get(ahora.strftime("%B"), "") + " " + str(ahora.year)
         st.metric(f"Total comprado en {mes_actual_esp}", f"${total_mes_actual:,.2f}")
 
-    # Gráfica de líneas total
+    # ---------------- GÁFICA DE LÍNEAS DEL TOTAL GENERAL  ------------------------------------------
     df_total_mes = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     fig_total = go.Figure()
     fig_total.add_trace(go.Scatter(x=df_total_mes.index, y=df_total_mes.values,
@@ -142,7 +143,7 @@ if opcion == "Resumen General":
     col1, col2 = st.columns(2)
   
 
-    # -------- Tabla de total comprado por mes --------
+    # ----------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------
     st.markdown("### Total comprado por mes")
 
     # Agrupar y pivotear para una sola fila
@@ -154,13 +155,12 @@ if opcion == "Resumen General":
     st.dataframe(tabla_horizontal_df, use_container_width=True)
 
 
-
-# =============================
-# ==== COMPRA POR DIVISION ====
-# =============================
+# ==========================================================================================================
+# ============================= COMPRA POR DIVISION =======================================
+# ==========================================================================================================
 elif opcion == "Compra por División":
     st.title("Distribución de Compras por División - 2025")
-    #------- Grafico de pastel -------
+    #------------------------- GRÁFICO DE PASTEL ---------------------------------------------------------
     df_agrupado = df_divisiones.groupby("division")["monto"].sum().reset_index()
     df_agrupado["texto"] = df_agrupado.apply(
         lambda row: f"{row['division']}<br>${row['monto']:,.0f}", axis=1
@@ -177,7 +177,7 @@ elif opcion == "Compra por División":
     fig_pie.update_traces(textinfo="percent+label", textposition="inside")
 
     fig_pie.update_layout(
-        title="Distribución porcentual del total comprado por división",
+        title="Distribución del total anual comprado por división",
         height=500,
         legend=dict(
             orientation="h",  # horizontal
@@ -191,23 +191,23 @@ elif opcion == "Compra por División":
     st.plotly_chart(fig_pie, use_container_width=True)
 
 
-    # -------- Tarjetas con total por división --------
+    # ------------------------- TARJETAS: TOTAL COMPRADO POR DIVISIÓN ------------------------------
     col1, col2, col3 = st.columns(3)
     divs = df_agrupado.set_index("division")
 
     with col1:
         monto = divs.loc["Agrícola", "monto"]
-        st.metric("Agrícola", f"${monto:,.0f}")
+        st.metric("Agrícola", f"${monto:,.2f}")
 
     with col2:
         monto = divs.loc["Construcción", "monto"]
-        st.metric("Construcción", f"${monto:,.0f}")
+        st.metric("Construcción", f"${monto:,.2f}")
 
     with col3:
         monto = divs.loc["Jardinería y Golf", "monto"]
-        st.metric("Jardinería y Golf", f"${monto:,.0f}")
+        st.metric("Jardinería y Golf", f"${monto:,.2f}")
 
-    # -------- Gráfico de barras con texto integrado (monto y %) ---------
+    # --------------- GRÁFICO DE BARRAS DEL TOTAL ANUAL COMPRADO POR DIVISIÓN ----------------------------------------------
     df_agrupado["porcentaje"] = df_agrupado["monto"] / df_agrupado["monto"].sum() * 100
     df_agrupado["texto_barra"] = df_agrupado.apply(
         lambda row: f"${row['monto']:,.0f}<br>{row['porcentaje']:.1f}%", axis=1
@@ -224,16 +224,16 @@ elif opcion == "Compra por División":
     )
     fig_bar.update_traces(textposition="inside", texttemplate="%{text}")
     fig_bar.update_layout(
-        title="Monto total por División (con porcentaje)",
+        title="Monto total anual por División",
         showlegend=False
     )
     st.plotly_chart(fig_bar, use_container_width=True)
 
-    # -------- TABLA ---------
+    # ---------------- TABLA: TOTAL MENSUAL COMPRADO POR DIVISIÓN ---------------------------------------------------------------------------
     tabla_pivot = df_divisiones.pivot_table(index="division", columns="mes_nombre", values="monto", aggfunc="sum", fill_value=0)
-    st.dataframe(tabla_pivot.style.format("${:,.0f}"), use_container_width=True)
+    st.dataframe(tabla_pivot.style.format("${:,.2f}"), use_container_width=True)
 
-    # -------- Evolución mensual por división ---------------------------------------------------
+    # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
     df_mes_div = df_divisiones.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
     df_mes_div["mes_nombre"] = pd.Categorical(df_mes_div["mes_nombre"], categories=orden_meses, ordered=True)
     df_mes_div = df_mes_div.sort_values("mes_nombre")
@@ -251,14 +251,20 @@ elif opcion == "Compra por División":
     fig_mes_div.update_layout(
         title="Evolución mensual de compras por División",
         barmode="stack",
-        xaxis=dict(tickangle=-45)
+        xaxis=dict(tickangle=-45),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.3,
+            xanchor="center",
+            x=0.5
+        )
     )
     st.plotly_chart(fig_mes_div, use_container_width=True)
 
-    #---------- Grafico de compra por division y sucursal ---------
+    #----------------- GRÁFICA DE BARRAS AGRUPADAS: COMPRA POR SUCURSAL Y DIVISIÓN ------------------------------------------------------------
     df_suc_div = df_divisiones.groupby(["sucursal", "division"])["monto"].sum().reset_index()
 
-    # Gráfico de barras apiladas por sucursal y división
     fig_suc_div = px.bar(
         df_suc_div,
         x="sucursal",
@@ -276,7 +282,14 @@ elif opcion == "Compra por División":
     fig_suc_div.update_layout(
         title="Compras por Sucursal y División",
         barmode="stack",
-        xaxis_tickangle=-45
+        xaxis_tickangle=-45,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.3,
+            xanchor="center",
+            x=0.5
+        )
     )
     st.plotly_chart(fig_suc_div, use_container_width=True)
 
@@ -291,14 +304,13 @@ elif opcion == "Compra por División":
         margins_name="Total",   # Nombre para los totales
     )
 
-    # Opcional: Formatear los valores como moneda
+    #Formatear los valores como moneda
     tabla_formateada = tabla_sucursal_division.applymap(lambda x: "null" if pd.isna(x) else f"${x:,.0f}")
 
-    st.subheader("Monto comprado por sucursal y división")
+    st.subheader("Monto anual comprado por sucursal y división")
     st.dataframe(tabla_formateada, use_container_width=True)
 
     #----------- Graficos de columnas de compra mensual por división y sucursal -------------
-    #locale.setlocale(locale.LC_TIME, 'es_ES')  # Para la mayoría de Windows en español
     with open("config_colores.json", "r", encoding="utf-8") as f:
         config = json.load(f)
 
@@ -412,9 +424,9 @@ elif opcion == "Compra por División":
                 cols[j].pyplot(fig)
 
 
-# =============================
-# ==== COMPRA POR CUENTA ======
-# =============================
+# ==========================================================================================================
+# ===================== COMPRA POR CUENTA ======================================
+# ==========================================================================================================
 #----------- Grafico de barras de compra por cuenta --------------
 elif opcion == "Compra por Cuenta":
     st.title("Compra Total por Cuenta (2025)")
@@ -552,9 +564,9 @@ elif opcion == "Compra por Cuenta":
 
     
 
-# =============================
-# ==== COMPRA POR SUCURSAL ====
-# =============================
+# ==========================================================================================================
+# =========================== COMPRA POR SUCURSAL ======================================
+#==========================================================================================================
 elif opcion == "Compra por Sucursal":
     st.title("Total de Compras por Mes y Sucursal - 2025")
 
@@ -663,9 +675,9 @@ elif opcion == "Compra por Sucursal":
         st.plotly_chart(fig_mes, use_container_width=True, key=f"bar_{mes}")
 
 
-# =============================
-# ==== VISTA POR SUCURSAL ====
-# =============================
+# ==========================================================================================================
+# ================================ VISTA POR SUCURSAL ====================================
+# ==========================================================================================================
 elif opcion == "Vista por Sucursal":
     st.title("Vista detallada por Sucursal")
 
@@ -896,9 +908,9 @@ elif opcion == "Vista por Sucursal":
 
 
 
-# =============================
-# ====== ESTADO DE LIGADO =====
-# =============================
+# ==========================================================================================================
+# ================================ ESTADO DE LIGADO ========================================
+# ==========================================================================================================
 elif opcion == "Estado de Ligado":
     st.title("Estado de Ligado de Facturas")
     # ----------- Información General - Estado de Ligado  (TARJETAS) -----------
@@ -1013,9 +1025,9 @@ elif opcion == "Estado de Ligado":
     )
 
 
-# =============================
-# ====== ESTADO DE CUENTA =====
-# =============================
+# ==========================================================================================================
+# ============================== ESTADO DE CUENTA ==========================================
+# ==========================================================================================================
 elif opcion == "Estado de cuenta":
     st.title("Cuadro de estado de cuenta")
     
