@@ -177,7 +177,7 @@ elif opcion == "Compra por División":
     fig_pie.update_traces(textinfo="percent+label", textposition="inside")
 
     fig_pie.update_layout(
-        title="Distribución del total anual comprado por división",
+        title=dict(text="Distribución del total anual comprado por División", x=0.5, xanchor="center", y=1.0),
         height=500,
         legend=dict(
             orientation="h",  # horizontal
@@ -224,7 +224,7 @@ elif opcion == "Compra por División":
     )
     fig_bar.update_traces(textposition="inside", texttemplate="%{text}")
     fig_bar.update_layout(
-        title="Monto total anual por División",
+        title=dict(text="Monto total anual por División", x=0.5, xanchor="center", y=1.0),
         showlegend=False
     )
     st.plotly_chart(fig_bar, use_container_width=True)
@@ -249,7 +249,7 @@ elif opcion == "Compra por División":
     )
     fig_mes_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
     fig_mes_div.update_layout(
-        title=dict(text="Evolución mensual de compras por División", x=0.5, xanchor="center"),
+        title=dict(text="Evolución mensual de compras por División", x=0.5, xanchor="center", y=1.0),
         barmode="stack",
         xaxis=dict(tickangle=-45),
         margin=dict(t=60, b=100),  # Aumenta margen superior e inferior
@@ -281,7 +281,7 @@ elif opcion == "Compra por División":
 
     fig_suc_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
     fig_suc_div.update_layout(
-        title=dict(text="Compra anual por Sucursal y División", x=0.5, xanchor="center"),
+        title=dict(text="Compra anual por Sucursal y División", x=0.5, xanchor="center", y=1.0),
         barmode="stack",
         xaxis_tickangle=-45,
         margin=dict(t=60, b=100),
