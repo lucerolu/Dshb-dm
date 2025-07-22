@@ -312,26 +312,49 @@ elif opcion == "Compra por División":
     sucursales = df_smd["sucursal"].unique()
     num_sucursales = len(sucursales)
     
+    # Lista en español (la mantienes como está)
     orden_meses_con_anio = [
         "Enero 2025", "Febrero 2025", "Marzo 2025", "Abril 2025", "Mayo 2025", "Junio 2025",
         "Julio 2025", "Agosto 2025", "Septiembre 2025", "Octubre 2025", "Noviembre 2025", "Diciembre 2025"
     ]
-    df_smd["fecha_mes"] = pd.to_datetime(df_smd["mes_nombre"], format="%B %Y") # Convertir mes_nombre (ej. "Junio 2025") a datetime para ordenarlo correctamente
+
+    # Mapeo Español → Inglés (solo para conversión interna)
+    meses_es_en = {
+        'Enero': 'January', 'Febrero': 'February', 'Marzo': 'March', 'Abril': 'April',
+        'Mayo': 'May', 'Junio': 'June', 'Julio': 'July', 'Agosto': 'August',
+        'Septiembre': 'September', 'Octubre': 'October', 'Noviembre': 'November', 'Diciembre': 'December'
+    }
+
+    # Crear columna temporal para conversión
+    df_smd["mes_nombre_en"] = df_smd["mes_nombre"].str.extract(r"(\w+)\s+(\d{4})").apply(
+        lambda row: f"{meses_es_en.get(row[0], row[0])} {row[1]}", axis=1
+    )
+
+    # Convertir la columna en inglés a datetime
+    df_smd["fecha_mes"] = pd.to_datetime(df_smd["mes_nombre_en"], format="%B %Y")
 
     # Obtener el mes más reciente con datos
     max_fecha = df_smd["fecha_mes"].max()
 
-    # Filtrar meses hasta esa fecha y construir lista ordenada de nombres
-    meses_hasta_max = [
-        mes for mes in orden_meses_con_anio
-        if pd.to_datetime(mes, format="%B %Y") <= max_fecha
+    # También convertir la lista `orden_meses_con_anio` a fechas para comparar con max_fecha
+    orden_meses_fecha = [
+        pd.to_datetime(f"{meses_es_en[m.split()[0]]} {m.split()[1]}", format="%B %Y")
+        for m in orden_meses_con_anio
     ]
 
-    # Re-categorizar con esa lista para que seaborn los ordene correctamente
+    # Filtrar los que estén antes o igual a max_fecha
+    meses_hasta_max = [
+        orden_meses_con_anio[i] for i, fecha in enumerate(orden_meses_fecha) if fecha <= max_fecha
+    ]
+
+    # Re-categorizar `mes_nombre` para ordenarlo visualmente
     df_smd["mes_nombre"] = pd.Categorical(df_smd["mes_nombre"], categories=meses_hasta_max, ordered=True)
 
-    # Ordenar por sucursal y mes
+    # Orden final
     df_smd = df_smd.sort_values(["sucursal", "mes_nombre"])
+
+    # (Opcional) limpiar columna temporal
+    df_smd.drop(columns=["mes_nombre_en"], inplace=True)
 
 
     st.title("Evolución de compras por sucursal")
