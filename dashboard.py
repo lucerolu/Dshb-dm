@@ -63,7 +63,7 @@ def obtener_estado_cuenta_api():
         return pd.DataFrame(), None
 
 
-# --------------- OBTENER DATOS -------------------------------------------------------------------------------
+# ------------------------------- OBTENER DATOS -------------------------------------------------------------------------------
 df = obtener_datos_api()
 if not df.empty:
     df = df.dropna(subset=["sucursal"])
@@ -80,7 +80,7 @@ if not df.empty:
     df = df.sort_values("mes_dt")
     orden_meses = df["mes_nombre"].drop_duplicates().tolist()
 
-    # -------------------- DIVISIONES ----------------------------------------------------
+    # ------------------------------- DIVISIONES ----------------------------------------------------
     divisiones = config["divisiones"]
     mapa_codigos = {}
     colores_divisiones = {}
@@ -322,7 +322,7 @@ elif opcion == "Compra por División":
     st.markdown("<br><br>", unsafe_allow_html=True)
 
 
-    #---------- Tabla de compra por division y sucursal -----------
+    #----------------------- Tabla de compra por division y sucursal ----------------------------------
     tabla_sucursal_division = pd.pivot_table(
         df_divisiones,
         values="monto",
@@ -458,9 +458,9 @@ elif opcion == "Compra por División":
 # ==========================================================================================================
 # ===================== COMPRA POR CUENTA ======================================
 # ==========================================================================================================
-#----------- Grafico de barras de compra por cuenta --------------
+#---------------------- GRÁFICO DE BARRAS: COMPRA ANUAL POR CUENTA -------------------------------------------------------
 elif opcion == "Compra por Cuenta":
-    st.title("Compra Total por Cuenta (2025)")
+    st.title("Compra Total Anual por Cuenta (2025)")
 
     # Agrupar monto total por cuenta y sucursal
     df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
@@ -483,7 +483,7 @@ elif opcion == "Compra por Cuenta":
         orientation="h",
         labels={"monto": "Monto", "cuenta_sucursal": "Cuenta - Sucursal", "division": "División"},
         title="Monto Total por Cuenta en 2025",
-        text_auto='.2s'  # añade el monto automáticamente con formato abreviado (puedes usar ',.0f' si prefieres exacto)
+        text_auto=',.0f'  # añade el monto automáticamente con formato abreviado (puedes usar ',.0f' si prefieres exacto)
     )
     # Ajustes visuales
     fig.update_layout(
@@ -496,13 +496,13 @@ elif opcion == "Compra por Cuenta":
 
     # Formatear etiquetas de valor
     fig.update_traces(
-        text=df_cta["monto"].apply(lambda x: f"${x:,.0f}"),
+        text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
         textposition="outside"
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-    #--------- Tabla de compra por cuenta y mes -------------
+    #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
     st.title("Compra mensual por Cuenta (2025)")
 
     # Agrupar monto total por cuenta y sucursal
@@ -548,7 +548,7 @@ elif opcion == "Compra por Cuenta":
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    #---------- Grafico de compra por cuenta y mes ----------------
+    #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
     # Asegúrate de que la columna mes_dt existe
     if "mes_dt" not in df_divisiones.columns:
         df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["fecha"]).dt.to_period("M").dt.to_timestamp()
@@ -591,8 +591,21 @@ elif opcion == "Compra por Cuenta":
         yaxis_tickformat=",",  # Formato con comas
         legend_title="Cuenta - Sucursal"
     )
-    st.plotly_chart(fig, use_container_width=True)
 
+    # Configuración personalizada del gráfico
+    config = {
+        "scrollZoom": True,
+        "modeBarButtonsToKeep": [
+            "toImage",         # Descargar como PNG
+            "zoom2d",          # Zoom
+            "autoScale2d",     # Autoscale
+            "toggleFullscreen" # Pantalla completa
+        ],
+        "displaylogo": False
+    }
+
+    # Mostrar gráfico con configuración
+    st.plotly_chart(fig, use_container_width=True, config=config)
     
 
 # ==========================================================================================================
@@ -601,6 +614,7 @@ elif opcion == "Compra por Cuenta":
 elif opcion == "Compra por Sucursal":
     st.title("Total de Compras por Mes y Sucursal - 2025")
 
+    #------------------------------------ GRÁFICA DE BARRAS AGRUPADA ---------------------------------------------------------------------------------------
     df_pivot = df.pivot_table(index="mes_nombre", columns="sucursal", values="monto", aggfunc="sum").fillna(0)
     df_pivot = df_pivot.reindex(orden_meses)
     df_percent = df_pivot.div(df_pivot.sum(axis=1), axis=0) * 100
@@ -630,9 +644,23 @@ elif opcion == "Compra por Sucursal":
         legend=dict(orientation='h', yanchor='top', y=-0.25, xanchor='center', x=0.5),
         height=650, margin=dict(t=100)
     )
-    st.plotly_chart(fig, use_container_width=True)
+    # Configuración personalizada para scroll + barra de herramientas limpia
+    config = {
+        "scrollZoom": True,
+        "modeBarButtonsToKeep": [
+            "toImage",
+            "zoom2d",
+            "autoScale2d",
+            "toggleFullscreen"
+        ],
+        "displaylogo": False
+    }
 
-    #-------- Tabla --------
+    # Mostrar gráfica con zoom y opciones de barra
+    st.plotly_chart(fig, use_container_width=True, config=config)
+
+
+    #------------------------------- TABLA: RESUMEN TOTAL POR MES Y SUCURSAL ------------------------------------
     st.markdown("### Resumen total por mes y sucursal")
     tabla = df.pivot_table(
         index="mes_nombre",
@@ -651,7 +679,7 @@ elif opcion == "Compra por Sucursal":
     st.dataframe(tabla_formateada, use_container_width=True)
 
 
-    # -------- Gráfico líneas con colores de sucursal --------
+    # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
     fig_lineas = go.Figure()
     for sucursal in df_pivot.columns:
         fig_lineas.add_trace(go.Scatter(
@@ -669,9 +697,22 @@ elif opcion == "Compra por Sucursal":
         height=500,
         margin=dict(t=60)
     )
-    st.plotly_chart(fig_lineas, use_container_width=True)
+    st.plotly_chart(
+        fig_lineas,
+        use_container_width=True,
+        config={
+            "scrollZoom": True,
+            "modeBarButtonsToKeep": [
+                "toImage",
+                "zoom2d",
+                "autoScale2d",
+                "toggleFullscreen"
+            ],
+            "displaylogo": False
+        }
+    )
 
-    #------------ Graficas de barras ---------------
+    #------------------------- GRÁFICAS DE BARRAS: COMPRAS POR SUCURSAL, MES A MES  -----------------------------------------------------
     st.markdown("### Compras por Sucursal, mes a mes")
 
     for mes in orden_meses:
@@ -716,11 +757,11 @@ elif opcion == "Vista por Sucursal":
     df_pivot = df.pivot_table(index="mes_nombre", columns="sucursal", values="monto", aggfunc="sum").fillna(0)
     df_pivot = df_pivot.reindex(orden_meses)
 
-    # ----------------- Selector de sucursales ---------------
+    # ------------------------------- SELECTOR DE SUCURSALES ----------------------------------------------------------------------------------------------------
     sucursales_disponibles = sorted(df["sucursal"].unique())
     sucursales_seleccionadas = st.multiselect("Selecciona una o varias sucursales", options=sucursales_disponibles, default=sucursales_disponibles)
-    
-    # -------------- Tarjetas resumen -----------------
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    # ----------------------------- TARJETAS: TOTAL ACUMULADO ANUAL Y MES ACTUAL ------------------------------------------------------------------------------------------------------------------
     if sucursales_seleccionadas:  # si hay selección
         df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)]
     else:
@@ -735,8 +776,11 @@ elif opcion == "Vista por Sucursal":
         texto_mes = "Sin datos"
         total_mensual = 0
     else:
-        texto_mes = ultimo_mes.strftime('%B %Y')
+        mes_en_ingles = ultimo_mes.strftime('%B')
+        mes_en_espanol = meses_es.get(mes_en_ingles, mes_en_ingles)
+        texto_mes = f"{mes_en_espanol} {ultimo_mes.year}"
         total_mensual = df_filtrado[df_filtrado["mes_dt"] == ultimo_mes]["monto"].sum()
+
 
     col1, col2 = st.columns(2)
     col1.metric(label="Total Acumulado Anual (2025)", value=f"${total_anual:,.0f}")
@@ -744,7 +788,7 @@ elif opcion == "Vista por Sucursal":
 
     st.title("Evolución mensual de compras por sucursal")
     
-    # === GRÁFICA DE LÍNEAS (evolución mensual) ===
+    # --------------------------- GRÁFICA DE LÍNEAS (evolución mensual) ------------------------------------------------------------------------------------------------------------------------------
     fig_lineas = go.Figure()
     for sucursal in sucursales_seleccionadas:
         if sucursal in df_pivot.columns:
@@ -760,9 +804,23 @@ elif opcion == "Vista por Sucursal":
         xaxis_title="Mes",
         yaxis_title="Total Comprado"
     )
-    st.plotly_chart(fig_lineas, use_container_width=True)
+    st.plotly_chart(
+        fig_lineas,
+        use_container_width=True,
+        config={
+            "scrollZoom": True,
+            "modeBarButtonsToKeep": [
+                "toImage",
+                "zoom2d",
+                "autoScale2d",
+                "toggleFullscreen"
+            ],
+            "displaylogo": False
+        }
+    )
 
-    #----------- Grafica de barras por cuenta --------------
+
+    #------------------------------ GRÁFICA DE BARRAS: COMPRAS ACUMULADAS POR CUENTA --------------------------------------------------------------------------------------
     df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)]
 
     # Agrupar por cuenta y sucursal
@@ -891,7 +949,25 @@ elif opcion == "Vista por Sucursal":
                 trace.marker.line.width = 1
                 trace.marker.line.color = "black"
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={
+                "scrollZoom": True,
+                "modeBarButtonsToKeep": [
+                    "zoom2d",        # Zoom con caja
+                    "zoomIn2d",      # Zoom +
+                    "zoomOut2d",     # Zoom -
+                    "autoScale2d",   # Reset zoom
+                    "pan2d",         # Pan (mover)
+                    "toImage",       # Descargar imagen
+                    "toggleSpikelines", # Líneas guía al pasar mouse (opcional)
+                    "toggleFullscreen"
+                ],
+                "displaylogo": False
+            }
+        )
+
 
     # === GRÁFICA DE BARRAS POR SUCURSAL ===
     if len(sucursales_seleccionadas) == 1:
