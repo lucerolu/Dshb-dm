@@ -495,7 +495,7 @@ elif opcion == "Compra por Cuenta":
         legend=dict(
             orientation="h",
             yanchor="top",
-            y=1.05,
+            y=-0.05,
             xanchor="center",
             x=0.5
         )
