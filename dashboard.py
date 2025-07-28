@@ -644,7 +644,7 @@ elif opcion == "Compra por Cuenta":
             )
 
             fig.update_traces(
-                texttemplate='%{text:,.0f}',  # Formato con comas, sin decimales
+                texttemplate='%{text:,.2f}',  # Formato con comas, sin decimales
                 textposition='outside'       # Mostrar fuera de la barra
             )
 
