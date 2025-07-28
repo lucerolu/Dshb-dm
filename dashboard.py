@@ -483,13 +483,13 @@ elif opcion == "Compra por Cuenta":
         orientation="h",
         labels={"monto": "Monto", "cuenta_sucursal": "Cuenta - Sucursal", "division": "División"},
         title="Monto Total por Cuenta en 2025",
-        text_auto=',.0f'  # añade el monto automáticamente con formato abreviado (puedes usar ',.0f' si prefieres exacto)
+        text_auto=',.2f'  # añade el monto automáticamente con formato abreviado (puedes usar ',.0f' si prefieres exacto)
     )
     # Ajustes visuales
     fig.update_layout(
         xaxis_title="Monto (MXN)",
         yaxis_title="Cuenta - Sucursal",
-        margin=dict(r=100),  # margen derecho suficiente
+        margin=dict(r=70),  # margen derecho suficiente
         template="plotly_dark",
         yaxis={'categoryorder': 'total ascending'},
         height=800,
@@ -501,8 +501,6 @@ elif opcion == "Compra por Cuenta":
             x=0.5
         )
     )
-
-
     # Formatear etiquetas de valor
     fig.update_traces(
         text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
@@ -624,21 +622,16 @@ elif opcion == "Compra por Cuenta":
     if df_divisiones.empty:
         st.warning("No hay datos disponibles.")
     else:
-        # Asegurarse que cuenta_sucursal esté bien
         if "cuenta_sucursal" not in df_divisiones.columns:
             df_divisiones["cuenta_sucursal"] = df_divisiones["codigo_normalizado"] + " - " + df_divisiones["sucursal"]
 
-        # Extraer sucursal
         df_divisiones["sucursal_nombre"] = df_divisiones["cuenta_sucursal"].str.split(" - ").str[-1]
 
-        # Agrupar por mes y cuenta_sucursal
         df_barras = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-        # Obtener sucursal para asignar color
         df_sucursales = df_divisiones.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
         df_barras = df_barras.merge(df_sucursales, on="cuenta_sucursal", how="left")
 
-        # Ordenar meses
         orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
         df_barras["mes_anio"] = pd.Categorical(df_barras["mes_anio"], categories=orden_meses, ordered=True)
 
@@ -648,17 +641,14 @@ elif opcion == "Compra por Cuenta":
             if df_mes.empty:
                 continue
 
-            # Ordenar por monto (mayor a menor) manualmente
             df_mes = df_mes.sort_values("monto", ascending=False)
             df_mes["cuenta_sucursal"] = pd.Categorical(df_mes["cuenta_sucursal"], categories=df_mes["cuenta_sucursal"], ordered=True)
 
-            # Texto y lógica de posición relativa
-            df_mes["texto_monto"] = df_mes["monto"].apply(lambda x: f"{x:,.2f}")
-            df_mes["textposition"] = df_mes["monto"].apply(lambda x: "inside" if x > df_mes["monto"].max() * 0.2 else "outside")
+            df_mes["texto_monto"] = df_mes["monto"].apply(lambda x: f"${x:,.2f}")
 
             fig = go.Figure()
 
-            for i, row in df_mes.iterrows(): 
+            for i, row in df_mes.iterrows():
                 fig.add_trace(go.Bar(
                     y=[row["cuenta_sucursal"]],
                     x=[row["monto"]],
@@ -666,7 +656,8 @@ elif opcion == "Compra por Cuenta":
                     name=row["sucursal_nombre"],
                     marker_color=colores_sucursales.get(row["sucursal_nombre"], "#CCCCCC"),
                     text=row["texto_monto"],
-                    textposition=row["textposition"],
+                    textposition="outside",
+                    cliponaxis=False,
                     hovertemplate=f"{row['cuenta_sucursal']}<br>Monto: $%{{x:,.2f}}<extra></extra>"
                 ))
 
@@ -681,15 +672,15 @@ elif opcion == "Compra por Cuenta":
                 xaxis_tickformat=",",
                 legend_title="Sucursal",
                 barmode="stack",
-                margin=dict(r=100),
+                margin=dict(r=70),  # 👈 margen derecho para evitar corte de texto
                 showlegend=False,
-                height=altura_total,    # altura dinámica según número de barras
+                height=altura_total,
                 bargap=0.15,
                 bargroupgap=0.1
             )
 
-
             st.plotly_chart(fig, use_container_width=True)
+
 
 # ==========================================================================================================
 # =========================== COMPRA POR SUCURSAL ======================================
