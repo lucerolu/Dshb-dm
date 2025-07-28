@@ -607,27 +607,31 @@ elif opcion == "Compra por Cuenta":
     # Mostrar gráfico con configuración
     st.plotly_chart(fig, use_container_width=True, config=config)
 
+    #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL ------------------------------------------------------------------------------
+
     st.header("Evolución mensual de compras por cuenta")
 
-    if df.empty:
+    if df_divisiones.empty:
         st.warning("No hay datos disponibles.")
     else:
-        # Asegurarse que no haya espacios en los nombres de columna
-        df.columns = df.columns.str.strip()
+        # Crear columna cuenta_sucursal si no existe
+        if "cuenta_sucursal" not in df_divisiones.columns:
+            df_divisiones["cuenta_sucursal"] = df_divisiones["codigo_normalizado"] + " - " + df_divisiones["sucursal"]
 
-        # Agrupar por mes, código (cuenta) y sucursal
-        cuentas_mes = df.groupby(["mes_nombre", "codigo_normalizado", "sucursal"], as_index=False)["monto"].sum()
+        # Agrupar por mes y cuenta_sucursal
+        df_barras = df_divisiones.groupby(["mes_anio", "cuenta_sucursal", "sucursal"], as_index=False)["monto"].sum()
 
-        # Asegurar orden correcto de meses
-        cuentas_mes["mes_nombre"] = pd.Categorical(cuentas_mes["mes_nombre"], categories=orden_meses, ordered=True)
-        cuentas_mes = cuentas_mes.sort_values(["mes_nombre", "codigo_normalizado"])
+        # Ordenar correctamente los meses
+        orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
+        df_barras["mes_anio"] = pd.Categorical(df_barras["mes_anio"], categories=orden_meses, ordered=True)
+        df_barras = df_barras.sort_values(["mes_anio", "cuenta_sucursal"])
 
-        # Crear nombre combinado para mostrar en eje X
-        cuentas_mes["cuenta_sucursal"] = cuentas_mes["codigo_normalizado"] + " (" + cuentas_mes["sucursal"] + ")"
-
-        # Graficar uno por uno por mes
+        # Mostrar gráfico por cada mes
         for mes in orden_meses:
-            df_mes = cuentas_mes[cuentas_mes["mes_nombre"] == mes]
+            df_mes = df_barras[df_barras["mes_anio"] == mes]
+
+            if df_mes.empty:
+                continue
 
             fig = px.bar(
                 df_mes,
