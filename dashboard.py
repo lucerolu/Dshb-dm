@@ -295,7 +295,7 @@ elif opcion == "Compra por División":
     )
     fig_mes_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
     fig_mes_div.update_layout(
-        title=dict(text="Evolución mensual de compras por División", x=0.5, xanchor="center", y=-1.0),
+        title=dict(text="Evolución mensual de compras por División", x=0.5, xanchor="center", y=2.0),
         barmode="stack",
         xaxis=dict(tickangle=-45),
         margin=dict(t=60, b=100),  # Aumenta margen superior e inferior
