@@ -648,7 +648,7 @@ elif opcion == "Compra por Cuenta":
 
             fig = go.Figure()
 
-            for i, row in df_mes.iterrows():
+            for i, row in df_mes.iterrows(): 
                 fig.add_trace(go.Bar(
                     y=[row["cuenta_sucursal"]],
                     x=[row["monto"]],
@@ -657,8 +657,6 @@ elif opcion == "Compra por Cuenta":
                     marker_color=colores_sucursales.get(row["sucursal_nombre"], "#CCCCCC"),
                     text=row["texto_monto"],
                     textposition=row["textposition"],
-                    textfont=dict(size=14, color="black"),  # 👈 Texto más grande y legible
-                    insidetextanchor='start' if row["textposition"] == "inside" else None,
                     hovertemplate=f"{row['cuenta_sucursal']}<br>Monto: $%{{x:,.0f}}<extra></extra>"
                 ))
 
@@ -669,10 +667,13 @@ elif opcion == "Compra por Cuenta":
                 xaxis_tickformat=",",
                 legend_title="Sucursal",
                 barmode="stack",
-                height=600,
                 margin=dict(r=100),
-                showlegend=False  # Puedes ponerlo en True si quieres
+                showlegend=False,
+                height=altura_total,    # altura dinámica según número de barras
+                bargap=0.15,
+                bargroupgap=0.1
             )
+
 
             st.plotly_chart(fig, use_container_width=True)
 
