@@ -490,9 +490,17 @@ elif opcion == "Compra por Cuenta":
         xaxis_title="Monto (MXN)",
         yaxis_title="Cuenta - Sucursal",
         template="plotly_dark",
-        yaxis={'categoryorder':'total ascending'},  # barras ordenadas
-        height=800
+        yaxis={'categoryorder': 'total ascending'},
+        height=800,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.05,
+            xanchor="center",
+            x=0.5
+        )
     )
+
 
     # Formatear etiquetas de valor
     fig.update_traces(
