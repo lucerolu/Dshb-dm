@@ -896,8 +896,8 @@ elif opcion == "Vista por Sucursal":
 
 
     col1, col2 = st.columns(2)
-    col1.metric(label="Total Acumulado Anual (2025)", value=f"${total_anual:,.0f}")
-    col2.metric(label=f"Total Acumulado {texto_mes}", value=f"${total_mensual:,.0f}")
+    col1.metric(label="Total Acumulado Anual (2025)", value=f"${total_anual:,.2f}")
+    col2.metric(label=f"Total Acumulado {texto_mes}", value=f"${total_mensual:,.2f}")
 
     st.title("Evolución mensual de compras por sucursal")
     
@@ -942,7 +942,7 @@ elif opcion == "Vista por Sucursal":
     # Crear etiqueta tipo "1234 - Monterrey"
     df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
 
-    # Ordenar por monto (descendente para que en horizontal queden bien)
+    # Ordenar por monto ascendente (para que en horizontal vayan de abajo hacia arriba)
     df_cta = df_cta.sort_values("monto", ascending=True)
 
     if not df_cta.empty:
@@ -963,20 +963,34 @@ elif opcion == "Vista por Sucursal":
             text=df_cta["monto"].apply(lambda x: f"${x:,.0f}")
         )
 
-        altura_grafica = max(300, min(50 * len(df_cta), 1000))  # Altura entre 300 y 800 px
+        altura_grafica = max(300, min(50 * len(df_cta), 1000))
+
+        fig.update_traces(
+            textposition="outside",
+            cliponaxis=False
+        )
 
         fig.update_layout(
             xaxis_title="Monto (MXN)",
             yaxis_title="Cuenta - Sucursal",
             yaxis={"categoryorder": "total ascending"},
             height=altura_grafica,
+            margin=dict(r=70),
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.2,
+                xanchor="center",
+                x=0.5
+            ),
             showlegend=len(sucursales_seleccionadas) > 1
         )
 
-        fig.update_traces(textposition="outside")
         st.plotly_chart(fig, use_container_width=True)
+
     else:
         st.info("Selecciona al menos una sucursal para ver esta gráfica.")
+
     
     #=================== GRAFICA DE BARRAS DE MONTO POR MES Y CUENTA ========================
 
