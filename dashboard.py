@@ -660,6 +660,10 @@ elif opcion == "Compra por Cuenta":
                     hovertemplate=f"{row['cuenta_sucursal']}<br>Monto: $%{{x:,.0f}}<extra></extra>"
                 ))
 
+            altura_por_barra = 40
+            numero_barras = len(df_mes)
+            altura_total = max(600, numero_barras * altura_por_barra)
+
             fig.update_layout(
                 title=f"Compras por Cuenta - {mes}",
                 xaxis_title="Monto de compra (MXN)",
