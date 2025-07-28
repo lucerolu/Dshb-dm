@@ -970,21 +970,45 @@ elif opcion == "Vista por Sucursal":
             cliponaxis=False
         )
 
+        # Detectar ancho de pantalla con slider oculto (puedes cambiar esto por otro método si quieres)
+        ancho_pantalla = st.slider("Ancho pantalla (px)", 200, 2000, 1000, key="ancho_pantalla", label_visibility="collapsed")
+
+        if ancho_pantalla < 600:
+            # Móvil: leyenda horizontal abajo
+            legend_config = dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.15,
+                xanchor="center",
+                x=0.5,
+                title=None,
+                bgcolor="rgba(255,255,255,0.8)",
+                bordercolor="lightgray",
+                borderwidth=1
+            )
+            margin_r = 70
+        else:
+            # Desktop: leyenda vertical derecha
+            legend_config = dict(
+                orientation="v",
+                yanchor="bottom",
+                y=0,
+                xanchor="right",
+                x=1,
+                title=None,
+                bgcolor="rgba(255,255,255,0.8)",
+                bordercolor="lightgray",
+                borderwidth=1
+            )
+            margin_r = 120
+
         fig.update_layout(
             xaxis_title="Monto (MXN)",
             yaxis_title="Cuenta - Sucursal",
             yaxis={"categoryorder": "total ascending"},
             height=altura_grafica,
-            margin=dict(r=120),  # 👈 margen más amplio para que quepa la leyenda dentro
-            legend=dict(
-                orientation="v",   # 👈 leyenda vertical
-                yanchor="bottom",
-                y=0,
-                xanchor="right",
-                x=1,
-                title=None,        # 👈 sin título de leyenda ("Sucursal")
-                borderwidth=1
-            ),
+            margin=dict(r=margin_r),
+            legend=legend_config,
             showlegend=len(sucursales_seleccionadas) > 1
         )
 
@@ -992,6 +1016,7 @@ elif opcion == "Vista por Sucursal":
 
     else:
         st.info("Selecciona al menos una sucursal para ver esta gráfica.")
+
 
     
     #=================== GRAFICA DE BARRAS DE MONTO POR MES Y CUENTA ========================
