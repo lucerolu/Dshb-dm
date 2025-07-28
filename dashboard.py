@@ -614,14 +614,21 @@ elif opcion == "Compra por Cuenta":
     if df_divisiones.empty:
         st.warning("No hay datos disponibles.")
     else:
-        # Crear columna cuenta_sucursal si no existe
+        # Asegurarse que cuenta_sucursal esté bien
         if "cuenta_sucursal" not in df_divisiones.columns:
             df_divisiones["cuenta_sucursal"] = df_divisiones["codigo_normalizado"] + " - " + df_divisiones["sucursal"]
 
-        # Agrupar por mes y cuenta_sucursal (sin separar por sucursal)
+        # Extraer sucursal desde cuenta_sucursal
+        df_divisiones["sucursal_nombre"] = df_divisiones["cuenta_sucursal"].str.split(" - ").str[-1]
+
+        # Agrupar por mes y cuenta_sucursal
         df_barras = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-        # Ordenar meses y cuentas por monto descendente
+        # Volver a unir la sucursal para asignar color
+        df_sucursales = df_divisiones.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
+        df_barras = df_barras.merge(df_sucursales, on="cuenta_sucursal", how="left")
+
+        # Ordenar meses y cuentas
         orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
         df_barras["mes_anio"] = pd.Categorical(df_barras["mes_anio"], categories=orden_meses, ordered=True)
         df_barras = df_barras.sort_values(["mes_anio", "monto"], ascending=[True, False])
@@ -636,27 +643,29 @@ elif opcion == "Compra por Cuenta":
                 df_mes,
                 y="cuenta_sucursal",
                 x="monto",
+                color="sucursal_nombre",
                 orientation="h",
                 text="monto",
-                title=f"Compras por Cuenta - {mes}"
+                title=f"Compras por Cuenta - {mes}",
+                color_discrete_map=colores_sucursales
             )
 
             fig.update_traces(
                 texttemplate='%{text:,.0f}',
-                textposition='outside'
+                textposition='inside',  # o 'auto'
+                insidetextanchor='start'  # alinea a la izquierda dentro de la barra
             )
 
             fig.update_layout(
                 xaxis_title="Monto de compra (MXN)",
                 yaxis_title="Cuenta",
                 xaxis_tickformat=",",
-                height=600
+                legend_title="Sucursal",
+                height=600,
+                margin=dict(r=80)  # margen derecho más grande para que no corte
             )
 
             st.plotly_chart(fig, use_container_width=True)
-
-
-    
 
 # ==========================================================================================================
 # =========================== COMPRA POR SUCURSAL ======================================
