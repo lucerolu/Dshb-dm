@@ -489,7 +489,7 @@ elif opcion == "Compra por Cuenta":
     fig.update_layout(
         xaxis_title="Monto (MXN)",
         yaxis_title="Cuenta - Sucursal",
-        margin=dict(r=150),  # margen derecho suficiente
+        margin=dict(r=100),  # margen derecho suficiente
         template="plotly_dark",
         yaxis={'categoryorder': 'total ascending'},
         height=800,
