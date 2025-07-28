@@ -618,51 +618,58 @@ elif opcion == "Compra por Cuenta":
         if "cuenta_sucursal" not in df_divisiones.columns:
             df_divisiones["cuenta_sucursal"] = df_divisiones["codigo_normalizado"] + " - " + df_divisiones["sucursal"]
 
-        # Extraer sucursal desde cuenta_sucursal
+        # Extraer sucursal
         df_divisiones["sucursal_nombre"] = df_divisiones["cuenta_sucursal"].str.split(" - ").str[-1]
 
         # Agrupar por mes y cuenta_sucursal
         df_barras = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-        # Volver a unir la sucursal para asignar color
+        # Obtener sucursal para asignar color
         df_sucursales = df_divisiones.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
         df_barras = df_barras.merge(df_sucursales, on="cuenta_sucursal", how="left")
 
-        # Ordenar meses y cuentas
+        # Ordenar meses
         orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
         df_barras["mes_anio"] = pd.Categorical(df_barras["mes_anio"], categories=orden_meses, ordered=True)
-        df_barras = df_barras.sort_values(["mes_anio", "monto"], ascending=[True, False])
 
         for mes in orden_meses:
-            df_mes = df_barras[df_barras["mes_anio"] == mes]
+            df_mes = df_barras[df_barras["mes_anio"] == mes].copy()
 
             if df_mes.empty:
                 continue
 
-            fig = px.bar(
-                df_mes,
-                y="cuenta_sucursal",
-                x="monto",
-                color="sucursal_nombre",
-                orientation="h",
-                text="monto",
-                title=f"Compras por Cuenta - {mes}",
-                color_discrete_map=colores_sucursales
-            )
+            # Ordenar por monto (mayor a menor) manualmente
+            df_mes = df_mes.sort_values("monto", ascending=False)
+            df_mes["cuenta_sucursal"] = pd.Categorical(df_mes["cuenta_sucursal"], categories=df_mes["cuenta_sucursal"], ordered=True)
 
-            fig.update_traces(
-                texttemplate='%{text:,.0f}',
-                textposition='inside',  # o 'auto'
-                insidetextanchor='start'  # alinea a la izquierda dentro de la barra
-            )
+            # Texto y lógica de posición relativa
+            df_mes["texto_monto"] = df_mes["monto"].apply(lambda x: f"{x:,.0f}")
+            df_mes["textposition"] = df_mes["monto"].apply(lambda x: "inside" if x > df_mes["monto"].max() * 0.2 else "outside")
+
+            fig = go.Figure()
+
+            for i, row in df_mes.iterrows():
+                fig.add_trace(go.Bar(
+                    y=[row["cuenta_sucursal"]],
+                    x=[row["monto"]],
+                    orientation='h',
+                    name=row["sucursal_nombre"],
+                    marker_color=colores_sucursales.get(row["sucursal_nombre"], "#CCCCCC"),
+                    text=row["texto_monto"],
+                    textposition=row["textposition"],
+                    hovertemplate=f"{row['cuenta_sucursal']}<br>Monto: $%{{x:,.0f}}<extra></extra>"
+                ))
 
             fig.update_layout(
+                title=f"Compras por Cuenta - {mes}",
                 xaxis_title="Monto de compra (MXN)",
                 yaxis_title="Cuenta",
                 xaxis_tickformat=",",
                 legend_title="Sucursal",
+                barmode="stack",
                 height=600,
-                margin=dict(r=80)  # margen derecho más grande para que no corte
+                margin=dict(r=100),
+                showlegend=False  # Puedes ponerlo en True si quieres
             )
 
             st.plotly_chart(fig, use_container_width=True)
