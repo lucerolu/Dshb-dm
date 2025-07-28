@@ -615,43 +615,38 @@ elif opcion == "Compra por Cuenta":
         # Asegurarse que no haya espacios en los nombres de columna
         df.columns = df.columns.str.strip()
 
-        # Mostrar columnas disponibles (para debug)
-        st.write("Columnas disponibles:", df.columns.tolist())
+        # Agrupar por mes, código (cuenta) y sucursal
+        cuentas_mes = df.groupby(["mes_nombre", "codigo_normalizado", "sucursal"], as_index=False)["monto"].sum()
 
-        # Verificar si 'cuenta_normalizada' está
-        if "cuenta_normalizada" not in df.columns:
-            st.error("La columna 'cuenta_normalizada' no está presente en los datos.")
-        else:
-            # Agrupamos por mes, cuenta y sucursal
-            cuentas_mes = df.groupby(["mes_nombre", "cuenta_normalizada", "sucursal"], as_index=False)["monto"].sum()
+        # Asegurar orden correcto de meses
+        cuentas_mes["mes_nombre"] = pd.Categorical(cuentas_mes["mes_nombre"], categories=orden_meses, ordered=True)
+        cuentas_mes = cuentas_mes.sort_values(["mes_nombre", "codigo_normalizado"])
 
-            # Asegurar orden correcto de meses
-            cuentas_mes["mes_nombre"] = pd.Categorical(cuentas_mes["mes_nombre"], categories=orden_meses, ordered=True)
-            cuentas_mes = cuentas_mes.sort_values(["mes_nombre", "cuenta_normalizada"])
+        # Crear nombre combinado para mostrar en eje X
+        cuentas_mes["cuenta_sucursal"] = cuentas_mes["codigo_normalizado"] + " (" + cuentas_mes["sucursal"] + ")"
 
-            # Crear columna combinada
-            cuentas_mes["cuenta_sucursal"] = cuentas_mes["cuenta_normalizada"] + " (" + cuentas_mes["sucursal"] + ")"
+        # Graficar uno por uno por mes
+        for mes in orden_meses:
+            df_mes = cuentas_mes[cuentas_mes["mes_nombre"] == mes]
 
-            for mes in orden_meses:
-                df_mes = cuentas_mes[cuentas_mes["mes_nombre"] == mes]
+            fig = px.bar(
+                df_mes,
+                x="cuenta_sucursal",
+                y="monto",
+                color="sucursal",
+                title=f"Compras por Cuenta - {mes}",
+                color_discrete_map=colores_sucursales
+            )
 
-                fig = px.bar(
-                    df_mes,
-                    x="cuenta_sucursal",
-                    y="monto",
-                    color="sucursal",
-                    title=f"Compras por Cuenta - {mes}",
-                    color_discrete_map=colores_sucursales
-                )
+            fig.update_layout(
+                xaxis_title="Cuenta",
+                yaxis_title="Monto de compra",
+                legend_title="Sucursal",
+                height=500
+            )
 
-                fig.update_layout(
-                    xaxis_title="Cuenta",
-                    yaxis_title="Monto de compra",
-                    legend_title="Sucursal",
-                    height=500
-                )
+            st.plotly_chart(fig, use_container_width=True)
 
-                st.plotly_chart(fig, use_container_width=True) 
     
 
 # ==========================================================================================================
