@@ -970,52 +970,43 @@ elif opcion == "Vista por Sucursal":
             cliponaxis=False
         )
 
-        # Detectar ancho de pantalla con slider oculto (puedes cambiar esto por otro método si quieres)
-        ancho_pantalla = st.slider("Ancho pantalla (px)", 200, 2000, 1000, key="ancho_pantalla", label_visibility="collapsed")
-
-        if ancho_pantalla < 600:
-            # Móvil: leyenda horizontal abajo
-            legend_config = dict(
-                orientation="h",
-                yanchor="top",
-                y=-0.15,
-                xanchor="center",
-                x=0.5,
-                title=None,
-                bgcolor="rgba(255,255,255,0.8)",
-                bordercolor="lightgray",
-                borderwidth=1
-            )
-            margin_r = 70
-        else:
-            # Desktop: leyenda vertical derecha
-            legend_config = dict(
-                orientation="v",
-                yanchor="bottom",
-                y=0,
-                xanchor="right",
-                x=1,
-                title=None,
-                bgcolor="rgba(255,255,255,0.8)",
-                bordercolor="lightgray",
-                borderwidth=1
-            )
-            margin_r = 120
-
         fig.update_layout(
             xaxis_title="Monto (MXN)",
             yaxis_title="Cuenta - Sucursal",
             yaxis={"categoryorder": "total ascending"},
             height=altura_grafica,
-            margin=dict(r=margin_r),
-            legend=legend_config,
-            showlegend=len(sucursales_seleccionadas) > 1
+            margin=dict(r=70),
+            showlegend=False  # Ocultamos la leyenda original
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
+        # -------------------- LEYENDA PERSONALIZADA DE SUCURSALES ----------------------
+        st.markdown("#### Sucursales")
+
+        # Crear lista de tuplas (abreviatura, color)
+        leyenda_sucursales = [(nombre[:3].capitalize(), color) for nombre, color in colores_sucursales.items()]
+
+        # Ordenar alfabéticamente por abreviatura
+        leyenda_sucursales = sorted(leyenda_sucursales, key=lambda x: x[0])
+
+        # Dividir en filas de 4 elementos
+        filas = [leyenda_sucursales[i:i+4] for i in range(0, len(leyenda_sucursales), 4)]
+
+        for fila in filas:
+            cols = st.columns(len(fila))
+            for idx, (abrev, color) in enumerate(fila):
+                with cols[idx]:
+                    st.markdown(
+                        f"<div style='display:flex;align-items:center;gap:8px;'>"
+                        f"<div style='width:15px;height:15px;background:{color};border-radius:3px;'></div>"
+                        f"<span style='font-size:14px;'>{abrev}</span>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
     else:
         st.info("Selecciona al menos una sucursal para ver esta gráfica.")
+
 
 
     
