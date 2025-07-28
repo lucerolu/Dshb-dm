@@ -618,13 +618,13 @@ elif opcion == "Compra por Cuenta":
         if "cuenta_sucursal" not in df_divisiones.columns:
             df_divisiones["cuenta_sucursal"] = df_divisiones["codigo_normalizado"] + " - " + df_divisiones["sucursal"]
 
-        # Agrupar por mes y cuenta_sucursal
-        df_barras = df_divisiones.groupby(["mes_anio", "cuenta_sucursal", "sucursal"], as_index=False)["monto"].sum()
+        # Agrupar por mes y cuenta_sucursal (sin separar por sucursal)
+        df_barras = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-        # Ordenar correctamente los meses
+        # Ordenar meses y cuentas por monto descendente
         orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
         df_barras["mes_anio"] = pd.Categorical(df_barras["mes_anio"], categories=orden_meses, ordered=True)
-        df_barras = df_barras.sort_values(["mes_anio", "monto"], ascending=[True, False])  # orden por monto descendente
+        df_barras = df_barras.sort_values(["mes_anio", "monto"], ascending=[True, False])
 
         for mes in orden_meses:
             df_mes = df_barras[df_barras["mes_anio"] == mes]
@@ -634,29 +634,27 @@ elif opcion == "Compra por Cuenta":
 
             fig = px.bar(
                 df_mes,
-                y="cuenta_sucursal",  # Ahora en el eje Y
-                x="monto",            # Monto en X
-                color="sucursal",
-                orientation="h",      # Barras horizontales
+                y="cuenta_sucursal",
+                x="monto",
+                orientation="h",
                 text="monto",
-                title=f"Compras por Cuenta - {mes}",
-                color_discrete_map=colores_sucursales
+                title=f"Compras por Cuenta - {mes}"
             )
 
             fig.update_traces(
-                texttemplate='%{text:,.2f}',  # Formato con comas, sin decimales
-                textposition='outside'       # Mostrar fuera de la barra
+                texttemplate='%{text:,.0f}',
+                textposition='outside'
             )
 
             fig.update_layout(
                 xaxis_title="Monto de compra (MXN)",
                 yaxis_title="Cuenta",
-                legend_title="Sucursal",
-                xaxis_tickformat=",",        # Eje X también con comas
+                xaxis_tickformat=",",
                 height=600
             )
 
             st.plotly_chart(fig, use_container_width=True)
+
 
     
 
