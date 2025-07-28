@@ -109,7 +109,7 @@ opcion = st.sidebar.selectbox("Selecciona una vista", [
 ])
 
 # ==========================================================================================================
-# ======= RESUMEN GENERAL =====
+# ============================= RESUMEN GENERAL ============================================================
 # ==========================================================================================================
 if opcion == "Resumen General":
     st.title("Resumen General de Compras - 2025")
@@ -154,6 +154,45 @@ if opcion == "Resumen General":
 
     st.dataframe(tabla_horizontal_df, use_container_width=True)
 
+# ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
+    st.markdown("### Gráfica de Total comprado por mes")
+
+    # Agrupar de nuevo (en bruto, sin formato)
+    df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
+    df_mensual["mes_nombre"] = pd.Categorical(df_mensual["mes_nombre"], categories=orden_meses, ordered=True)
+    df_mensual = df_mensual.sort_values("mes_nombre")
+
+    # Formato de texto
+    df_mensual["texto_monto"] = df_mensual["monto"].apply(lambda x: f"${x:,.0f}")
+
+    # Crear gráfica
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        y=df_mensual["mes_nombre"],
+        x=df_mensual["monto"],
+        orientation='h',
+        marker_color="#1f77b4",  # azul default
+        text=df_mensual["texto_monto"],
+        textposition="outside",
+        cliponaxis=False,
+        hovertemplate="%{y}<br>Total: %{text}<extra></extra>"
+    ))
+
+    # Ajustes visuales
+    altura_total = max(400, len(df_mensual) * 40)
+
+    fig.update_layout(
+        title="Total Comprado por Mes",
+        xaxis_title="Monto de compra (MXN)",
+        yaxis_title="Mes",
+        xaxis_tickformat=",",
+        height=altura_total,
+        margin=dict(r=70),
+        bargap=0.25
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 # ==========================================================================================================
 # ============================= COMPRA POR DIVISION =======================================
