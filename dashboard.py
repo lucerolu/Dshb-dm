@@ -657,7 +657,7 @@ elif opcion == "Compra por Cuenta":
                     marker_color=colores_sucursales.get(row["sucursal_nombre"], "#CCCCCC"),
                     text=row["texto_monto"],
                     textposition=row["textposition"],
-                    hovertemplate=f"{row['cuenta_sucursal']}<br>Monto: $%{{x:,.0f}}<extra></extra>"
+                    hovertemplate=f"{row['cuenta_sucursal']}<br>Monto: $%{{x:,.2f}}<extra></extra>"
                 ))
 
             altura_por_barra = 40
