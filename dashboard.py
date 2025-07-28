@@ -624,9 +624,8 @@ elif opcion == "Compra por Cuenta":
         # Ordenar correctamente los meses
         orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
         df_barras["mes_anio"] = pd.Categorical(df_barras["mes_anio"], categories=orden_meses, ordered=True)
-        df_barras = df_barras.sort_values(["mes_anio", "cuenta_sucursal"])
+        df_barras = df_barras.sort_values(["mes_anio", "monto"], ascending=[True, False])  # orden por monto descendente
 
-        # Mostrar gráfico por cada mes
         for mes in orden_meses:
             df_mes = df_barras[df_barras["mes_anio"] == mes]
 
@@ -635,18 +634,26 @@ elif opcion == "Compra por Cuenta":
 
             fig = px.bar(
                 df_mes,
-                x="cuenta_sucursal",
-                y="monto",
+                y="cuenta_sucursal",  # Ahora en el eje Y
+                x="monto",            # Monto en X
                 color="sucursal",
+                orientation="h",      # Barras horizontales
+                text="monto",
                 title=f"Compras por Cuenta - {mes}",
                 color_discrete_map=colores_sucursales
             )
 
+            fig.update_traces(
+                texttemplate='%{text:,.0f}',  # Formato con comas, sin decimales
+                textposition='outside'       # Mostrar fuera de la barra
+            )
+
             fig.update_layout(
-                xaxis_title="Cuenta",
-                yaxis_title="Monto de compra",
+                xaxis_title="Monto de compra (MXN)",
+                yaxis_title="Cuenta",
                 legend_title="Sucursal",
-                height=500
+                xaxis_tickformat=",",        # Eje X también con comas
+                height=600
             )
 
             st.plotly_chart(fig, use_container_width=True)
