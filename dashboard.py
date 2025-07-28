@@ -606,6 +606,41 @@ elif opcion == "Compra por Cuenta":
 
     # Mostrar gráfico con configuración
     st.plotly_chart(fig, use_container_width=True, config=config)
+
+    st.header("Evolución mensual de compras por cuenta")
+
+    # Validar si hay datos
+    if df.empty:
+        st.warning("No hay datos disponibles.")
+    else:
+        # Agrupamos por mes, cuenta y sucursal
+        cuentas_mes = df.groupby(["mes_nombre", "cuenta_normalizada", "sucursal"], as_index=False)["monto"].sum()
+
+        # Asegurar orden correcto de meses
+        cuentas_mes["mes_nombre"] = pd.Categorical(cuentas_mes["mes_nombre"], categories=orden_meses, ordered=True)
+        cuentas_mes = cuentas_mes.sort_values(["mes_nombre", "cuenta_normalizada"])
+        cuentas_mes["cuenta_sucursal"] = cuentas_mes["cuenta_normalizada"] + " (" + cuentas_mes["sucursal"] + ")"
+        # Iterar por mes para mostrar un gráfico por cada mes
+        for mes in orden_meses:
+            df_mes = cuentas_mes[cuentas_mes["mes_nombre"] == mes]
+
+            fig = px.bar(
+                df_mes,
+                x="cuenta_sucursal",
+                y="monto",
+                color="sucursal",
+                title=f"Compras por Cuenta - {mes}",
+                color_discrete_map=colores_sucursales
+            )
+
+            fig.update_layout(
+                xaxis_title="Cuenta",
+                yaxis_title="Monto de compra",
+                legend_title="Sucursal",
+                height=500
+            )
+
+            st.plotly_chart(fig, use_container_width=True) 
     
 
 # ==========================================================================================================
