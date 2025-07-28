@@ -302,7 +302,7 @@ elif opcion == "Compra por División":
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=-0.8,
+            y=-0.7,
             xanchor="center",
             x=0.5
         )
@@ -352,7 +352,7 @@ elif opcion == "Compra por División":
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=-0.8,
+            y=-0.7,
             xanchor="center",
             x=0.5
         )
