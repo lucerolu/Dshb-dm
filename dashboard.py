@@ -643,7 +643,7 @@ elif opcion == "Compra por Cuenta":
             df_mes["cuenta_sucursal"] = pd.Categorical(df_mes["cuenta_sucursal"], categories=df_mes["cuenta_sucursal"], ordered=True)
 
             # Texto y lógica de posición relativa
-            df_mes["texto_monto"] = df_mes["monto"].apply(lambda x: f"{x:,.0f}")
+            df_mes["texto_monto"] = df_mes["monto"].apply(lambda x: f"{x:,.2f}")
             df_mes["textposition"] = df_mes["monto"].apply(lambda x: "inside" if x > df_mes["monto"].max() * 0.2 else "outside")
 
             fig = go.Figure()
