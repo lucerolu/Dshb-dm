@@ -983,8 +983,6 @@ elif opcion == "Vista por Sucursal":
                 xanchor="right",
                 x=1,
                 title=None,        # 👈 sin título de leyenda ("Sucursal")
-                bgcolor="rgba(255,255,255,0.8)",  # 👈 fondo blanco semi-transparente (opcional)
-                bordercolor="lightgray",
                 borderwidth=1
             ),
             showlegend=len(sucursales_seleccionadas) > 1
