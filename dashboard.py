@@ -489,6 +489,7 @@ elif opcion == "Compra por Cuenta":
     fig.update_layout(
         xaxis_title="Monto (MXN)",
         yaxis_title="Cuenta - Sucursal",
+        margin=dict(r=150),  # margen derecho suficiente
         template="plotly_dark",
         yaxis={'categoryorder': 'total ascending'},
         height=800,
@@ -505,7 +506,8 @@ elif opcion == "Compra por Cuenta":
     # Formatear etiquetas de valor
     fig.update_traces(
         text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
-        textposition="outside"
+        textposition="outside", 
+        cliponaxis=False  # <-- evita que se recorte el texto
     )
 
     st.plotly_chart(fig, use_container_width=True)
