@@ -986,26 +986,23 @@ elif opcion == "Vista por Sucursal":
 
         # Crear lista de tuplas (abreviatura, color)
         leyenda_sucursales = [(nombre[:3].capitalize(), color) for nombre, color in colores_sucursales.items()]
-
-        # Ordenar alfabéticamente por abreviatura
         leyenda_sucursales = sorted(leyenda_sucursales, key=lambda x: x[0])
 
-        # Dividir en filas de 4 elementos
-        filas = [leyenda_sucursales[i:i+4] for i in range(0, len(leyenda_sucursales), 4)]
+        # Generar HTML manual en grid de 4 columnas
+        leyenda_html = "<div style='display: grid; grid-template-columns: repeat(4, auto); gap: 4px 16px;'>"
 
-        for fila in filas:
-            cols = st.columns(len(fila))
-            for idx, (abrev, color) in enumerate(fila):
-                with cols[idx]:
-                    st.markdown(
-                        f"<div style='display:flex;align-items:center;gap:8px;'>"
-                        f"<div style='width:15px;height:15px;background:{color};border-radius:3px;'></div>"
-                        f"<span style='font-size:14px;'>{abrev}</span>"
-                        f"</div>",
-                        unsafe_allow_html=True
-                    )
-    else:
-        st.info("Selecciona al menos una sucursal para ver esta gráfica.")
+        for abrev, color in leyenda_sucursales:
+            leyenda_html += (
+                f"<div style='display: flex; align-items: center; gap: 6px;'>"
+                f"<div style='width:10px; height:10px; background:{color}; border-radius:2px;'></div>"
+                f"<span style='font-size:13px;'>{abrev}</span>"
+                f"</div>"
+            )
+
+        leyenda_html += "</div>"
+
+        st.markdown(leyenda_html, unsafe_allow_html=True)
+
 
 
 
