@@ -494,7 +494,7 @@ elif opcion == "Compra por Cuenta":
         height=800,
         legend=dict(
             orientation="h",
-            yanchor="bottom",
+            yanchor="top",
             y=1.05,
             xanchor="center",
             x=0.5
