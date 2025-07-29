@@ -1043,23 +1043,24 @@ elif opcion == "Vista por Sucursal":
                 text=df_grupo["texto_monto"] if mostrar_texto else None,
                 textposition="inside" if mostrar_texto else "none",
                 insidetextanchor="start",
-                hovertemplate="<b>%{customdata[0]}</b><br>Monto: $%{x:,.0f}<br>Porcentaje: %{customdata[1]:.1f}%<extra></extra>",
+                hovertemplate="<b>%{customdata[0]}</b><br>Monto: $%{x:,.2f}<br>Porcentaje: %{customdata[1]:.1f}%<extra></extra>",
                 customdata=df_grupo[["cuenta_sucursal", "porcentaje"]]
             ))
 
         # Layout
         fig.update_layout(
             barmode="stack",
-            height=max(300, min(50 * len(df_mes_cta["mes_nombre"].unique()), 800)),
+            height=max(300, min(70 * len(df_mes_cta["mes_nombre"].unique()), 800)),
             xaxis_title="Monto (MXN)",
             yaxis_title="Mes",
             xaxis_tickformat=",",  # ← importante también para ejes
             legend=dict(
                 orientation="h",
-                yanchor="bottom",
-                y=1.02,
+                yanchor="top",
+                y=-0.3,
                 xanchor="center",
-                x=0.5
+                x=0.5,
+                title=None
             )
         )
 
