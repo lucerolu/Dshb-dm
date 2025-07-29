@@ -965,7 +965,6 @@ elif opcion == "Vista por Sucursal":
             },
             text=df_cta["monto"].apply(lambda x: f"${x:,.2f}")
         )
-
         altura_grafica = max(300, min(50 * len(df_cta), 1000))
 
         fig.update_traces(
@@ -978,22 +977,9 @@ elif opcion == "Vista por Sucursal":
             yaxis_title="Cuenta - Sucursal",
             yaxis={"categoryorder": "total ascending"},
             height=altura_grafica,
-            margin=dict(r=70, b=50),  # 👈 margen inferior para leyenda
-            legend=dict(
-                orientation="h",
-                yanchor="top",
-                y=-0.1,
-                xanchor="center",
-                x=0.5,
-                title=None,
-                font=dict(size=11),
-                traceorder="normal",       # 👈 mantiene el orden de ingreso
-                itemwidth=60,              # 👈 fuerza ancho mínimo por ítem (más columnas)
-                itemsizing="constant"
-            ),
-            showlegend=len(sucursales_seleccionadas) > 1
+            margin=dict(r=70, b=30),  # 👈 margen inferior más reducido
+            showlegend=False  # 👈 quita la leyenda de colores
         )
-
         st.plotly_chart(fig, use_container_width=True)
 
     
