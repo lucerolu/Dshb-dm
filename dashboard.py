@@ -982,25 +982,23 @@ elif opcion == "Vista por Sucursal":
         st.plotly_chart(fig, use_container_width=True)
 
         # -------------------- LEYENDA PERSONALIZADA DE SUCURSALES ----------------------
+        
         st.markdown("#### Sucursales")
 
-        # Crear lista de tuplas (abreviatura, color)
         leyenda_sucursales = [(nombre[:3].capitalize(), color) for nombre, color in colores_sucursales.items()]
         leyenda_sucursales = sorted(leyenda_sucursales, key=lambda x: x[0])
 
-        # Generar HTML manual en grid de 4 columnas
-        leyenda_html = "<div style='display: grid; grid-template-columns: repeat(4, auto); gap: 4px 16px;'>"
+        leyenda_html = "<div style='display: grid; grid-template-columns: repeat(4, auto); gap: 2px 4px;'>"
 
         for abrev, color in leyenda_sucursales:
             leyenda_html += (
-                f"<div style='display: flex; align-items: center; gap: 6px;'>"
+                f"<div style='display: flex; align-items: center; gap: 4px;'>"
                 f"<div style='width:10px; height:10px; background:{color}; border-radius:2px;'></div>"
                 f"<span style='font-size:13px;'>{abrev}</span>"
                 f"</div>"
             )
 
         leyenda_html += "</div>"
-
         st.markdown(leyenda_html, unsafe_allow_html=True)
 
 
