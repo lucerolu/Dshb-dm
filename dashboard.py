@@ -1086,12 +1086,13 @@ elif opcion == "Vista por Sucursal":
             }
         )
 
-    # === GRÁFICA DE BARRAS POR SUCURSAL ===
+    # ============================== GRÁFICA DE BARRAS POR SUCURSAL ==============================================================================================
     if len(sucursales_seleccionadas) == 1:
         sucursal = sucursales_seleccionadas[0]
         df_suc = df[df["sucursal"] == sucursal].copy()
         df_suc = df_suc.groupby(["mes_nombre", "mes_dt"], as_index=False).agg({"monto": "sum"})
-        df_suc = df_suc.sort_values("mes_dt")  # asegurar orden
+        df_suc = df_suc.sort_values("monto", ascending=False)  # asegurar orden
+        df_suc["mes_nombre"] = pd.Categorical(df_suc["mes_nombre"], categories=df_suc["mes_nombre"], ordered=True)
         df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
 
         fig_barras = px.bar(
@@ -1116,6 +1117,8 @@ elif opcion == "Vista por Sucursal":
                 continue
             df_mes["porcentaje"] = df_mes["monto"] / total_mes * 100
             df_mes["texto"] = df_mes.apply(lambda row: f"${row['monto']:,.0f}<br>({row['porcentaje']:.1f}%)", axis=1)
+            df_mes = df_mes.sort_values("monto", ascending=False)  # 👈 ordenar por monto de mayor a menor
+            df_mes["sucursal"] = pd.Categorical(df_mes["sucursal"], categories=df_mes["sucursal"], ordered=True)
 
             fig_mes = px.bar(
                 df_mes,
