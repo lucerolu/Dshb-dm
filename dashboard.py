@@ -945,6 +945,9 @@ elif opcion == "Vista por Sucursal":
     # Ordenar por monto ascendente (para que en horizontal vayan de abajo hacia arriba)
     df_cta = df_cta.sort_values("monto", ascending=True)
 
+    # Abreviar los nombres de sucursales a 3 letras solo para la leyenda
+    df_cta["sucursal_abrev"] = df_cta["sucursal"].apply(lambda x: x[:3].capitalize())
+
     if not df_cta.empty:
         st.markdown("### Compras acumuladas por cuenta (anual)")
 
@@ -953,12 +956,12 @@ elif opcion == "Vista por Sucursal":
             x="monto",
             y="cuenta_sucursal",
             orientation="h",
-            color="sucursal",
-            color_discrete_map=colores_sucursales,
+            color="sucursal_abrev",  # 👈 usamos el campo abreviado
+            color_discrete_map={k[:3].capitalize(): v for k, v in colores_sucursales.items()},
             labels={
                 "monto": "Monto (MXN)",
                 "cuenta_sucursal": "Cuenta - Sucursal",
-                "sucursal": "Sucursal"
+                "sucursal_abrev": "Sucursal"
             },
             text=df_cta["monto"].apply(lambda x: f"${x:,.0f}")
         )
@@ -975,34 +978,20 @@ elif opcion == "Vista por Sucursal":
             yaxis_title="Cuenta - Sucursal",
             yaxis={"categoryorder": "total ascending"},
             height=altura_grafica,
-            margin=dict(r=70),
-            showlegend=False  # Ocultamos la leyenda original
+            margin=dict(r=70, b=120),  # 👈 margen inferior para leyenda
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.2,
+                xanchor="center",
+                x=0.5,
+                title=None,
+                font=dict(size=12)
+            ),
+            showlegend=len(sucursales_seleccionadas) > 1
         )
 
         st.plotly_chart(fig, use_container_width=True)
-
-        # -------------------- LEYENDA PERSONALIZADA DE SUCURSALES ----------------------
-        
-        st.markdown("#### Sucursales")
-
-        leyenda_sucursales = [(nombre[:3].capitalize(), color) for nombre, color in colores_sucursales.items()]
-        leyenda_sucursales = sorted(leyenda_sucursales, key=lambda x: x[0])
-
-        leyenda_html = "<div style='display: grid; grid-template-columns: repeat(4, auto); gap: 2px 4px;'>"
-
-        for abrev, color in leyenda_sucursales:
-            leyenda_html += (
-                f"<div style='display: flex; align-items: center; gap: 4px;'>"
-                f"<div style='width:10px; height:10px; background:{color}; border-radius:2px;'></div>"
-                f"<span style='font-size:13px;'>{abrev}</span>"
-                f"</div>"
-            )
-
-        leyenda_html += "</div>"
-        st.markdown(leyenda_html, unsafe_allow_html=True)
-
-
-
 
     
     #=================== GRAFICA DE BARRAS DE MONTO POR MES Y CUENTA ========================
