@@ -978,15 +978,18 @@ elif opcion == "Vista por Sucursal":
             yaxis_title="Cuenta - Sucursal",
             yaxis={"categoryorder": "total ascending"},
             height=altura_grafica,
-            margin=dict(r=70, b=70),  # 👈 margen inferior para leyenda
+            margin=dict(r=70, b=50),  # 👈 margen inferior para leyenda
             legend=dict(
                 orientation="h",
                 yanchor="top",
-                y=-0.2,
+                y=-0.1,
                 xanchor="center",
                 x=0.5,
                 title=None,
-                font=dict(size=12)
+                font=dict(size=11)
+                traceorder="normal",       # 👈 mantiene el orden de ingreso
+                itemwidth=60,              # 👈 fuerza ancho mínimo por ítem (más columnas)
+                itemsizing="constant"
             ),
             showlegend=len(sucursales_seleccionadas) > 1
         )
