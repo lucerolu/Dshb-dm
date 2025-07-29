@@ -1024,35 +1024,36 @@ elif opcion == "Vista por Sucursal":
             except Exception:
                 return False  # color inválido, lo tratamos como oscuro
 
-        # Calcular porcentaje por mes
+        # Calcular porcentaje y texto
         df_mes_cta["total_mes"] = df_mes_cta.groupby("mes_nombre")["monto"].transform("sum")
         df_mes_cta["porcentaje"] = df_mes_cta["monto"] / df_mes_cta["total_mes"] * 100
         df_mes_cta["texto_monto"] = df_mes_cta.apply(lambda row: f"${row['monto']:,.0f} ({row['porcentaje']:.1f}%)", axis=1)
 
-        # Crear figura con hover más informativo
-        fig = px.bar(
-            df_mes_cta,
-            x="monto",
-            y="mes_nombre",
-            color=color_columna,
-            orientation="h",
-            labels={
-                "monto": "Monto (MXN)",
-                "mes_nombre": "Mes",
-                "cuenta_sucursal": "Cuenta - Sucursal",
-                color_columna: color_columna.capitalize()
-            },
-            text=df_mes_cta["texto_monto"] if mostrar_texto else None,
-            category_orders={"mes_nombre": orden_meses},
-            color_discrete_map=color_mapa,
-            hover_data={"cuenta_sucursal": True, "monto": True, "porcentaje": True}
-        )
+        fig = go.Figure()
 
+        # Crear trazas para cada grupo (sucursal o división)
+        for valor in df_mes_cta[color_columna].unique():
+            df_grupo = df_mes_cta[df_mes_cta[color_columna] == valor]
+            fig.add_trace(go.Bar(
+                x=df_grupo["monto"],
+                y=df_grupo["mes_nombre"],
+                orientation="h",
+                name=valor,
+                marker=dict(color=color_mapa.get(valor, "#999999")),
+                text=df_grupo["texto_monto"] if mostrar_texto else None,
+                textposition="inside" if mostrar_texto else "none",
+                insidetextanchor="start",
+                hovertemplate="<b>%{customdata[0]}</b><br>Monto: $%{x:,.0f}<br>Porcentaje: %{customdata[1]:.1f}%<extra></extra>",
+                customdata=df_grupo[["cuenta_sucursal", "porcentaje"]]
+            ))
+
+        # Layout
         fig.update_layout(
+            barmode="stack",
             height=max(300, min(50 * len(df_mes_cta["mes_nombre"].unique()), 800)),
             xaxis_title="Monto (MXN)",
             yaxis_title="Mes",
-            barmode="stack",
+            xaxis_tickformat=",",  # ← importante también para ejes
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
