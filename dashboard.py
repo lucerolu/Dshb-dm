@@ -986,7 +986,7 @@ elif opcion == "Vista por Sucursal":
                 xanchor="center",
                 x=0.5,
                 title=None,
-                font=dict(size=11)
+                font=dict(size=11),
                 traceorder="normal",       # 👈 mantiene el orden de ingreso
                 itemwidth=60,              # 👈 fuerza ancho mínimo por ítem (más columnas)
                 itemsizing="constant"
