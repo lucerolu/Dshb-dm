@@ -963,7 +963,7 @@ elif opcion == "Vista por Sucursal":
                 "cuenta_sucursal": "Cuenta - Sucursal",
                 "sucursal_abrev": "Sucursal"
             },
-            text=df_cta["monto"].apply(lambda x: f"${x:,.0f}")
+            text=df_cta["monto"].apply(lambda x: f"${x:,.2f}")
         )
 
         altura_grafica = max(300, min(50 * len(df_cta), 1000))
@@ -978,7 +978,7 @@ elif opcion == "Vista por Sucursal":
             yaxis_title="Cuenta - Sucursal",
             yaxis={"categoryorder": "total ascending"},
             height=altura_grafica,
-            margin=dict(r=70, b=120),  # 👈 margen inferior para leyenda
+            margin=dict(r=70, b=70),  # 👈 margen inferior para leyenda
             legend=dict(
                 orientation="h",
                 yanchor="top",
