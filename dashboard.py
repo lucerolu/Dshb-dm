@@ -1024,7 +1024,12 @@ elif opcion == "Vista por Sucursal":
             except Exception:
                 return False  # color inválido, lo tratamos como oscuro
 
-        # Crear gráfica
+        # Calcular porcentaje por mes
+        df_mes_cta["total_mes"] = df_mes_cta.groupby("mes_nombre")["monto"].transform("sum")
+        df_mes_cta["porcentaje"] = df_mes_cta["monto"] / df_mes_cta["total_mes"] * 100
+        df_mes_cta["texto_monto"] = df_mes_cta.apply(lambda row: f"${row['monto']:,.0f} ({row['porcentaje']:.1f}%)", axis=1)
+
+        # Crear figura con hover más informativo
         fig = px.bar(
             df_mes_cta,
             x="monto",
@@ -1037,17 +1042,26 @@ elif opcion == "Vista por Sucursal":
                 "cuenta_sucursal": "Cuenta - Sucursal",
                 color_columna: color_columna.capitalize()
             },
-            text=df_mes_cta["monto"].apply(lambda x: f"${x:,.0f}") if mostrar_texto else None,
+            text=df_mes_cta["texto_monto"] if mostrar_texto else None,
             category_orders={"mes_nombre": orden_meses},
-            color_discrete_map=color_mapa
+            color_discrete_map=color_mapa,
+            hover_data={"cuenta_sucursal": True, "monto": True, "porcentaje": True}
         )
 
         fig.update_layout(
             height=max(300, min(50 * len(df_mes_cta["mes_nombre"].unique()), 800)),
             xaxis_title="Monto (MXN)",
             yaxis_title="Mes",
-            barmode="stack"
+            barmode="stack",
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5
+            )
         )
+
 
         if mostrar_texto:
             colores_barras = df_mes_cta[color_columna].map(color_mapa).fillna("#666666")
