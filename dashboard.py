@@ -1091,8 +1091,7 @@ elif opcion == "Vista por Sucursal":
         sucursal = sucursales_seleccionadas[0]
         df_suc = df[df["sucursal"] == sucursal].copy()
         df_suc = df_suc.groupby(["mes_nombre", "mes_dt"], as_index=False).agg({"monto": "sum"})
-        df_suc = df_suc.sort_values("monto", ascending=False)  # asegurar orden
-        df_suc["mes_nombre"] = pd.Categorical(df_suc["mes_nombre"], categories=df_suc["mes_nombre"], ordered=True)
+        df_suc = df_suc.sort_values("mes_dt")  # asegurar orden
         df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
 
         fig_barras = px.bar(
