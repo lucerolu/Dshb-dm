@@ -197,26 +197,51 @@ if opcion == "Resumen General":
     #----------------------- COMPARATIVO: MES VS MES ANTERIOR ------------------------------------------------------
     st.markdown("### Comparativo de compras mensuales")
 
-    # Asegurar que los datos estén ordenados por mes
+    # Agrupar y ordenar por mes
     df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
     df_mensual["mes_nombre"] = pd.Categorical(df_mensual["mes_nombre"], categories=orden_meses, ordered=True)
     df_mensual = df_mensual.sort_values("mes_nombre").reset_index(drop=True)
 
-    # Calcular diferencias y variación %
+    # Calcular diferencia y variación
     df_mensual["diferencia"] = df_mensual["monto"].diff().fillna(0)
     df_mensual["variacion_pct"] = df_mensual["monto"].pct_change().fillna(0) * 100
 
-    # Formato de texto
-    df_mensual["monto_str"] = df_mensual["monto"].apply(lambda x: f"${x:,.0f}")
-    df_mensual["diferencia_str"] = df_mensual["diferencia"].apply(lambda x: f"{'+' if x >= 0 else ''}${x:,.0f}")
-    df_mensual["variacion_str"] = df_mensual["variacion_pct"].apply(lambda x: f"{'+' if x >= 0 else ''}{x:.1f}%")
+    # Función para agregar flechas e íconos
+    def formatear_flecha(dif, pct):
+        if dif > 0:
+            return f"🔼 +${dif:,.0f}", f"🔼 +{pct:.1f}%"
+        elif dif < 0:
+            return f"🔽 ${dif:,.0f}", f"🔽 {pct:.1f}%"
+        else:
+            return "➖ $0", "➖ 0.0%"
 
-    # Selección y renombre de columnas
+    df_mensual[["diferencia_str", "variacion_str"]] = df_mensual.apply(
+        lambda row: pd.Series(formatear_flecha(row["diferencia"], row["variacion_pct"])),
+        axis=1
+    )
+
+    # Formato del monto
+    df_mensual["monto_str"] = df_mensual["monto"].apply(lambda x: f"${x:,.0f}")
+
+    # Armar tabla final
     df_comp = df_mensual[["mes_nombre", "monto_str", "diferencia_str", "variacion_str"]]
     df_comp.columns = ["Mes", "Total Comprado", "Diferencia ($)", "Variación (%)"]
 
-    # Mostrar tabla
-    st.dataframe(df_comp, use_container_width=True)
+    # Función para resaltar fila
+    def resaltar_fila(row):
+        if "🔽" in row["Diferencia ($)"]:
+            return ['background-color: #c6f6d5'] * len(row)  # verde
+        elif "🔼" in row["Diferencia ($)"]:
+            return ['background-color: #feb2b2'] * len(row)  # rojo
+        else:
+            return [''] * len(row)
+
+    # Mostrar tabla con estilo
+    st.dataframe(
+        df_comp.style.apply(resaltar_fila, axis=1),
+        use_container_width=True,
+        hide_index=True
+    )
 
 
 # ==========================================================================================================
