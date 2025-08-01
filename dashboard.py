@@ -1278,7 +1278,7 @@ elif opcion == "Estado de cuenta":
     else:
         st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
         #----------------------------------------- TARJETAS -------------------------------------------------------------------
-        
+        df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
         hoy = pd.to_datetime(datetime.today().date())
         
         total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
