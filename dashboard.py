@@ -155,8 +155,7 @@ if opcion == "Resumen General":
     st.dataframe(tabla_horizontal_df, use_container_width=True)
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
-    st.markdown("### Gráfica de Total comprado por mes")
-
+    #st.markdown("### Gráfica de Total comprado por mes")
     # Agrupar de nuevo (en bruto, sin formato)
     df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
     df_mensual["mes_nombre"] = pd.Categorical(df_mensual["mes_nombre"], categories=orden_meses, ordered=True)
@@ -196,6 +195,7 @@ if opcion == "Resumen General":
 
     #----------------------- COMPARATIVO: MES VS MES ANTERIOR ------------------------------------------------------
     st.markdown("### Comparativo de compras mensuales")
+    st.markdown("#### Compra vs mes anterior")  # Subtítulo
 
     # Agrupar y ordenar por mes
     df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
@@ -206,42 +206,47 @@ if opcion == "Resumen General":
     df_mensual["diferencia"] = df_mensual["monto"].diff().fillna(0)
     df_mensual["variacion_pct"] = df_mensual["monto"].pct_change().fillna(0) * 100
 
-    # Función para agregar flechas e íconos
-    def formatear_flecha(dif, pct):
+    # Función con flechas negras en HTML
+    def formatear_flecha_html(dif, pct):
         if dif > 0:
-            return f"🔼 +${dif:,.0f}", f"🔼 +{pct:.1f}%"
+            return f"⬆ +${dif:,.0f}", f"⬆ +{pct:.1f}%"
         elif dif < 0:
-            return f"🔽 ${dif:,.0f}", f"🔽 {pct:.1f}%"
+            return f"⬇ ${dif:,.0f}", f"⬇ {pct:.1f}%"
         else:
             return "➖ $0", "➖ 0.0%"
 
     df_mensual[["diferencia_str", "variacion_str"]] = df_mensual.apply(
-        lambda row: pd.Series(formatear_flecha(row["diferencia"], row["variacion_pct"])),
+        lambda row: pd.Series(formatear_flecha_html(row["diferencia"], row["variacion_pct"])),
         axis=1
     )
 
     # Formato del monto
     df_mensual["monto_str"] = df_mensual["monto"].apply(lambda x: f"${x:,.0f}")
 
-    # Armar tabla final
+    # Tabla final
     df_comp = df_mensual[["mes_nombre", "monto_str", "diferencia_str", "variacion_str"]]
     df_comp.columns = ["Mes", "Total Comprado", "Diferencia ($)", "Variación (%)"]
 
-    # Función para resaltar fila
-    def resaltar_fila(row):
-        if "🔽" in row["Diferencia ($)"]:
-            return ['background-color: #50c878'] * len(row)  # verde
-        elif "🔼" in row["Diferencia ($)"]:
-            return ['background-color: #FF0000'] * len(row)  # rojo
+    # Resaltar con bordes
+    def resaltar_con_bordes(row):
+        estilos = []
+        if "⬇" in row["Diferencia ($)"]:
+            estilos = ['border: 1px solid black; background-color: #c6f6d5'] * len(row)
+        elif "⬆" in row["Diferencia ($)"]:
+            estilos = ['border: 1px solid black; background-color: #feb2b2'] * len(row)
         else:
-            return [''] * len(row)
+            estilos = [''] * len(row)
+        return estilos
 
-    # Mostrar tabla con estilo
+    # Mostrar tabla
     st.dataframe(
-        df_comp.style.apply(resaltar_fila, axis=1),
+        df_comp.style
+            .apply(resaltar_con_bordes, axis=1)
+            .set_properties(**{"text-align": "center"}),
         use_container_width=True,
         hide_index=True
     )
+
 
 
 # ==========================================================================================================
