@@ -130,27 +130,33 @@ if opcion == "Resumen General":
         mes_actual_esp = meses_es.get(ahora.strftime("%B"), "") + " " + str(ahora.year)
         st.metric(f"Total comprado en {mes_actual_esp}", f"${total_mes_actual:,.2f}")
 
-    # ---------------- GÁFICA DE LÍNEAS DEL TOTAL GENERAL  ------------------------------------------
+    # ------------------------------------ GÁFICA DE LÍNEAS DEL TOTAL GENERAL  -----------------------------------------------------------------------------------------------------------------
     df_total_mes = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     fig_total = go.Figure()
-    fig_total.add_trace(go.Scatter(x=df_total_mes.index, y=df_total_mes.values,
-                                   mode="lines+markers", name="Total",
-                                   line=dict(color="blue")))
-    fig_total.update_layout(title="Evolución mensual del total comprado", xaxis_title="Mes", yaxis_title="Monto")
+    fig_total.add_trace(go.Scatter(
+        x=df_total_mes.index,
+        y=df_total_mes.values,
+        mode="lines+markers",
+        name="Total",
+        line=dict(color="blue"),
+        hovertemplate="%{x}<br>Total: $%{y:,.0f}<extra></extra>"  # 👈 muestra el número con comas y sin abreviar
+    ))
+    fig_total.update_layout(
+        title="Evolución mensual del total comprado",
+        xaxis_title="Mes",
+        yaxis_title="Monto",
+        yaxis_tickformat=","  # 👈 muestra ejes con comas en lugar de abreviaturas
+    )
     st.plotly_chart(fig_total, use_container_width=True)
-
-    
-    col1, col2 = st.columns(2)
   
-
-    # ----------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------
+    # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
     st.markdown("### Total comprado por mes")
 
     # Agrupar y pivotear para una sola fila
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T  # Transponer para tener una fila
     tabla_horizontal_df.index = ["Total Comprado"]
-    tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.0f}")
+    tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
     st.dataframe(tabla_horizontal_df, use_container_width=True)
 
@@ -162,7 +168,7 @@ if opcion == "Resumen General":
     df_mensual = df_mensual.sort_values("mes_nombre")
 
     # Formato de texto
-    df_mensual["texto_monto"] = df_mensual["monto"].apply(lambda x: f"${x:,.0f}")
+    df_mensual["texto_monto"] = df_mensual["monto"].apply(lambda x: f"${x:,.2f}")
 
     # Crear gráfica
     fig = go.Figure()
@@ -182,7 +188,6 @@ if opcion == "Resumen General":
     altura_total = max(400, len(df_mensual) * 40)
 
     fig.update_layout(
-        title="Total Comprado por Mes",
         xaxis_title="Monto de compra (MXN)",
         yaxis_title="Mes",
         xaxis_tickformat=",",
@@ -221,7 +226,7 @@ if opcion == "Resumen General":
     )
 
     # Formato del monto
-    df_mensual["monto_str"] = df_mensual["monto"].apply(lambda x: f"${x:,.0f}")
+    df_mensual["monto_str"] = df_mensual["monto"].apply(lambda x: f"${x:,.2f}")
 
     # Tabla final
     df_comp = df_mensual[["mes_nombre", "monto_str", "diferencia_str", "variacion_str"]]
@@ -258,7 +263,7 @@ if opcion == "Resumen General":
     # Calcular diferencias
     df_mensual["diferencia"] = df_mensual["monto"].diff().fillna(0)
     df_mensual["color"] = df_mensual["diferencia"].apply(lambda x: "#f81515" if x >= 0 else "#33FF00")
-    df_mensual["texto"] = df_mensual["diferencia"].apply(lambda x: f"${x:,.0f}")
+    df_mensual["texto"] = df_mensual["diferencia"].apply(lambda x: f"${x:,.2f}")
 
     # Crear gráfica
     fig_dif = go.Figure()
