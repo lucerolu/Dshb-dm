@@ -193,7 +193,7 @@ if opcion == "Resumen General":
 
     st.plotly_chart(fig, use_container_width=True)
 
-    #----------------------- COMPARATIVO: MES VS MES ANTERIOR ------------------------------------------------------
+    #------------------------------------------ COMPARATIVO: MES VS MES ANTERIOR ---------------------------------------------------------------------------------------------------------
     st.markdown("### Comparativo de compras mensuales")
     st.markdown("#### Compra vs mes anterior")  # Subtítulo
 
@@ -209,9 +209,9 @@ if opcion == "Resumen General":
     # Función con flechas negras en HTML
     def formatear_flecha_html(dif, pct):
         if dif > 0:
-            return f"⬆ +${dif:,.0f}", f"⬆ +{pct:.1f}%"
+            return f"⬆ +${dif:,.2f}", f"⬆ +{pct:.1f}%"
         elif dif < 0:
-            return f"⬇ ${dif:,.0f}", f"⬇ {pct:.1f}%"
+            return f"⬇ ${dif:,.2f}", f"⬇ {pct:.1f}%"
         else:
             return "➖ $0", "➖ 0.0%"
 
@@ -247,6 +247,43 @@ if opcion == "Resumen General":
         hide_index=True
     )
 
+    # --------------------------------------- GRÁFICA DE DIFERENCIAS MENSUALES --------------------------------------------------------------------------------------------
+    st.markdown("### Variación de compras respecto al mes anterior")
+
+    # Agrupar y ordenar por mes
+    df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
+    df_mensual["mes_nombre"] = pd.Categorical(df_mensual["mes_nombre"], categories=orden_meses, ordered=True)
+    df_mensual = df_mensual.sort_values("mes_nombre").reset_index(drop=True)
+
+    # Calcular diferencias
+    df_mensual["diferencia"] = df_mensual["monto"].diff().fillna(0)
+    df_mensual["color"] = df_mensual["diferencia"].apply(lambda x: "#50c878" if x >= 0 else "#FF0000")
+    df_mensual["texto"] = df_mensual["diferencia"].apply(lambda x: f"${x:,.0f}")
+
+    # Crear gráfica
+    fig_dif = go.Figure()
+
+    fig_dif.add_trace(go.Bar(
+        x=df_mensual["mes_nombre"],
+        y=df_mensual["diferencia"],
+        marker_color=df_mensual["color"],
+        text=df_mensual["texto"],
+        textposition="outside",
+        cliponaxis=False,
+        hovertemplate="%{x}<br>Diferencia: %{text}<extra></extra>"
+    ))
+
+    # Ajustes visuales
+    fig_dif.update_layout(
+        title="Diferencia mensual de compras vs mes anterior",
+        xaxis_title="Mes",
+        yaxis_title="Diferencia en monto (MXN)",
+        yaxis=dict(zeroline=True, zerolinecolor="black"),
+        height=450,
+        margin=dict(r=70)
+    )
+
+    st.plotly_chart(fig_dif, use_container_width=True)
 
 
 # ==========================================================================================================
