@@ -1329,7 +1329,16 @@ elif opcion == "Estado de cuenta":
         df_pivot[cols_to_format] = df_pivot[cols_to_format].apply(pd.to_numeric, errors='coerce')
 
         # Mostrar con formato correcto
-        st.dataframe(df_pivot_reset.style.format("{:,.2f}", subset=numeric_cols))
+        st.data_editor(
+            df_pivot_reset.style.format("{:,.2f}", subset=numeric_cols),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "sucursal": st.column_config.Column(label="Sucursal", disabled=True, width="small", pinned="left"),
+                "codigo": st.column_config.Column(label="Código", disabled=True, width="small", pinned="left"),
+            }
+        )
+
 
         #--------------------- BOTON DE DESCARGA --------------------------------------
         def to_excel(df):
