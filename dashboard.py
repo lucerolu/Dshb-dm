@@ -63,7 +63,7 @@ def obtener_estado_cuenta_api():
         return pd.DataFrame(), None
 
 
-# ------------------------------- OBTENER DATOS -------------------------------------------------------------------------------
+# ----------------------------------------------- OBTENER DATOS -------------------------------------------------------------------------------
 df = obtener_datos_api()
 if not df.empty:
     df = df.dropna(subset=["sucursal"])
@@ -80,7 +80,7 @@ if not df.empty:
     df = df.sort_values("mes_dt")
     orden_meses = df["mes_nombre"].drop_duplicates().tolist()
 
-    # ------------------------------- DIVISIONES ----------------------------------------------------
+    # ------------------------------------------ DIVISIONES ----------------------------------------------------
     divisiones = config["divisiones"]
     mapa_codigos = {}
     colores_divisiones = {}
@@ -139,7 +139,7 @@ if opcion == "Resumen General":
         mode="lines+markers",
         name="Total",
         line=dict(color="blue"),
-        hovertemplate="%{x}<br>Total: $%{y:,.0f}<extra></extra>"  # 👈 muestra el número con comas y sin abreviar
+        hovertemplate="%{x}<br>Total: $%{y:,.2f}<extra></extra>"  # 👈 muestra el número con comas y sin abreviar
     ))
     fig_total.update_layout(
         title="Evolución mensual del total comprado",
@@ -197,6 +197,7 @@ if opcion == "Resumen General":
     )
 
     st.plotly_chart(fig, use_container_width=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     #------------------------------------------ COMPARATIVO: MES VS MES ANTERIOR ---------------------------------------------------------------------------------------------------------
     st.markdown("### Comparativo de compras mensuales")
@@ -251,6 +252,7 @@ if opcion == "Resumen General":
         use_container_width=True,
         hide_index=True
     )
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     # --------------------------------------- GRÁFICA DE DIFERENCIAS MENSUALES --------------------------------------------------------------------------------------------
     st.markdown("### Variación de compras respecto al mes anterior")
@@ -291,9 +293,9 @@ if opcion == "Resumen General":
     st.plotly_chart(fig_dif, use_container_width=True)
 
 
-# ==========================================================================================================
+# ================================================================================================================================
 # ============================= COMPRA POR DIVISION =======================================
-# ==========================================================================================================
+# ================================================================================================================================
 elif opcion == "Compra por División":
     st.title("Distribución de Compras por División - 2025")
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -301,7 +303,7 @@ elif opcion == "Compra por División":
     #------------------------- GRÁFICO DE PASTEL ---------------------------------------------------------
     df_agrupado = df_divisiones.groupby("division")["monto"].sum().reset_index()
     df_agrupado["texto"] = df_agrupado.apply(
-        lambda row: f"{row['division']}<br>${row['monto']:,.0f}", axis=1
+        lambda row: f"{row['division']}<br>${row['monto']:,.2f}", axis=1
     )
 
     fig_pie = px.pie(
@@ -923,13 +925,24 @@ elif opcion == "Compra por Sucursal":
     )
 
     #------------------------- GRÁFICAS DE BARRAS: COMPRAS POR SUCURSAL, MES A MES  -----------------------------------------------------
+    # Obtener mes actual
+    mes_actual = datetime.today().month
+
+    # Reordenar los meses empezando por el anterior al mes actual
+    mes_inicio = (mes_actual - 1) % 12
+    orden_meses_reversa = orden_meses[mes_inicio::-1] + orden_meses[:mes_inicio][::-1]
+
     st.markdown("### Compras por Sucursal, mes a mes")
 
-    for mes in orden_meses:
+    for mes in orden_meses_reversa:
         df_mes = df[df["mes_nombre"] == mes].copy()
         
         # Agrupar solo por sucursal, sumando los montos de todas las divisiones
         df_mes = df_mes.groupby("sucursal", as_index=False).agg({"monto": "sum"})
+        
+        # Saltar si el mes no tiene compras
+        if df_mes["monto"].sum() == 0:
+            continue
 
         total_mes = df_mes["monto"].sum()
         df_mes["porcentaje"] = df_mes["monto"] / total_mes * 100
