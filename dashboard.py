@@ -230,9 +230,9 @@ if opcion == "Resumen General":
     # Función para resaltar fila
     def resaltar_fila(row):
         if "🔽" in row["Diferencia ($)"]:
-            return ['background-color: #c6f6d5'] * len(row)  # verde
+            return ['background-color: #50c878'] * len(row)  # verde
         elif "🔼" in row["Diferencia ($)"]:
-            return ['background-color: #feb2b2'] * len(row)  # rojo
+            return ['background-color: #FF0000'] * len(row)  # rojo
         else:
             return [''] * len(row)
 
