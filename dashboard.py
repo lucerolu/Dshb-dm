@@ -1324,8 +1324,9 @@ elif opcion == "Estado de cuenta":
         df_pivot_reset = df_pivot.reset_index()
         numeric_cols = df_pivot_reset.select_dtypes(include="number").columns.tolist()
         # Asegura que todas las columnas excepto el índice sean numéricas
-        cols_to_format = df_pivot.columns
-        df_pivot[cols_to_format] = df_pivot[cols_to_format].apply(pd.to_numeric, errors='coerce')
+        #cols_to_format = df_pivot.columns
+        #df_pivot[cols_to_format] = df_pivot[cols_to_format].apply(pd.to_numeric, errors='coerce')
+        df_pivot_reset[numeric_cols] = df_pivot_reset[numeric_cols].applymap(lambda x: f"{x:,.2f}")
 
         # Mostrar con formato correcto
         st.data_editor(
