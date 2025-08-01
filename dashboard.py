@@ -231,9 +231,9 @@ if opcion == "Resumen General":
     def resaltar_con_bordes(row):
         estilos = []
         if "⬇" in row["Diferencia ($)"]:
-            estilos = ['border: 1px solid black; background-color: #c6f6d5'] * len(row)
+            estilos = ['border: 1px solid black; background-color: #50c878'] * len(row)
         elif "⬆" in row["Diferencia ($)"]:
-            estilos = ['border: 1px solid black; background-color: #feb2b2'] * len(row)
+            estilos = ['border: 1px solid black; background-color: #FF0000'] * len(row)
         else:
             estilos = [''] * len(row)
         return estilos
