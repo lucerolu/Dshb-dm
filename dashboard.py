@@ -257,7 +257,7 @@ if opcion == "Resumen General":
 
     # Calcular diferencias
     df_mensual["diferencia"] = df_mensual["monto"].diff().fillna(0)
-    df_mensual["color"] = df_mensual["diferencia"].apply(lambda x: "#50c878" if x >= 0 else "#FF0000")
+    df_mensual["color"] = df_mensual["diferencia"].apply(lambda x: "#f81515" if x >= 0 else "#33FF00")
     df_mensual["texto"] = df_mensual["diferencia"].apply(lambda x: f"${x:,.0f}")
 
     # Crear gráfica
