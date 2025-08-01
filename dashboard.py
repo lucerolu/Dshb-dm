@@ -194,6 +194,31 @@ if opcion == "Resumen General":
 
     st.plotly_chart(fig, use_container_width=True)
 
+    #----------------------- COMPARATIVO: MES VS MES ANTERIOR ------------------------------------------------------
+    st.markdown("### Comparativo de compras mensuales")
+
+    # Asegurar que los datos estén ordenados por mes
+    df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
+    df_mensual["mes_nombre"] = pd.Categorical(df_mensual["mes_nombre"], categories=orden_meses, ordered=True)
+    df_mensual = df_mensual.sort_values("mes_nombre").reset_index(drop=True)
+
+    # Calcular diferencias y variación %
+    df_mensual["diferencia"] = df_mensual["monto"].diff().fillna(0)
+    df_mensual["variacion_pct"] = df_mensual["monto"].pct_change().fillna(0) * 100
+
+    # Formato de texto
+    df_mensual["monto_str"] = df_mensual["monto"].apply(lambda x: f"${x:,.0f}")
+    df_mensual["diferencia_str"] = df_mensual["diferencia"].apply(lambda x: f"{'+' if x >= 0 else ''}${x:,.0f}")
+    df_mensual["variacion_str"] = df_mensual["variacion_pct"].apply(lambda x: f"{'+' if x >= 0 else ''}{x:.1f}%")
+
+    # Selección y renombre de columnas
+    df_comp = df_mensual[["mes_nombre", "monto_str", "diferencia_str", "variacion_str"]]
+    df_comp.columns = ["Mes", "Total Comprado", "Diferencia ($)", "Variación (%)"]
+
+    # Mostrar tabla
+    st.dataframe(df_comp, use_container_width=True)
+
+
 # ==========================================================================================================
 # ============================= COMPRA POR DIVISION =======================================
 # ==========================================================================================================
