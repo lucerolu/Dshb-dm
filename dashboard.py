@@ -1277,7 +1277,25 @@ elif opcion == "Estado de cuenta":
         st.warning("No hay datos de estado de cuenta.")
     else:
         st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
+        #----------------------------------------- TARJETAS -------------------------------------------------------------------
         
+        hoy = pd.to_datetime(datetime.today().date())
+        
+        total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
+        por_vencer_30 = df_estado_cuenta[
+            (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
+            (df_estado_cuenta["fecha_exigibilidad"] <= hoy + timedelta(days=30))
+        ]["total"].sum()
+        por_vencer_90 = df_estado_cuenta[
+            df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
+        ]["total"].sum()
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("🔴 Total vencido", f"${total_vencido:,.2f}")
+        col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
+        col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
+
+        #------------------------------------------ TABLA -----------------------------------------------------------------------
         df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
         df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
         
@@ -1312,7 +1330,8 @@ elif opcion == "Estado de cuenta":
 
         # Mostrar con formato correcto
         st.dataframe(df_pivot_reset.style.format("{:,.2f}", subset=numeric_cols))
-        
+
+        #--------------------- BOTON DE DESCARGA --------------------------------------
         def to_excel(df):
             import io
             output = io.BytesIO()
@@ -1327,21 +1346,8 @@ elif opcion == "Estado de cuenta":
             file_name=f"estado_cuenta_{fecha_corte.strftime('%Y%m%d')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
+        #------------------------------------------------------------------------------------------------------------
         
-        hoy = pd.to_datetime(datetime.today().date())
-        
-        total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
-        por_vencer_30 = df_estado_cuenta[
-            (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
-            (df_estado_cuenta["fecha_exigibilidad"] <= hoy + timedelta(days=30))
-        ]["total"].sum()
-        por_vencer_90 = df_estado_cuenta[
-            df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
-        ]["total"].sum()
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("🔴 Total vencido", f"${total_vencido:,.2f}")
-        col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
-        col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
 # =============================
