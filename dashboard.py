@@ -1320,7 +1320,6 @@ elif opcion == "Estado de cuenta":
 
         # Reordenar columnas del pivot
         df_pivot = df_pivot[cols_ordenadas]
-
         df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
         df_pivot_reset = df_pivot.reset_index()
         numeric_cols = df_pivot_reset.select_dtypes(include="number").columns.tolist()
@@ -1330,13 +1329,15 @@ elif opcion == "Estado de cuenta":
 
         # Mostrar con formato correcto
         st.data_editor(
-            df_pivot_reset.style.format("{:,.2f}", subset=numeric_cols),
+            df_pivot_reset,
             use_container_width=True,
             hide_index=True,
+            disabled=True,  # ❌ Desactiva edición y ordenamiento
             column_config={
-                "sucursal": st.column_config.Column(label="Sucursal", disabled=True, width="small", pinned="left"),
-                "codigo": st.column_config.Column(label="Código", disabled=True, width="small", pinned="left"),
-            }
+                "sucursal": st.column_config.Column(label="Sucursal", width="small", pinned="left"),
+                "codigo": st.column_config.Column(label="Código", width="small", pinned="left"),
+            },
+            column_order=["sucursal", "codigo"] + cols_ordenadas  # Asegura orden correcto
         )
 
 
