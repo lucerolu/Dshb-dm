@@ -180,23 +180,38 @@ if opcion == "Resumen General":
     # Configurar AgGrid
     gb = GridOptionsBuilder.from_dataframe(tabla_horizontal_df)
     gb.configure_default_column(resizable=True, filter=True, sortable=True)
-    gb.configure_column("Descripción", pinned="left", cellStyle={'color': 'white', 'backgroundColor': '#6F079C'})
 
-    gridOptions = gb.build()
+    # Fijar la primera columna (Descripción) a la izquierda y con colores
+    gb.configure_column(
+        "Descripción",
+        pinned="left",
+        cellStyle={'color': 'white', 'backgroundColor': '#6F079C'},
+        minWidth=180,
+        maxWidth=300,
+        flex=0  # No se estira, fijo ancho dentro de min/max
+    )
 
-    # Calcular altura mínima dinámica: 1 fila + encabezado = 35px + 35px
+    # Para las otras columnas, que se distribuyan proporcionalmente
+    for col in tabla_horizontal_df.columns[1:]:
+        gb.configure_column(
+            col,
+            minWidth=100,
+            maxWidth=250,
+            flex=1  # Todas con igual "peso" para estirarse proporcionalmente
+        )
+
     altura_dinamica = 35 * (len(tabla_horizontal_df) + 1) + 10
 
     AgGrid(
         tabla_horizontal_df,
-        gridOptions=gridOptions,
+        gridOptions=gb.build(),
         height=altura_dinamica,
         fit_columns_on_grid_load=False,
         theme="streamlit",
         enable_enterprise_modules=False,
-        width='100%',
         allow_unsafe_jscode=True
     )
+
     
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
