@@ -16,6 +16,7 @@ from datetime import timedelta
 import locale
 import io
 import requests
+import itertools
 
 #==========================================================================================================
 # -------------- CONFIGURACION GENERAL --------------------------------------------------------------------
@@ -734,9 +735,23 @@ elif opcion == "Compra por Cuenta":
     # Preparar los datos para plotly (long-form)
     df_grafico = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-    # Ordenar los meses correctamente
+    # Definir el orden de los meses, asegurando que estén ordenados cronológicamente y en español
     orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
+
+    # Obtener lista de cuentas únicas
+    cuentas = df_grafico["cuenta_sucursal"].unique()
+
+    # Crear todas las combinaciones posibles mes-cuenta
+    combinaciones = pd.DataFrame(list(itertools.product(orden_meses, cuentas)), columns=["mes_anio", "cuenta_sucursal"])
+
+    # Merge para tener todas las combinaciones y completar montos faltantes con cero
+    df_grafico = combinaciones.merge(df_grafico, on=["mes_anio", "cuenta_sucursal"], how="left")
+    df_grafico["monto"] = df_grafico["monto"].fillna(0)
+
+    # Convertir mes_anio en categoría ordenada para que se grafique en orden correcto
     df_grafico["mes_anio"] = pd.Categorical(df_grafico["mes_anio"], categories=orden_meses, ordered=True)
+
+    # Ordenar el DataFrame por mes_anio
     df_grafico = df_grafico.sort_values("mes_anio")
 
     # 🟡 SELECTOR DE CUENTAS
@@ -777,6 +792,7 @@ elif opcion == "Compra por Cuenta":
 
     # Mostrar gráfico con configuración
     st.plotly_chart(fig, use_container_width=True, config=config)
+
 
     #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL ------------------------------------------------------------------------------
 
