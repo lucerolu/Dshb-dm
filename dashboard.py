@@ -210,31 +210,23 @@ if opcion == "Resumen General":
 
     # Calcular altura dinámica
     altura_dinamica = 35 * (len(tabla_horizontal_df) + 1) + 10
-
-
-    # 🔧 --- INICIO: CSS para scroll horizontal en móvil ---
+    # --- INICIO: Contenedor con scroll horizontal ---
     st.markdown("""
-        <style>
-            .ag-root-wrapper {
-                overflow-x: auto !important;
-            }
-            .ag-theme-streamlit {
-                min-width: 900px !important;  /* Puedes ajustar según cuántas columnas tengas */
-            }
-        </style>
+        <div style='overflow-x: auto;'>
     """, unsafe_allow_html=True)
-    # 🔧 --- FIN: CSS ---
 
-    # Mostrar tabla
     AgGrid(
         tabla_horizontal_df,
         gridOptions=gb.build(),
         height=altura_dinamica,
-        fit_columns_on_grid_load=True,  # <- cambia a True
+        fit_columns_on_grid_load=False,
         theme="streamlit",
         enable_enterprise_modules=False,
         allow_unsafe_jscode=True
     )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    # --- FIN: Contenedor con scroll horizontal ---
 
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
