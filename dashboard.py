@@ -185,7 +185,7 @@ if opcion == "Resumen General":
     gridOptions = gb.build()
 
     # Calcular altura mínima dinámica: 1 fila + encabezado = 35px + 35px
-    altura_dinamica = 35 * (len(tabla_horizontal_df) + 1)
+    altura_dinamica = 35 * (len(tabla_horizontal_df) + 1) + 10
 
     AgGrid(
         tabla_horizontal_df,
@@ -193,8 +193,11 @@ if opcion == "Resumen General":
         height=altura_dinamica,
         fit_columns_on_grid_load=False,
         theme="streamlit",
-        enable_enterprise_modules=False
+        enable_enterprise_modules=False,
+        width='100%',
+        allow_unsafe_jscode=True
     )
+    
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
     #st.markdown("### Gráfica de Total comprado por mes")
