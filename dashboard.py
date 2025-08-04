@@ -168,67 +168,29 @@ if opcion == "Resumen General":
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
     tabla_horizontal_df.index = ["Total Comprado"]
-
-    # Agregar columna para que no se pierda el nombre
     tabla_horizontal_df.insert(0, "Descripción", tabla_horizontal_df.index)
     tabla_horizontal_df.reset_index(drop=True, inplace=True)
 
-    # Identificar columnas de meses (todas excepto 'Descripción')
+    # 2. Calcular columna Total (sin formatear aún)
     meses_cols = tabla_horizontal_df.columns[1:]
-
-    # Calcular Total antes de formatear
     tabla_horizontal_df["Total"] = tabla_horizontal_df[meses_cols].sum(axis=1)
 
-    # Actualizar meses_cols para que incluya solo columnas numéricas (sin 'Descripción' ni 'Total' ya formateado)
-    meses_cols = tabla_horizontal_df.columns[1:-1]
+    # 3. Aplicar estilo con color y formato moneda
+    def estilo_tabla(styler):
+        # Colorear columnas por mes
+        color_base = "#F0E5FF"
+        color_total = "#D2B4FF"
+        mes_colores = {col: f"background-color: {color_base}" for col in meses_cols}
+        mes_colores["Total"] = f"background-color: {color_total}"
+        
+        return styler.format("${:,.2f}", subset=meses_cols.tolist() + ["Total"]).set_properties(**{
+            "font-weight": "bold",
+            "text-align": "right"
+        }).apply(lambda _: [mes_colores.get(c, "") for c in styler.columns], axis=1)
 
-    # Formatear columnas como moneda
-    #for col in meses_cols.tolist() + ["Total"]:
-    #    tabla_horizontal_df[col] = tabla_horizontal_df[col].apply(lambda x: f"${x:,.2f}")
-
-    # Configurar AgGrid
-    gb = GridOptionsBuilder.from_dataframe(tabla_horizontal_df)
-    gb.configure_default_column(resizable=True, filter=True, sortable=True)
-
-    # Fijar la columna de descripción
-    gb.configure_column(
-        "Descripción",
-        pinned="left",
-        cellStyle={'color': 'white', 'backgroundColor': '#6F079C'},
-        #minWidth=180,
-        #maxWidth=300,
-        flex=1
-    )
-
-    # Distribuir columnas de manera proporcional
-    for col in meses_cols.tolist() + ["Total"]:
-        gb.configure_column(
-            col,
-            type=["numericColumn"],
-            valueFormatter="x.toLocaleString('en-US', {style: 'currency', currency: 'USD'})",
-            autoWidth=True
-        )
-
-    # Calcular altura dinámica
-    altura_dinamica = 35 * (len(tabla_horizontal_df) + 1) + 10
-    # --- INICIO: Contenedor con scroll horizontal ---
-    st.markdown("""
-        <div style='overflow-x: auto;'>
-    """, unsafe_allow_html=True)
-
-    AgGrid(
-        tabla_horizontal_df,
-        gridOptions=gb.build(),
-        height=altura_dinamica,
-        fit_columns_on_grid_load=True,
-        theme="streamlit",
-        enable_enterprise_modules=False,
-        allow_unsafe_jscode=True
-    )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-    # --- FIN: Contenedor con scroll horizontal ---
-
+    # 4. Mostrar tabla con estilos
+    st.markdown("### Total comprado por mes")
+    st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
     #st.markdown("### Gráfica de Total comprado por mes")
