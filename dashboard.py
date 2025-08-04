@@ -385,8 +385,22 @@ elif opcion == "Compra por División":
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ---------------- TABLA: TOTAL MENSUAL COMPRADO POR DIVISIÓN ---------------------------------------------------------------------------
-    tabla_pivot = df_divisiones.pivot_table(index="division", columns="mes_nombre", values="monto", aggfunc="sum", fill_value=0)
-    st.dataframe(tabla_pivot.style.format("${:,.2f}"), use_container_width=True)
+    tabla_pivot = df_divisiones.pivot_table(
+        index="division",
+        columns="mes_nombre",
+        values="monto",
+        aggfunc="sum",
+        fill_value=0  # ya reemplaza nulls por 0
+    )
+
+    # Renombrar índice (nombre de la columna del índice)
+    tabla_pivot.index.rename("División", inplace=True)
+
+    # Mostrar la tabla formateada
+    st.dataframe(
+        tabla_pivot.style.format("${:,.2f}"),
+        use_container_width=True
+    )
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
