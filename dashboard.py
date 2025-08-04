@@ -730,10 +730,9 @@ elif opcion == "Compra por Cuenta":
     if "mes_dt" not in df_divisiones.columns:
         df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["fecha"]).dt.to_period("M").dt.to_timestamp()
 
-    # Crear columna mes_año en formato 'Jul 2024'
-    df_divisiones["mes_abrev_en"] = df_divisiones["mes_dt"].dt.strftime('%b')
-    df_divisiones["mes_abrev_es"] = df_divisiones["mes_abrev_en"].map(meses_es)
-    df_divisiones["mes_anio"] = df_divisiones["mes_abrev_es"] + " " + df_divisiones["mes_dt"].dt.year.astype(str)
+    # ✅ Crear columna mes_anio directamente con nombres completos en español (sin usar abreviaturas)
+    df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es)
+    df_divisiones["mes_anio"] = df_divisiones["mes_nombre"] + " " + df_divisiones["mes_dt"].dt.year.astype(str)
 
     # Crear columna cuenta_sucursal si no existe
     if "cuenta_sucursal" not in df_divisiones.columns:
@@ -742,8 +741,8 @@ elif opcion == "Compra por Cuenta":
     # Preparar los datos para plotly (long-form)
     df_grafico = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-    # Definir el orden de los meses, asegurando que estén ordenados cronológicamente y en español
-    orden_meses = [m for m in df_divisiones.sort_values("mes_dt")["mes_anio"].unique() if pd.notna(m)]
+    # Definir el orden de los meses en español
+    orden_meses = df_divisiones.drop_duplicates("mes_anio").sort_values("mes_dt")["mes_anio"].tolist()
 
     # Obtener lista de cuentas únicas
     cuentas = df_grafico["cuenta_sucursal"].unique()
@@ -755,51 +754,50 @@ elif opcion == "Compra por Cuenta":
     df_grafico = combinaciones.merge(df_grafico, on=["mes_anio", "cuenta_sucursal"], how="left")
     df_grafico["monto"] = df_grafico["monto"].fillna(0)
 
-    # Convertir mes_anio en categoría ordenada para que se grafique en orden correcto
+    # Convertir mes_anio en categoría ordenada
     df_grafico["mes_anio"] = pd.Categorical(df_grafico["mes_anio"], categories=orden_meses, ordered=True)
 
     # Ordenar el DataFrame por mes_anio
     df_grafico = df_grafico.sort_values("mes_anio")
 
-    # 🟡 SELECTOR DE CUENTAS
+    # 🟡 Selector de cuentas
     cuentas_disponibles = sorted(df_grafico["cuenta_sucursal"].unique())
     cuentas_seleccionadas = st.multiselect("Selecciona cuentas a mostrar:", cuentas_disponibles, default=cuentas_disponibles)
 
     # Filtrar el DataFrame según selección
     df_filtrado = df_grafico[df_grafico["cuenta_sucursal"].isin(cuentas_seleccionadas)]
 
-    # Crear gráfico de líneas
-    fig = px.line(
-        df_filtrado,
-        x="mes_anio",
-        y="monto",
-        color="cuenta_sucursal",
-        markers=True,
-        title="Compras mensuales por cuenta"
-    )
+    # ✅ Mostrar algunos datos si no se ve nada
+    if df_filtrado.empty:
+        st.warning("No hay datos para mostrar con las cuentas seleccionadas.")
+        st.dataframe(df_grafico.head(10))  # Para depuración
+    else:
+        # Crear gráfico de líneas
+        fig = px.line(
+            df_filtrado,
+            x="mes_anio",
+            y="monto",
+            color="cuenta_sucursal",
+            markers=True,
+            title="Compras mensuales por cuenta"
+        )
 
-    fig.update_layout(
-        xaxis_title="Mes",
-        yaxis_title="Monto (MXN)",
-        yaxis_tickformat=",",  # Formato con comas
-        legend_title="Cuenta - Sucursal"
-    )
+        fig.update_layout(
+            xaxis_title="Mes",
+            yaxis_title="Monto (MXN)",
+            yaxis_tickformat=",",  # Formato con comas
+            legend_title="Cuenta - Sucursal"
+        )
 
-    # Configuración personalizada del gráfico
-    config = {
-        "scrollZoom": True,
-        "modeBarButtonsToKeep": [
-            "toImage",         # Descargar como PNG
-            "zoom2d",          # Zoom
-            "autoScale2d",     # Autoscale
-            "toggleFullscreen" # Pantalla completa
-        ],
-        "displaylogo": False
-    }
+        config = {
+            "scrollZoom": True,
+            "modeBarButtonsToKeep": [
+                "toImage", "zoom2d", "autoScale2d", "toggleFullscreen"
+            ],
+            "displaylogo": False
+        }
 
-    # Mostrar gráfico con configuración
-    st.plotly_chart(fig, use_container_width=True, config=config)
-
+        st.plotly_chart(fig, use_container_width=True, config=config)
 
     #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL ------------------------------------------------------------------------------
     st.header("Evolución mensual de compras por cuenta")
