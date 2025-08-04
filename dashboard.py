@@ -707,7 +707,7 @@ elif opcion == "Compra por Cuenta":
 
     # Mostrar tabla con formato
     columnas_numericas = tabla_compras.select_dtypes(include='number').columns
-    tabla_compras_formateada = tabla_compras.style.format("{:,.2f}", subset=columnas_numericas)
+    tabla_compras_formateada = tabla_compras.style.format("{:,.2f}", subset=columnas_numericas).hide_index()
     st.dataframe(tabla_compras_formateada, use_container_width=True)
 
     # Descargar Excel
