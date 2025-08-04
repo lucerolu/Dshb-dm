@@ -172,30 +172,21 @@ if opcion == "Resumen General":
     # Calcular Total
     tabla_horizontal_df["Total"] = tabla_horizontal_df.sum(axis=1)
 
-    # Resetear índice para convertirlo en columna
-    tabla_horizontal_df.reset_index(inplace=True)
-    tabla_horizontal_df.rename(columns={"index": "Descripción"}, inplace=True)
-
     # Reordenar columnas (opcional)
-    cols = ["Descripción"] + [col for col in tabla_horizontal_df.columns if col != "Descripción"]
+    cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
     tabla_horizontal_df = tabla_horizontal_df[cols]
 
+    # Estilo personalizado (solo encabezado)
     def estilo_tabla(styler):
-        # Encabezado morado oscuro
-        styler.set_table_styles([
-            {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
-        ])
-        
-        def pintar_fila(df):
-            colores = pd.DataFrame("", index=df.index, columns=df.columns)
-            mask = df["Descripción"] == "Total Comprado"
-            colores.loc[mask, :] = "background-color: #4F079C; color: white"
-            return colores
-        
-        styler = styler.apply(pintar_fila, axis=None)
-        
-        return styler.format("${:,.2f}", subset=[c for c in tabla_horizontal_df.columns if c != "Descripción"])
+        return (
+            styler
+            .set_table_styles([
+                {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
+            ])
+            .format("${:,.2f}")  # Formatear como moneda
+        )
 
+    # Mostrar tabla
     st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
 
 
