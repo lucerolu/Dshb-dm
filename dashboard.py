@@ -165,24 +165,30 @@ if opcion == "Resumen General":
     st.markdown("### Total comprado por mes")
 
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
-    tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T  # Transponer para tener una fila
+    tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
     tabla_horizontal_df.index = ["Total Comprado"]
 
-    # Formato de moneda sin convertir a string aún (para control del estilo)
-    tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
+    # Calcular columna "Total" como suma de meses
+    tabla_horizontal_df["Total"] = tabla_horizontal_df.sum(axis=1)
 
+    # Reordenar columnas si lo deseas (opcional)
+    cols = ["Total"] + tabla_horizontal.columns.tolist()
+    tabla_horizontal_df = tabla_horizontal_df[cols[1:] + ["Total"]]
+
+    # Estilo personalizado
     def estilo_tabla(styler):
-        # 1. Pintar la celda "Total Comprado"
-        styler.applymap_index(lambda v: "background-color: #4F079C; color: white", axis=0)
-
-        # 2. Pintar encabezados de columnas
+        # Pintar encabezado de columnas
         styler.set_table_styles([
             {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
         ])
+        
+        # Pintar solo la primera celda: fila 0, columna 0
+        styler.apply(lambda df: df.style.where(df.index != "Total Comprado", 
+                                            [["background-color: #4F079C; color: white"] + [""]*(df.shape[1]-1)]), axis=None)
+        
+        return styler.format("${:,.2f}")  # Formato moneda sin convertir a texto
 
-        return styler
-
-    # Mostrar tabla con estilo
+    # Mostrar la tabla
     st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
