@@ -164,32 +164,26 @@ if opcion == "Resumen General":
     # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
     st.markdown("### Total comprado por mes")
 
-    # Agrupar y pivotear para una sola fila
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
-    tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
+    tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T  # Transponer para tener una fila
     tabla_horizontal_df.index = ["Total Comprado"]
-    tabla_horizontal_df.insert(0, "Descripción", tabla_horizontal_df.index)
-    tabla_horizontal_df.reset_index(drop=True, inplace=True)
 
-    # 2. Calcular columna Total (sin formatear aún)
-    meses_cols = tabla_horizontal_df.columns[1:]
-    tabla_horizontal_df["Total"] = tabla_horizontal_df[meses_cols].sum(axis=1)
+    # Formato de moneda sin convertir a string aún (para control del estilo)
+    tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
-    # 3. Aplicar estilo con color y formato moneda
+    # Crear estilo personalizado
     def estilo_tabla(styler):
-        # Colorear columnas por mes
-        color_base = "#F0E5FF"
-        color_total = "#D2B4FF"
-        mes_colores = {col: f"background-color: {color_base}" for col in meses_cols}
-        mes_colores["Total"] = f"background-color: {color_total}"
-        
-        return styler.format("${:,.2f}", subset=meses_cols.tolist() + ["Total"]).set_properties(**{
-            "font-weight": "bold",
-            "text-align": "right"
-        }).apply(lambda _: [mes_colores.get(c, "") for c in styler.columns], axis=1)
+        # Color a la celda "Total Comprado"
+        styler.apply(lambda df: [["background-color: #4F079C; color: white"] + [""] * (df.shape[1] - 1)], axis=1)
 
-    # 4. Mostrar tabla con estilos
-    st.markdown("### Total comprado por mes")
+        # Color al encabezado
+        styler.set_table_styles([
+            {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
+        ])
+
+        return styler
+
+    # Mostrar tabla con estilo
     st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
