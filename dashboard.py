@@ -164,50 +164,35 @@ if opcion == "Resumen General":
     # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
     st.markdown("### Total comprado por mes")
 
-    # Definir función de estilo justo antes de usarla
-    def estilo_tabla(df):
-        color_encabezado = '#500570'  # morado oscuro
-        color_letra_encabezado = 'black'
-        color_primera_columna = '#6F079C'  # morado más oscuro
-        color_letra_primera_columna = 'white'
-
-        return (df.style
-                .set_table_styles([
-                    {'selector': 'thead th',
-                    'props': [('background-color', color_encabezado),
-                            ('color', color_letra_encabezado),
-                            ('font-weight', 'bold')]},
-                    {'selector': 'tbody th',
-                    'props': [('background-color', color_primera_columna),
-                            ('color', color_letra_primera_columna),
-                            ('font-weight', 'bold')]}
-                ])
-                )
-
     # Agrupar y pivotear para una sola fila
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T  # Transponer para tener una fila
     tabla_horizontal_df.index = ["Total Comprado"]
-    tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
-    # Mostrar la tabla con el estilo personalizado
-        # Crear configuración del grid
+    # Asegurar que "Total Comprado" quede como columna si quieres verla como parte de los datos
+    tabla_horizontal_df.insert(0, "Descripción", tabla_horizontal_df.index)
+    tabla_horizontal_df.reset_index(drop=True, inplace=True)
+
+    # Formatear como dinero
+    for col in tabla_horizontal_df.columns[1:]:
+        tabla_horizontal_df[col] = tabla_horizontal_df[col].apply(lambda x: f"${x:,.2f}")
+
+    # Configurar AgGrid
     gb = GridOptionsBuilder.from_dataframe(tabla_horizontal_df)
     gb.configure_default_column(resizable=True, filter=True, sortable=True)
 
-    # Fijar primera columna y darle estilo
-    gb.configure_column(tabla_horizontal_df.columns[0], pinned="left", 
-        cellStyle={'color': 'white', 'backgroundColor': '#6F079C'})
+    # Fijar la columna "Descripción"
+    gb.configure_column("Descripción", pinned="left", cellStyle={'color': 'white', 'backgroundColor': '#6F079C'})
 
+    # Opcional: puedes dar estilo a otras columnas si quieres también
     gridOptions = gb.build()
 
-    # Mostrar con AgGrid
     AgGrid(
         tabla_horizontal_df,
         gridOptions=gridOptions,
-        height=300,
-        fit_columns_on_grid_load=True,
-        theme="streamlit",  # Puedes probar también "material", "alpine", etc.
+        height=200,  # Puedes hacer dinámico si hay más filas
+        fit_columns_on_grid_load=False,  # ⬅️ Esto permite scroll horizontal si hay muchas columnas
+        theme="streamlit",
         enable_enterprise_modules=False
     )
 
