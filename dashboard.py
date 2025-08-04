@@ -204,8 +204,9 @@ if opcion == "Resumen General":
     for col in meses_cols.tolist() + ["Total"]:
         gb.configure_column(
             col,
-            #minWidth=120,
-            flex=1
+            type=["numericColumn"],
+            valueFormatter="x.toLocaleString('en-US', {style: 'currency', currency: 'USD'})",
+            autoWidth=True
         )
 
     # Calcular altura dinámica
