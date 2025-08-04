@@ -163,7 +163,6 @@ if opcion == "Resumen General":
   
     # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
     st.markdown("### Total comprado por mes")
-
     # Agrupar y pivotear
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
@@ -172,27 +171,29 @@ if opcion == "Resumen General":
     # Calcular Total
     tabla_horizontal_df["Total"] = tabla_horizontal_df.sum(axis=1)
 
+    # Resetear índice para convertirlo en columna
+    tabla_horizontal_df.reset_index(inplace=True)
+    tabla_horizontal_df.rename(columns={"index": "Descripción"}, inplace=True)
+
     # Reordenar columnas (opcional)
-    cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
+    cols = ["Descripción"] + [col for col in tabla_horizontal_df.columns if col not in ["Descripción"]]
     tabla_horizontal_df = tabla_horizontal_df[cols]
 
     # Estilo personalizado
     def estilo_tabla(styler):
-        # Encabezado: morado oscuro
+        # Pintar encabezado
         styler.set_table_styles([
             {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
         ])
         
-        # Pintar celda "Total Comprado" (posición [0,0])
-        styler.apply(lambda df: pd.DataFrame(
+        # Pintar la primera celda (fila 0, columna 'Descripción')
+        return styler.apply(lambda df: pd.DataFrame(
             [["background-color: #4F079C; color: white" if i == 0 and j == 0 else "" 
-            for j in range(df.shape[1])] 
+            for j in range(df.shape[1])]
             for i in range(df.shape[0])],
             index=df.index,
             columns=df.columns
-        ), axis=None)
-        
-        return styler.format("${:,.2f}")  # Formatear todo como moneda
+        ), axis=None).format("${:,.2f}", subset=tabla_horizontal_df.columns[1:])  # formato solo a montos
 
     # Mostrar tabla
     st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
