@@ -166,32 +166,32 @@ if opcion == "Resumen General":
 
     # Agrupar y pivotear para una sola fila
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
-    tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T  # Transponer para tener una fila
+    tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
     tabla_horizontal_df.index = ["Total Comprado"]
 
-    # Asegurar que "Total Comprado" quede como columna si quieres verla como parte de los datos
+    # Agregar columna para que no se pierda el nombre
     tabla_horizontal_df.insert(0, "Descripción", tabla_horizontal_df.index)
     tabla_horizontal_df.reset_index(drop=True, inplace=True)
 
-    # Formatear como dinero
+    # Formatear columnas como texto con formato de moneda
     for col in tabla_horizontal_df.columns[1:]:
         tabla_horizontal_df[col] = tabla_horizontal_df[col].apply(lambda x: f"${x:,.2f}")
 
     # Configurar AgGrid
     gb = GridOptionsBuilder.from_dataframe(tabla_horizontal_df)
     gb.configure_default_column(resizable=True, filter=True, sortable=True)
-
-    # Fijar la columna "Descripción"
     gb.configure_column("Descripción", pinned="left", cellStyle={'color': 'white', 'backgroundColor': '#6F079C'})
 
-    # Opcional: puedes dar estilo a otras columnas si quieres también
     gridOptions = gb.build()
+
+    # Calcular altura mínima dinámica: 1 fila + encabezado = 35px + 35px
+    altura_dinamica = 35 * (len(tabla_horizontal_df) + 1)
 
     AgGrid(
         tabla_horizontal_df,
         gridOptions=gridOptions,
-        height=200,  # Puedes hacer dinámico si hay más filas
-        fit_columns_on_grid_load=False,  # ⬅️ Esto permite scroll horizontal si hay muchas columnas
+        height=altura_dinamica,
+        fit_columns_on_grid_load=False,
         theme="streamlit",
         enable_enterprise_modules=False
     )
