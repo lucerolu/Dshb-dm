@@ -693,6 +693,10 @@ elif opcion == "Compra por Cuenta":
     tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
     tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
+    # ✅ Hacer que la columna de cuenta_sucursal sea visible y con nombre 
+    tabla_compras = tabla_compras.reset_index()
+    tabla_compras = tabla_compras.rename(columns={"cuenta_sucursal": "Cuenta - Sucursal"})
+
     # Mostrar tabla con formato
     tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
     st.dataframe(tabla_compras_formateada, use_container_width=True)
@@ -719,7 +723,9 @@ elif opcion == "Compra por Cuenta":
         df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["fecha"]).dt.to_period("M").dt.to_timestamp()
 
     # Crear columna mes_año en formato 'Jul 2024'
-    df_divisiones["mes_anio"] = df_divisiones["mes_dt"].dt.strftime('%b %Y').str.capitalize()
+    df_divisiones["mes_abrev_en"] = df_divisiones["mes_dt"].dt.strftime('%b')
+    df_divisiones["mes_abrev_es"] = df_divisiones["mes_abrev_en"].map(meses_es)
+    df_divisiones["mes_anio"] = df_divisiones["mes_abrev_es"] + " " + df_divisiones["mes_dt"].dt.year.astype(str)
 
     # Crear columna cuenta_sucursal si no existe
     if "cuenta_sucursal" not in df_divisiones.columns:
