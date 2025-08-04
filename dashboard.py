@@ -183,8 +183,8 @@ if opcion == "Resumen General":
     meses_cols = tabla_horizontal_df.columns[1:-1]
 
     # Formatear columnas como moneda
-    for col in meses_cols.tolist() + ["Total"]:
-        tabla_horizontal_df[col] = tabla_horizontal_df[col].apply(lambda x: f"${x:,.2f}")
+    #for col in meses_cols.tolist() + ["Total"]:
+    #    tabla_horizontal_df[col] = tabla_horizontal_df[col].apply(lambda x: f"${x:,.2f}")
 
     # Configurar AgGrid
     gb = GridOptionsBuilder.from_dataframe(tabla_horizontal_df)
@@ -220,7 +220,7 @@ if opcion == "Resumen General":
         tabla_horizontal_df,
         gridOptions=gb.build(),
         height=altura_dinamica,
-        fit_columns_on_grid_load=False,
+        fit_columns_on_grid_load=True,
         theme="streamlit",
         enable_enterprise_modules=False,
         allow_unsafe_jscode=True
