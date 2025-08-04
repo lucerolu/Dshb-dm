@@ -163,6 +163,7 @@ if opcion == "Resumen General":
   
     # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
     st.markdown("### Total comprado por mes")
+
     # Agrupar y pivotear
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
@@ -176,30 +177,27 @@ if opcion == "Resumen General":
     tabla_horizontal_df.rename(columns={"index": "Descripción"}, inplace=True)
 
     # Reordenar columnas (opcional)
-    cols = ["Descripción"] + [col for col in tabla_horizontal_df.columns if col not in ["Descripción"]]
+    cols = ["Descripción"] + [col for col in tabla_horizontal_df.columns if col != "Descripción"]
     tabla_horizontal_df = tabla_horizontal_df[cols]
 
-    # Estilo personalizado
     def estilo_tabla(styler):
         # Encabezado morado oscuro
         styler.set_table_styles([
             {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
         ])
         
-        # Pintar toda la fila 'Total Comprado'
         def pintar_fila(df):
-            # Crear dataframe con colores vacíos
             colores = pd.DataFrame("", index=df.index, columns=df.columns)
-            # Pintar toda la fila 'Total Comprado'
-            colores.loc["Total Comprado", :] = "background-color: #4F079C; color: white"
+            mask = df["Descripción"] == "Total Comprado"
+            colores.loc[mask, :] = "background-color: #4F079C; color: white"
             return colores
         
-        styler.apply(pintar_fila, axis=None)
+        styler = styler.apply(pintar_fila, axis=None)
         
-        return styler.format("${:,.2f}")
+        return styler.format("${:,.2f}", subset=[c for c in tabla_horizontal_df.columns if c != "Descripción"])
 
-    # Mostrar tabla
     st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
+
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
     #st.markdown("### Gráfica de Total comprado por mes")
