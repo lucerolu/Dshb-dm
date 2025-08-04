@@ -171,12 +171,11 @@ if opcion == "Resumen General":
     # Formato de moneda sin convertir a string aún (para control del estilo)
     tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
-    # Crear estilo personalizado
     def estilo_tabla(styler):
-        # Color a la celda "Total Comprado"
-        styler.apply(lambda df: [["background-color: #4F079C; color: white"] + [""] * (df.shape[1] - 1)], axis=1)
+        # 1. Pintar la celda "Total Comprado"
+        styler.applymap_index(lambda v: "background-color: #4F079C; color: white", axis=0)
 
-        # Color al encabezado
+        # 2. Pintar encabezados de columnas
         styler.set_table_styles([
             {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
         ])
