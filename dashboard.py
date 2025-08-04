@@ -173,18 +173,16 @@ if opcion == "Resumen General":
     tabla_horizontal_df.insert(0, "Descripción", tabla_horizontal_df.index)
     tabla_horizontal_df.reset_index(drop=True, inplace=True)
 
-    # Agregar columna "Total" con suma de todos los meses
-    # Sumamos desde la columna 1 (primer mes) hasta la última
-    # Agregar columna Total primero (sin formatear)
-    tabla_horizontal_df["Total"] = tabla_horizontal_df.iloc[:, 1:].sum(axis=1)
-    # OJO: aquí asumimos que todas las columnas excepto "Descripción" son meses
-    meses_cols = tabla_horizontal_df.columns[1:]  # desde primer mes hasta último
-    tabla_horizontal_df["Total"] = tabla_horizontal_df[meses_cols].apply(
-        lambda fila: fila.astype(str).str.replace("[$,]", "", regex=True).astype(float).sum(),
-        axis=1
-    )
+    # Identificar columnas de meses (todas excepto 'Descripción')
+    meses_cols = tabla_horizontal_df.columns[1:]
 
-    # Formatear columnas como texto con formato de moneda (incluyendo Total)
+    # Calcular Total antes de formatear
+    tabla_horizontal_df["Total"] = tabla_horizontal_df[meses_cols].sum(axis=1)
+
+    # Actualizar meses_cols para que incluya solo columnas numéricas (sin 'Descripción' ni 'Total' ya formateado)
+    meses_cols = tabla_horizontal_df.columns[1:-1]
+
+    # Formatear columnas como moneda
     for col in meses_cols.tolist() + ["Total"]:
         tabla_horizontal_df[col] = tabla_horizontal_df[col].apply(lambda x: f"${x:,.2f}")
 
@@ -192,27 +190,28 @@ if opcion == "Resumen General":
     gb = GridOptionsBuilder.from_dataframe(tabla_horizontal_df)
     gb.configure_default_column(resizable=True, filter=True, sortable=True)
 
-    # Fijar la primera columna (Descripción) a la izquierda y con colores
+    # Fijar la columna de descripción
     gb.configure_column(
         "Descripción",
         pinned="left",
         cellStyle={'color': 'white', 'backgroundColor': '#6F079C'},
         minWidth=180,
         maxWidth=300,
-        flex=1  # fijo ancho
+        flex=1
     )
 
-    # Configurar todas las demás columnas (meses + Total) para distribuirse proporcionalmente
+    # Distribuir columnas de manera proporcional
     for col in meses_cols.tolist() + ["Total"]:
         gb.configure_column(
             col,
             minWidth=120,
-            #maxWidth=250,
-            flex=1  # todas con igual peso para distribuir espacio
+            flex=1
         )
 
+    # Calcular altura dinámica
     altura_dinamica = 35 * (len(tabla_horizontal_df) + 1) + 10
 
+    # Mostrar tabla
     AgGrid(
         tabla_horizontal_df,
         gridOptions=gb.build(),
@@ -222,6 +221,7 @@ if opcion == "Resumen General":
         enable_enterprise_modules=False,
         allow_unsafe_jscode=True
     )
+
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
     #st.markdown("### Gráfica de Total comprado por mes")
