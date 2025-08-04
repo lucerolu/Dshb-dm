@@ -743,7 +743,7 @@ elif opcion == "Compra por Cuenta":
     df_grafico = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
     # Definir el orden de los meses, asegurando que estén ordenados cronológicamente y en español
-    orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
+    orden_meses = [m for m in df_divisiones.sort_values("mes_dt")["mes_anio"].unique() if pd.notna(m)]
 
     # Obtener lista de cuentas únicas
     cuentas = df_grafico["cuenta_sucursal"].unique()
@@ -818,7 +818,7 @@ elif opcion == "Compra por Cuenta":
         df_barras = df_divisiones.groupby(["mes_nombre", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
         # Obtener todas las cuentas y meses para asegurar combinaciones completas
-        orden_meses = [mes for mes in orden_meses_desc if mes is not None and pd.notna(mes)]
+        orden_meses = [m for m in orden_meses_desc if pd.notna(m)]
         todas_cuentas = df_divisiones["cuenta_sucursal"].unique()
 
         # Crear todas las combinaciones posibles mes-cuenta
