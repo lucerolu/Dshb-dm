@@ -173,8 +173,16 @@ if opcion == "Resumen General":
     tabla_horizontal_df.insert(0, "Descripción", tabla_horizontal_df.index)
     tabla_horizontal_df.reset_index(drop=True, inplace=True)
 
-    # Formatear columnas como texto con formato de moneda
-    for col in tabla_horizontal_df.columns[1:]:
+    # Agregar columna "Total" con suma de todos los meses
+    # Sumamos desde la columna 1 (primer mes) hasta la última
+    # OJO: aquí asumimos que todas las columnas excepto "Descripción" son meses
+    meses_cols = tabla_horizontal_df.columns[1:]  # desde primer mes hasta último
+    tabla_horizontal_df["Total"] = tabla_horizontal_df[meses_cols].apply(
+        lambda fila: fila.str.replace("[$,]", "", regex=True).astype(float).sum(), axis=1
+    )
+
+    # Formatear columnas como texto con formato de moneda (incluyendo Total)
+    for col in meses_cols.tolist() + ["Total"]:
         tabla_horizontal_df[col] = tabla_horizontal_df[col].apply(lambda x: f"${x:,.2f}")
 
     # Configurar AgGrid
@@ -188,16 +196,16 @@ if opcion == "Resumen General":
         cellStyle={'color': 'white', 'backgroundColor': '#6F079C'},
         minWidth=180,
         maxWidth=300,
-        flex=0  # No se estira, fijo ancho dentro de min/max
+        flex=0  # fijo ancho
     )
 
-    # Para las otras columnas, que se distribuyan proporcionalmente
-    for col in tabla_horizontal_df.columns[1:]:
+    # Configurar todas las demás columnas (meses + Total) para distribuirse proporcionalmente
+    for col in meses_cols.tolist() + ["Total"]:
         gb.configure_column(
             col,
             minWidth=100,
             maxWidth=250,
-            flex=1  # Todas con igual "peso" para estirarse proporcionalmente
+            flex=1  # todas con igual peso para distribuir espacio
         )
 
     altura_dinamica = 35 * (len(tabla_horizontal_df) + 1) + 10
@@ -211,8 +219,6 @@ if opcion == "Resumen General":
         enable_enterprise_modules=False,
         allow_unsafe_jscode=True
     )
-
-    
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
     #st.markdown("### Gráfica de Total comprado por mes")
