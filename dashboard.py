@@ -163,13 +163,34 @@ if opcion == "Resumen General":
     # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
     st.markdown("### Total comprado por mes")
 
+    # Definir función de estilo justo antes de usarla
+    def estilo_tabla(df):
+        color_encabezado = '#500570'  # morado oscuro
+        color_letra_encabezado = 'black'
+        color_primera_columna = '#6F079C'  # morado más oscuro
+        color_letra_primera_columna = 'white'
+
+        return (df.style
+                .set_table_styles([
+                    {'selector': 'thead th',
+                    'props': [('background-color', color_encabezado),
+                            ('color', color_letra_encabezado),
+                            ('font-weight', 'bold')]},
+                    {'selector': 'tbody th',
+                    'props': [('background-color', color_primera_columna),
+                            ('color', color_letra_primera_columna),
+                            ('font-weight', 'bold')]}
+                ])
+                )
+
     # Agrupar y pivotear para una sola fila
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T  # Transponer para tener una fila
     tabla_horizontal_df.index = ["Total Comprado"]
     tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
-    st.dataframe(tabla_horizontal_df, use_container_width=True)
+    # Mostrar la tabla con el estilo personalizado
+    st.dataframe(estilo_tabla(tabla_horizontal_df), use_container_width=True)
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
     #st.markdown("### Gráfica de Total comprado por mes")
