@@ -164,31 +164,37 @@ if opcion == "Resumen General":
     # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
     st.markdown("### Total comprado por mes")
 
+    # Agrupar y pivotear
     tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
     tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
     tabla_horizontal_df.index = ["Total Comprado"]
 
-    # Calcular columna "Total" como suma de meses
+    # Calcular Total
     tabla_horizontal_df["Total"] = tabla_horizontal_df.sum(axis=1)
 
-    # Reordenar columnas si lo deseas (opcional)
-    cols = ["Total"] + tabla_horizontal.columns.tolist()
-    tabla_horizontal_df = tabla_horizontal_df[cols[1:] + ["Total"]]
+    # Reordenar columnas (opcional)
+    cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
+    tabla_horizontal_df = tabla_horizontal_df[cols]
 
     # Estilo personalizado
     def estilo_tabla(styler):
-        # Pintar encabezado de columnas
+        # Encabezado: morado oscuro
         styler.set_table_styles([
             {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
         ])
         
-        # Pintar solo la primera celda: fila 0, columna 0
-        styler.apply(lambda df: df.style.where(df.index != "Total Comprado", 
-                                            [["background-color: #4F079C; color: white"] + [""]*(df.shape[1]-1)]), axis=None)
+        # Pintar celda "Total Comprado" (posición [0,0])
+        styler.apply(lambda df: pd.DataFrame(
+            [["background-color: #4F079C; color: white" if i == 0 and j == 0 else "" 
+            for j in range(df.shape[1])] 
+            for i in range(df.shape[0])],
+            index=df.index,
+            columns=df.columns
+        ), axis=None)
         
-        return styler.format("${:,.2f}")  # Formato moneda sin convertir a texto
+        return styler.format("${:,.2f}")  # Formatear todo como moneda
 
-    # Mostrar la tabla
+    # Mostrar tabla
     st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
