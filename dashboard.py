@@ -662,123 +662,49 @@ elif opcion == "Compra por Cuenta":
     #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
     st.title("Compra mensual por Cuenta (2025)")
 
-    # Agrupar monto total por cuenta y sucursal
+    # Agrupar monto total por cuenta y sucursal (no se usa directamente aquí pero puede servir)
     df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
 
     # Crear cuenta_sucursal en df
     df["cuenta_sucursal"] = df["codigo_normalizado"] + " - " + df["sucursal"]
 
     # Crear mes_anio y orden_mes en df
-    df["mes_dt"] = pd.to_datetime(df["mes"])
-    df["mes_nombre"] = df["mes_dt"].dt.month_name().map(meses_es)
-    df["mes_anio"] = df["mes_nombre"] + " " + df["mes_dt"].dt.year.astype(str)
+    df["mes_anio"] = df["mes_dt"].dt.strftime('%b %Y').str.capitalize()
     df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
-    # Obtener todos los meses únicos ordenados
-    orden_columnas = (
-        df.drop_duplicates("mes_anio")
-        .sort_values("orden_mes")["mes_anio"]
-        .tolist()
-    )
-
-    # Obtener todas las cuentas únicas
-    todas_cuentas = df["cuenta_sucursal"].unique()
-
-    # Crear todas las combinaciones posibles mes-cuenta para asegurar filas completas
-    idx = pd.MultiIndex.from_product([todas_cuentas, orden_columnas], names=["cuenta_sucursal", "mes_anio"])
-
-    # Crear tabla pivote sin fill_value
+    # Crear tabla pivote con fill_value para completar con ceros
     tabla_compras = df.pivot_table(
         index="cuenta_sucursal",
         columns="mes_anio",
         values="monto",
-        aggfunc="sum"
+        aggfunc="sum",
+        fill_value=0
     )
 
-    # Reindexar para completar meses faltantes con 0
-    tabla_compras = tabla_compras.reindex(index=todas_cuentas, columns=orden_columnas, fill_value=0)
+    # Ordenar columnas según orden_mes
+    orden_columnas = df.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
+    tabla_compras = tabla_compras[orden_columnas]
 
     # Agregar totales
     tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
     tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
-    # Resetear índice y renombrar la columna de cuenta
-    tabla_compras = tabla_compras.reset_index()
-    tabla_compras = tabla_compras.rename(columns={"cuenta_sucursal": "Cuenta - Sucursal"})
+    # Cambiar nombre del índice para que se vea mejor el encabezado
+    tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
 
-    # Formatear columnas numéricas como moneda
-    for col in tabla_compras.select_dtypes(include='number').columns:
-        tabla_compras[col] = tabla_compras[col].apply(lambda x: f"${x:,.2f}")
+    # Formatear números con comas y dos decimales
+    tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
 
-    # Convertir a HTML (sin índice)
-    tabla_html = tabla_compras.to_html(index=False, escape=False)
+    # Mostrar tabla con scroll y encabezado fijo (st.dataframe lo maneja)
+    st.dataframe(tabla_compras_formateada, use_container_width=True)
 
-    # Mostrar HTML con encabezados y primera columna fijos
-    st.markdown("""
-        <style>
-            .scroll-container {
-                overflow-x: auto;
-                max-height: 600px;
-                border: 1px solid #ddd;
-            }
-            .scroll-container table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            .scroll-container th, .scroll-container td {
-                border: 1px solid #ccc;
-                padding: 8px;
-                text-align: left;
-                white-space: nowrap;
-                min-width: 120px;
-            }
-            .scroll-container thead th {
-                position: sticky;
-                top: 0;
-                background-color: #f1f1f1;
-                z-index: 2;
-            }
-            .scroll-container td:first-child,
-            .scroll-container th:first-child {
-                position: sticky;
-                left: 0;
-                background-color: #ffffff;
-                z-index: 3;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown(f'<div class="scroll-container">{tabla_html}</div>', unsafe_allow_html=True)
-
-    # Descargar Excel (sin formato visual)
+    # Crear archivo Excel en memoria para descarga (sin formateo visual, solo valores)
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        tabla_compras_excel = tabla_compras.copy()
-        for col in tabla_compras_excel.columns:
-            if tabla_compras_excel[col].dtype == object and tabla_compras_excel[col].astype(str).str.startswith("$").any():
-                tabla_compras_excel[col] = tabla_compras_excel[col].replace('[\$,]', '', regex=True).astype(float)
-        tabla_compras_excel.to_excel(writer, sheet_name="Compras", index=False)
-
+        tabla_compras.to_excel(writer, sheet_name='Compras')
     processed_data = output.getvalue()
 
-    st.download_button(
-        label="📥 Descargar tabla en Excel",
-        data=processed_data,
-        file_name="compras_por_mes_por_cuenta.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    # ---------- Descargar Excel (sin formato visual, pero con datos originales) ----------
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        tabla_compras_excel = tabla_compras.copy()
-        for col in tabla_compras_excel.columns:
-            if tabla_compras_excel[col].dtype == object and tabla_compras_excel[col].astype(str).str.startswith("$").any():
-                tabla_compras_excel[col] = tabla_compras_excel[col].replace('[\$,]', '', regex=True).astype(float)
-        tabla_compras_excel.to_excel(writer, sheet_name="Compras", index=False)
-    processed_data = output.getvalue()
-
+    # Botón para descargar Excel
     st.download_button(
         label="📥 Descargar tabla en Excel",
         data=processed_data,
@@ -786,7 +712,6 @@ elif opcion == "Compra por Cuenta":
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    st.markdown("<br><br>", unsafe_allow_html=True)
 
     #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
     # Asegúrate de que la columna mes_dt existe
