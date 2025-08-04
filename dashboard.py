@@ -211,6 +211,20 @@ if opcion == "Resumen General":
     # Calcular altura dinámica
     altura_dinamica = 35 * (len(tabla_horizontal_df) + 1) + 10
 
+
+    # 🔧 --- INICIO: CSS para scroll horizontal en móvil ---
+    st.markdown("""
+        <style>
+            .ag-root-wrapper {
+                overflow-x: auto !important;
+            }
+            .ag-theme-streamlit {
+                min-width: 900px !important;  /* Puedes ajustar según cuántas columnas tengas */
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    # 🔧 --- FIN: CSS ---
+
     # Mostrar tabla
     AgGrid(
         tabla_horizontal_df,
