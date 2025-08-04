@@ -17,6 +17,7 @@ import locale
 import io
 import requests
 import itertools
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 
 #==========================================================================================================
@@ -190,7 +191,25 @@ if opcion == "Resumen General":
     tabla_horizontal_df = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
     # Mostrar la tabla con el estilo personalizado
-    st.dataframe(estilo_tabla(tabla_horizontal_df), use_container_width=True)
+        # Crear configuración del grid
+    gb = GridOptionsBuilder.from_dataframe(tabla_horizontal_df)
+    gb.configure_default_column(resizable=True, filter=True, sortable=True)
+
+    # Fijar primera columna y darle estilo
+    gb.configure_column(tabla_horizontal_df.columns[0], pinned="left", 
+        cellStyle={'color': 'white', 'backgroundColor': '#6F079C'})
+
+    gridOptions = gb.build()
+
+    # Mostrar con AgGrid
+    AgGrid(
+        tabla_horizontal_df,
+        gridOptions=gridOptions,
+        height=300,
+        fit_columns_on_grid_load=True,
+        theme="streamlit",  # Puedes probar también "material", "alpine", etc.
+        enable_enterprise_modules=False
+    )
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
     #st.markdown("### Gráfica de Total comprado por mes")
