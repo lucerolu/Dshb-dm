@@ -705,15 +705,24 @@ elif opcion == "Compra por Cuenta":
     tabla_compras = tabla_compras.reset_index()
     tabla_compras = tabla_compras.rename(columns={"cuenta_sucursal": "Cuenta - Sucursal"})
 
-    # Mostrar tabla con formato
-    columnas_numericas = tabla_compras.select_dtypes(include='number').columns
-    tabla_compras_formateada = tabla_compras.style.format("{:,.2f}", subset=columnas_numericas)
-    st.data_editor(tabla_compras_formateada, use_container_width=True, disabled=True)
+    # Formatear los valores como texto con comas (sin usar .style para evitar índice numérico)
+    for col in tabla_compras.select_dtypes(include='number').columns:
+        tabla_compras[col] = tabla_compras[col].apply(lambda x: f"${x:,.2f}")
 
-    # Descargar Excel
+    # Mostrar tabla sin índice visual
+    st.dataframe(tabla_compras, use_container_width=True)
+
+    # Descargar Excel (sin formato visual, pero con datos originales)
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        tabla_compras.to_excel(writer, sheet_name="Compras", index=False)
+        # Escribe la versión sin formato de string
+        tabla_compras_excel = tabla_compras.copy()
+        for col in tabla_compras_excel.columns:
+            # Convertir string de dinero a float para que no se vea como texto en Excel
+            if tabla_compras_excel[col].dtype == object and tabla_compras_excel[col].str.startswith("$").any():
+                tabla_compras_excel[col] = tabla_compras_excel[col].replace('[\$,]', '', regex=True).astype(float)
+        tabla_compras_excel.to_excel(writer, sheet_name="Compras", index=False)
+
     processed_data = output.getvalue()
 
     st.download_button(
@@ -723,7 +732,6 @@ elif opcion == "Compra por Cuenta":
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     st.markdown("<br><br>", unsafe_allow_html=True)
-
 
     #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
     # Asegúrate de que la columna mes_dt existe
