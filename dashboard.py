@@ -1262,7 +1262,7 @@ elif opcion == "Vista por Sucursal":
         sucursal = sucursales_seleccionadas[0]
         df_suc = df[df["sucursal"] == sucursal].copy()
         df_suc = df_suc.groupby(["mes_nombre", "mes_dt"], as_index=False).agg({"monto": "sum"})
-        df_suc = df_suc.sort_values("mes_dt")  # asegurar orden
+        df_suc = df_suc.sort_values("mes_dt", ascending=False)  # orden descendente
         df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
 
         fig_barras = px.bar(
@@ -1278,7 +1278,7 @@ elif opcion == "Vista por Sucursal":
         st.plotly_chart(fig_barras, use_container_width=True)
     else:
         st.markdown("### Compras por Sucursal, mes a mes")
-        for mes in orden_meses:
+        for mes in orden_meses_desc:  # <- aquí el cambio para orden descendente
             df_mes = df[df["mes_nombre"] == mes]
             df_mes = df_mes[df_mes["sucursal"].isin(sucursales_seleccionadas)].copy()
             df_mes = df_mes.groupby("sucursal", as_index=False).agg({"monto": "sum"})
@@ -1287,7 +1287,7 @@ elif opcion == "Vista por Sucursal":
                 continue
             df_mes["porcentaje"] = df_mes["monto"] / total_mes * 100
             df_mes["texto"] = df_mes.apply(lambda row: f"${row['monto']:,.0f}<br>({row['porcentaje']:.1f}%)", axis=1)
-            df_mes = df_mes.sort_values("monto", ascending=False)  # 👈 ordenar por monto de mayor a menor
+            df_mes = df_mes.sort_values("monto", ascending=False)
             df_mes["sucursal"] = pd.Categorical(df_mes["sucursal"], categories=df_mes["sucursal"], ordered=True)
 
             fig_mes = px.bar(
@@ -1302,6 +1302,7 @@ elif opcion == "Vista por Sucursal":
             fig_mes.update_traces(textposition='inside', texttemplate='%{text}')
             fig_mes.update_layout(showlegend=False)
             st.plotly_chart(fig_mes, use_container_width=True, key=f"mes_{mes}")
+
 
 
 # ==========================================================================================================
