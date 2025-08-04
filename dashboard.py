@@ -178,7 +178,8 @@ if opcion == "Resumen General":
     # OJO: aquí asumimos que todas las columnas excepto "Descripción" son meses
     meses_cols = tabla_horizontal_df.columns[1:]  # desde primer mes hasta último
     tabla_horizontal_df["Total"] = tabla_horizontal_df[meses_cols].apply(
-        lambda fila: fila.str.replace("[$,]", "", regex=True).astype(float).sum(), axis=1
+        lambda fila: fila.astype(str).str.replace("[$,]", "", regex=True).astype(float).sum(),
+        axis=1
     )
 
     # Formatear columnas como texto con formato de moneda (incluyendo Total)
