@@ -78,7 +78,16 @@ if not df.empty:
     df["mes_nombre"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
     df["mes_period"] = df["mes_dt"].dt.to_period("M")
     df = df.sort_values("mes_dt")
-    orden_meses = df["mes_nombre"].drop_duplicates().tolist()
+    # Orden ascendente (para gráficas que van de enero a diciembre)
+    orden_meses_asc = (
+        df.drop_duplicates(subset="mes_period")
+        .sort_values("mes_period", ascending=True)["mes_nombre"]
+        .tolist()
+    )
+
+    # Orden descendente (para gráficas que van de mes más reciente al más antiguo)
+    orden_meses_desc = orden_meses_asc[::-1]
+    orden_meses = orden_meses_asc
 
     # ------------------------------------------ DIVISIONES ----------------------------------------------------
     divisiones = config["divisiones"]
@@ -658,7 +667,9 @@ elif opcion == "Compra por Cuenta":
     df["cuenta_sucursal"] = df["codigo_normalizado"] + " - " + df["sucursal"]
 
     # Crear mes_anio y orden_mes en df
-    df["mes_anio"] = df["mes_dt"].dt.strftime('%b %Y').str.capitalize()
+    df["mes_dt"] = pd.to_datetime(df["mes"])
+    df["mes_nombre"] = df["mes_dt"].dt.month_name().map(meses_es)
+    df["mes_anio"] = df["mes_nombre"] + " " + df["mes_dt"].dt.year.astype(str)
     df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
     # Crear tabla pivote
@@ -670,29 +681,37 @@ elif opcion == "Compra por Cuenta":
         fill_value=0
     )
 
-    # Ordenar columnas (meses)
-    orden_columnas = df.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
+    # Ordenar columnas por fecha real
+    orden_columnas = (
+        df.drop_duplicates("mes_anio")
+        .sort_values("orden_mes")["mes_anio"]
+        .tolist()
+    )
     tabla_compras = tabla_compras[orden_columnas]
+
+    # Agregar totales
     tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
     tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
-    # Mostrar con Streamlit (usa st.dataframe o st.table)
+    # Mostrar tabla con formato
     tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
-    st.dataframe(tabla_compras_formateada)
+    st.dataframe(tabla_compras_formateada, use_container_width=True)
 
-    # 🔽 CREAR ARCHIVO EXCEL EN MEMORIA
+    # 🔽 Descargar Excel
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        tabla_compras.to_excel(writer, index=True, sheet_name='Compras')
+        tabla_compras.to_excel(writer, sheet_name="Compras")
     processed_data = output.getvalue()
 
-    # 🟢 BOTÓN DE DESCARGA
+    # 🟢 Botón de descarga
     st.download_button(
         label="📥 Descargar tabla en Excel",
         data=processed_data,
         file_name="compras_por_mes_por_cuenta.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
 
     #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
     # Asegúrate de que la columna mes_dt existe
@@ -765,23 +784,28 @@ elif opcion == "Compra por Cuenta":
 
         df_divisiones["sucursal_nombre"] = df_divisiones["cuenta_sucursal"].str.split(" - ").str[-1]
 
-        df_barras = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
+        # Crear columna mes_nombre en español
+        df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
 
+        # Agrupar
+        df_barras = df_divisiones.groupby(["mes_nombre", "cuenta_sucursal"], as_index=False)["monto"].sum()
+
+        # Agregar sucursal
         df_sucursales = df_divisiones.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
         df_barras = df_barras.merge(df_sucursales, on="cuenta_sucursal", how="left")
 
-        orden_meses = df_divisiones.sort_values("mes_dt")["mes_anio"].unique()
-        df_barras["mes_anio"] = pd.Categorical(df_barras["mes_anio"], categories=orden_meses, ordered=True)
+        # Ordenar meses (descendente: más reciente al más antiguo)
+        orden_meses = orden_meses_desc
+        df_barras["mes_nombre"] = pd.Categorical(df_barras["mes_nombre"], categories=orden_meses, ordered=True)
 
         for mes in orden_meses:
-            df_mes = df_barras[df_barras["mes_anio"] == mes].copy()
+            df_mes = df_barras[df_barras["mes_nombre"] == mes].copy()
 
             if df_mes.empty:
                 continue
 
             df_mes = df_mes.sort_values("monto", ascending=False)
             df_mes["cuenta_sucursal"] = pd.Categorical(df_mes["cuenta_sucursal"], categories=df_mes["cuenta_sucursal"], ordered=True)
-
             df_mes["texto_monto"] = df_mes["monto"].apply(lambda x: f"${x:,.2f}")
 
             fig = go.Figure()
@@ -810,7 +834,7 @@ elif opcion == "Compra por Cuenta":
                 xaxis_tickformat=",",
                 legend_title="Sucursal",
                 barmode="stack",
-                margin=dict(r=70),  # 👈 margen derecho para evitar corte de texto
+                margin=dict(r=70),
                 showlegend=False,
                 height=altura_total,
                 bargap=0.15,
@@ -818,6 +842,7 @@ elif opcion == "Compra por Cuenta":
             )
 
             st.plotly_chart(fig, use_container_width=True)
+
 
 
 # ==========================================================================================================
