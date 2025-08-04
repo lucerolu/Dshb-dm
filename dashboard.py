@@ -17,6 +17,7 @@ import locale
 import io
 import requests
 import itertools
+from pandas.io.formats.style import Styler
 
 #==========================================================================================================
 # -------------- CONFIGURACION GENERAL --------------------------------------------------------------------
@@ -705,24 +706,70 @@ elif opcion == "Compra por Cuenta":
     tabla_compras = tabla_compras.reset_index()
     tabla_compras = tabla_compras.rename(columns={"cuenta_sucursal": "Cuenta - Sucursal"})
 
-    # Formatear los valores como texto con comas (sin usar .style para evitar índice numérico)
+    # ---------- Mostrar tabla como HTML con encabezados y columna fija ----------
+    # Formatear columnas numéricas como texto con formato moneda
     for col in tabla_compras.select_dtypes(include='number').columns:
         tabla_compras[col] = tabla_compras[col].apply(lambda x: f"${x:,.2f}")
 
-    # Mostrar tabla sin índice visual
-    st.dataframe(tabla_compras, use_container_width=True)
+    # Convertir a HTML sin índice, escapando HTML desactivado para que se vean los signos
+    tabla_html = tabla_compras.to_html(index=False, escape=False)
 
-    # Descargar Excel (sin formato visual, pero con datos originales)
+    # Mostrar tabla con scroll horizontal, encabezado y primera columna fijos
+    st.markdown(
+        f"""
+        <style>
+        .tabla-scroll-wrapper {{
+            overflow-x: auto;
+            max-height: 500px;
+            border: 1px solid #ddd;
+        }}
+        .tabla-scroll-wrapper table {{
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+        }}
+        .tabla-scroll-wrapper thead th {{
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 2;
+        }}
+        .tabla-scroll-wrapper td, .tabla-scroll-wrapper th {{
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+            min-width: 100px;
+            white-space: nowrap;
+        }}
+        .tabla-scroll-wrapper tbody th {{
+            position: sticky;
+            left: 0;
+            background-color: #ffffff;
+            z-index: 1;
+        }}
+        .tabla-scroll-wrapper td:first-child {{
+            position: sticky;
+            left: 0;
+            background-color: #ffffff;
+            z-index: 1;
+        }}
+        </style>
+
+        <div class="tabla-scroll-wrapper">
+            {tabla_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ---------- Descargar Excel (sin formato visual, pero con datos originales) ----------
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        # Escribe la versión sin formato de string
         tabla_compras_excel = tabla_compras.copy()
         for col in tabla_compras_excel.columns:
-            # Convertir string de dinero a float para que no se vea como texto en Excel
-            if tabla_compras_excel[col].dtype == object and tabla_compras_excel[col].str.startswith("$").any():
+            if tabla_compras_excel[col].dtype == object and tabla_compras_excel[col].astype(str).str.startswith("$").any():
                 tabla_compras_excel[col] = tabla_compras_excel[col].replace('[\$,]', '', regex=True).astype(float)
         tabla_compras_excel.to_excel(writer, sheet_name="Compras", index=False)
-
     processed_data = output.getvalue()
 
     st.download_button(
@@ -731,6 +778,7 @@ elif opcion == "Compra por Cuenta":
         file_name="compras_por_mes_por_cuenta.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
