@@ -195,8 +195,8 @@ if opcion == "Resumen General":
         "Descripción",
         pinned="left",
         cellStyle={'color': 'white', 'backgroundColor': '#6F079C'},
-        minWidth=180,
-        maxWidth=300,
+        #minWidth=180,
+        #maxWidth=300,
         flex=1
     )
 
@@ -204,7 +204,7 @@ if opcion == "Resumen General":
     for col in meses_cols.tolist() + ["Total"]:
         gb.configure_column(
             col,
-            minWidth=120,
+            #minWidth=120,
             flex=1
         )
 
@@ -216,7 +216,7 @@ if opcion == "Resumen General":
         tabla_horizontal_df,
         gridOptions=gb.build(),
         height=altura_dinamica,
-        fit_columns_on_grid_load=False,
+        fit_columns_on_grid_load=True,  # <- cambia a True
         theme="streamlit",
         enable_enterprise_modules=False,
         allow_unsafe_jscode=True
