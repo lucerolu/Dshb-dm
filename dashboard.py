@@ -496,13 +496,15 @@ elif opcion == "Compra por División":
         margins_name="Total",   # Nombre para los totales
     )
 
-    #Formatear los valores como moneda
-    tabla_formateada = tabla_sucursal_division.applymap(lambda x: "null" if pd.isna(x) else f"${x:,.0f}")
+    # Renombrar índice
+    tabla_sucursal_division.index.rename("División", inplace=True)
+
+    # Reemplazar NaN por 0 para que no salga "null"
+    tabla_formateada = tabla_sucursal_division.fillna(0).applymap(lambda x: f"${x:,.0f}")
 
     st.subheader("Monto anual comprado por sucursal y división")
     st.dataframe(tabla_formateada, use_container_width=True)
     st.markdown("<br><br>", unsafe_allow_html=True)
-
 
     #----------- Graficos de columnas de compra mensual por división y sucursal -------------
     with open("config_colores.json", "r", encoding="utf-8") as f:
