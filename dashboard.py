@@ -17,7 +17,7 @@ import locale
 import io
 import requests
 import itertools
-from pandas.io.formats.style import Styler
+
 
 #==========================================================================================================
 # -------------- CONFIGURACION GENERAL --------------------------------------------------------------------
@@ -706,61 +706,68 @@ elif opcion == "Compra por Cuenta":
     tabla_compras = tabla_compras.reset_index()
     tabla_compras = tabla_compras.rename(columns={"cuenta_sucursal": "Cuenta - Sucursal"})
 
-    # ---------- Mostrar tabla como HTML con encabezados y columna fija ----------
-    # Formatear columnas numéricas como texto con formato moneda
+    # Formatear columnas numéricas como moneda
     for col in tabla_compras.select_dtypes(include='number').columns:
         tabla_compras[col] = tabla_compras[col].apply(lambda x: f"${x:,.2f}")
 
-    # Convertir a HTML sin índice, escapando HTML desactivado para que se vean los signos
+    # Convertir a HTML (sin índice)
     tabla_html = tabla_compras.to_html(index=False, escape=False)
 
-    # Mostrar tabla con scroll horizontal, encabezado y primera columna fijos
-    st.markdown(
-        f"""
+    # Mostrar HTML con encabezados y primera columna fijos
+    st.markdown("""
         <style>
-        .tabla-scroll-wrapper {{
-            overflow-x: auto;
-            max-height: 500px;
-            border: 1px solid #ddd;
-        }}
-        .tabla-scroll-wrapper table {{
-            border-collapse: collapse;
-            width: 100%;
-            table-layout: fixed;
-        }}
-        .tabla-scroll-wrapper thead th {{
-            position: sticky;
-            top: 0;
-            background-color: #f8f9fa;
-            z-index: 2;
-        }}
-        .tabla-scroll-wrapper td, .tabla-scroll-wrapper th {{
-            padding: 8px;
-            text-align: left;
-            border: 1px solid #ddd;
-            min-width: 100px;
-            white-space: nowrap;
-        }}
-        .tabla-scroll-wrapper tbody th {{
-            position: sticky;
-            left: 0;
-            background-color: #ffffff;
-            z-index: 1;
-        }}
-        .tabla-scroll-wrapper td:first-child {{
-            position: sticky;
-            left: 0;
-            background-color: #ffffff;
-            z-index: 1;
-        }}
+            .scroll-container {
+                overflow-x: auto;
+                max-height: 600px;
+                border: 1px solid #ddd;
+            }
+            .scroll-container table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            .scroll-container th, .scroll-container td {
+                border: 1px solid #ccc;
+                padding: 8px;
+                text-align: left;
+                white-space: nowrap;
+                min-width: 120px;
+            }
+            .scroll-container thead th {
+                position: sticky;
+                top: 0;
+                background-color: #f1f1f1;
+                z-index: 2;
+            }
+            .scroll-container td:first-child,
+            .scroll-container th:first-child {
+                position: sticky;
+                left: 0;
+                background-color: #ffffff;
+                z-index: 3;
+            }
         </style>
+    """, unsafe_allow_html=True)
 
-        <div class="tabla-scroll-wrapper">
-            {tabla_html}
-        </div>
-        """,
-        unsafe_allow_html=True
+    st.markdown(f'<div class="scroll-container">{tabla_html}</div>', unsafe_allow_html=True)
+
+    # Descargar Excel (sin formato visual)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        tabla_compras_excel = tabla_compras.copy()
+        for col in tabla_compras_excel.columns:
+            if tabla_compras_excel[col].dtype == object and tabla_compras_excel[col].astype(str).str.startswith("$").any():
+                tabla_compras_excel[col] = tabla_compras_excel[col].replace('[\$,]', '', regex=True).astype(float)
+        tabla_compras_excel.to_excel(writer, sheet_name="Compras", index=False)
+
+    processed_data = output.getvalue()
+
+    st.download_button(
+        label="📥 Descargar tabla en Excel",
+        data=processed_data,
+        file_name="compras_por_mes_por_cuenta.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ---------- Descargar Excel (sin formato visual, pero con datos originales) ----------
     output = io.BytesIO()
