@@ -175,6 +175,8 @@ if opcion == "Resumen General":
 
     # Agregar columna "Total" con suma de todos los meses
     # Sumamos desde la columna 1 (primer mes) hasta la última
+    # Agregar columna Total primero (sin formatear)
+    tabla_horizontal_df["Total"] = tabla_horizontal_df.iloc[:, 1:].sum(axis=1)
     # OJO: aquí asumimos que todas las columnas excepto "Descripción" son meses
     meses_cols = tabla_horizontal_df.columns[1:]  # desde primer mes hasta último
     tabla_horizontal_df["Total"] = tabla_horizontal_df[meses_cols].apply(
@@ -197,15 +199,15 @@ if opcion == "Resumen General":
         cellStyle={'color': 'white', 'backgroundColor': '#6F079C'},
         minWidth=180,
         maxWidth=300,
-        flex=0  # fijo ancho
+        flex=1  # fijo ancho
     )
 
     # Configurar todas las demás columnas (meses + Total) para distribuirse proporcionalmente
     for col in meses_cols.tolist() + ["Total"]:
         gb.configure_column(
             col,
-            minWidth=100,
-            maxWidth=250,
+            minWidth=120,
+            #maxWidth=250,
             flex=1  # todas con igual peso para distribuir espacio
         )
 
