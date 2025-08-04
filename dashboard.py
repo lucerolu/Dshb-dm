@@ -673,42 +673,49 @@ elif opcion == "Compra por Cuenta":
     df["mes_anio"] = df["mes_nombre"] + " " + df["mes_dt"].dt.year.astype(str)
     df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
-    # Crear tabla pivote
-    tabla_compras = df.pivot_table(
-        index="cuenta_sucursal",
-        columns="mes_anio",
-        values="monto",
-        aggfunc="sum",
-        fill_value=0
-    )
-
-    # Ordenar columnas por fecha real
+    # Obtener todos los meses únicos ordenados
     orden_columnas = (
         df.drop_duplicates("mes_anio")
         .sort_values("orden_mes")["mes_anio"]
         .tolist()
     )
-    tabla_compras = tabla_compras[orden_columnas]
+
+    # Obtener todas las cuentas únicas
+    todas_cuentas = df["cuenta_sucursal"].unique()
+
+    # Crear todas las combinaciones posibles mes-cuenta para asegurar filas completas
+    idx = pd.MultiIndex.from_product([todas_cuentas, orden_columnas], names=["cuenta_sucursal", "mes_anio"])
+
+    # Crear tabla pivote sin fill_value
+    tabla_compras = df.pivot_table(
+        index="cuenta_sucursal",
+        columns="mes_anio",
+        values="monto",
+        aggfunc="sum"
+    )
+
+    # Reindexar para completar meses faltantes con 0
+    tabla_compras = tabla_compras.reindex(index=todas_cuentas, columns=orden_columnas, fill_value=0)
 
     # Agregar totales
     tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
     tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
-    # ✅ Hacer que la columna de cuenta_sucursal sea visible y con nombre 
+    # Resetear índice y renombrar la columna de cuenta
     tabla_compras = tabla_compras.reset_index()
     tabla_compras = tabla_compras.rename(columns={"cuenta_sucursal": "Cuenta - Sucursal"})
 
     # Mostrar tabla con formato
     columnas_numericas = tabla_compras.select_dtypes(include='number').columns
     tabla_compras_formateada = tabla_compras.style.format("{:,.2f}", subset=columnas_numericas)
+    st.dataframe(tabla_compras_formateada, use_container_width=True)
 
-    # 🔽 Descargar Excel
+    # Descargar Excel
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        tabla_compras.to_excel(writer, sheet_name="Compras")
+        tabla_compras.to_excel(writer, sheet_name="Compras", index=False)
     processed_data = output.getvalue()
 
-    # 🟢 Botón de descarga
     st.download_button(
         label="📥 Descargar tabla en Excel",
         data=processed_data,
@@ -795,9 +802,7 @@ elif opcion == "Compra por Cuenta":
 
 
     #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL ------------------------------------------------------------------------------
-
     st.header("Evolución mensual de compras por cuenta")
-
     if df_divisiones.empty:
         st.warning("No hay datos disponibles.")
     else:
@@ -809,15 +814,24 @@ elif opcion == "Compra por Cuenta":
         # Crear columna mes_nombre en español
         df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
 
-        # Agrupar
+        # Agrupar por mes_nombre y cuenta_sucursal
         df_barras = df_divisiones.groupby(["mes_nombre", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-        # Agregar sucursal
+        # Obtener todas las cuentas y meses para asegurar combinaciones completas
+        orden_meses = [mes for mes in orden_meses_desc if mes is not None and pd.notna(mes)]
+        todas_cuentas = df_divisiones["cuenta_sucursal"].unique()
+
+        # Crear todas las combinaciones posibles mes-cuenta
+        idx = pd.MultiIndex.from_product([orden_meses, todas_cuentas], names=["mes_nombre", "cuenta_sucursal"])
+
+        # Reindexar para completar combinaciones faltantes y rellenar con 0
+        df_barras = df_barras.set_index(["mes_nombre", "cuenta_sucursal"]).reindex(idx, fill_value=0).reset_index()
+
+        # Agregar columna sucursal_nombre
         df_sucursales = df_divisiones.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
         df_barras = df_barras.merge(df_sucursales, on="cuenta_sucursal", how="left")
 
-        # Ordenar meses (descendente: más reciente al más antiguo)
-        orden_meses = orden_meses_desc
+        # Categorizar mes_nombre para orden correcto
         df_barras["mes_nombre"] = pd.Categorical(df_barras["mes_nombre"], categories=orden_meses, ordered=True)
 
         for mes in orden_meses:
@@ -864,8 +878,6 @@ elif opcion == "Compra por Cuenta":
             )
 
             st.plotly_chart(fig, use_container_width=True)
-
-
 
 # ==========================================================================================================
 # =========================== COMPRA POR SUCURSAL ======================================
