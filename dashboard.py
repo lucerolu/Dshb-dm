@@ -181,19 +181,22 @@ if opcion == "Resumen General":
 
     # Estilo personalizado
     def estilo_tabla(styler):
-        # Pintar encabezado
+        # Encabezado morado oscuro
         styler.set_table_styles([
             {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
         ])
         
-        # Pintar la primera celda (fila 0, columna 'Descripción')
-        return styler.apply(lambda df: pd.DataFrame(
-            [["background-color: #4F079C; color: white" if i == 0 and j == 0 else "" 
-            for j in range(df.shape[1])]
-            for i in range(df.shape[0])],
-            index=df.index,
-            columns=df.columns
-        ), axis=None).format("${:,.2f}", subset=tabla_horizontal_df.columns[1:])  # formato solo a montos
+        # Pintar toda la fila 'Total Comprado'
+        def pintar_fila(df):
+            # Crear dataframe con colores vacíos
+            colores = pd.DataFrame("", index=df.index, columns=df.columns)
+            # Pintar toda la fila 'Total Comprado'
+            colores.loc["Total Comprado", :] = "background-color: #4F079C; color: white"
+            return colores
+        
+        styler.apply(pintar_fila, axis=None)
+        
+        return styler.format("${:,.2f}")
 
     # Mostrar tabla
     st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
