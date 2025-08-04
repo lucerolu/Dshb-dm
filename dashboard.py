@@ -698,8 +698,8 @@ elif opcion == "Compra por Cuenta":
     tabla_compras = tabla_compras.rename(columns={"cuenta_sucursal": "Cuenta - Sucursal"})
 
     # Mostrar tabla con formato
-    tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
-    st.dataframe(tabla_compras_formateada, use_container_width=True)
+    columnas_numericas = tabla_compras.select_dtypes(include='number').columns
+    tabla_compras_formateada = tabla_compras.style.format("{:,.2f}", subset=columnas_numericas)
 
     # 🔽 Descargar Excel
     output = io.BytesIO()
