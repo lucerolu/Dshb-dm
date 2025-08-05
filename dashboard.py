@@ -176,14 +176,20 @@ if opcion == "Resumen General":
     cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
     tabla_horizontal_df = tabla_horizontal_df[cols]
 
-    # Formatear a moneda
+    # Formatear valores
     tabla_html = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
-    # Construir encabezado: dejar primera celda vacía
-    header_html = ''.join([f'<th style="background-color:#390570;color:white;padding:8px;text-align:right">{col}</th>' for col in tabla_html.columns])
+    # Construir cabecera: todos los meses y "Total", alineados a la derecha, con fondo morado
+    header_html = ''.join([
+        f'<th style="background-color:#390570;color:white;padding:8px;text-align:right">{col}</th>'
+        for col in tabla_html.columns
+    ])
 
-    # Construir celdas de contenido
-    row_html = ''.join([f'<td style="padding:8px;text-align:right">{val}</td>' for val in tabla_html.iloc[0]])
+    # Celdas de monto: alineadas a la derecha
+    row_html = ''.join([
+        f'<td style="padding:8px;text-align:right">{val}</td>'
+        for val in tabla_html.iloc[0]
+    ])
 
     # HTML completo
     html_table = f"""
@@ -191,13 +197,15 @@ if opcion == "Resumen General":
     <table style="border-collapse:collapse; width:100%;">
         <thead>
         <tr>
-            <th style="background-color:#4F079C;color:white;padding:8px;"></th>  <!-- Encabezado de primera columna vacío -->
+            <th style="background-color:transparent; padding:8px;"></th>  <!-- Esquina vacía sin color -->
             {header_html}
         </tr>
         </thead>
         <tbody>
         <tr>
-            <td style="padding:8px; text-align:left; font-weight:bold;">Total Comprado</td> <!-- Solo esta celda a la izquierda -->
+            <td style="padding:8px; text-align:left; background-color:#4F079C; color:white; font-weight:bold;">
+                Total Comprado
+            </td>  <!-- Solo esta celda con fondo morado y texto blanco -->
             {row_html}
         </tr>
         </tbody>
@@ -205,7 +213,7 @@ if opcion == "Resumen General":
     </div>
     """
 
-    # Mostrar tabla
+    # Mostrar en Streamlit
     st.markdown(html_table, unsafe_allow_html=True)
 
 
