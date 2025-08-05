@@ -270,76 +270,90 @@ if opcion == "Resumen General":
     df_mensual["diferencia"] = df_mensual["monto"].diff().fillna(0)
     df_mensual["variacion_pct"] = df_mensual["monto"].pct_change().fillna(0) * 100
 
-    # Formato
+    # Flechas al final
     df_mensual["monto_str"] = df_mensual["monto"].apply(lambda x: f"${x:,.2f}")
     df_mensual["diferencia_str"] = df_mensual["diferencia"].apply(
-        lambda x: f"⬆ +${x:,.2f}" if x > 0 else f"⬇ ${x:,.2f}" if x < 0 else "➖ $0"
+        lambda x: f"${x:,.2f} ⬆" if x > 0 else f"${x:,.2f} ⬇" if x < 0 else "$0 ➖"
     )
     df_mensual["variacion_str"] = df_mensual["variacion_pct"].apply(
-        lambda x: f"⬆ +{x:.1f}%" if x > 0 else f"⬇ {x:.1f}%" if x < 0 else "➖ 0.0%"
+        lambda x: f"{x:.1f}% ⬆" if x > 0 else f"{x:.1f}% ⬇" if x < 0 else "0.0% ➖"
     )
 
     # Tabla final
     df_comp = df_mensual[["mes_nombre", "monto_str", "diferencia_str", "variacion_str"]]
     df_comp.columns = ["Mes", "Total Comprado", "Diferencia ($)", "Variación (%)"]
 
-    # ----------------- Estilos con JS -----------------
-    # Colorear encabezado
-    header_style = {
-        "headerClass": "encabezado-morado"
-    }
+    # ----------------- Estilo por columna -----------------
 
-    # JS para pintar filas según contenido
-    js_code_estilo = JsCode("""
+    # JS para pintar fondo de columna "Mes"
+    cell_style_mes = JsCode("""
     function(params) {
-        let value = params.value;
-        if (value && value.includes("⬇")) {
-            return {'color': 'white', 'backgroundColor': '#184E08'};
-        } else if (value && value.includes("⬆")) {
-            return {'color': 'white', 'backgroundColor': '#7D1F08'};
+        return {
+            'backgroundColor': '#503063',
+            'color': 'white',
+            'textAlign': 'right',
+            'fontWeight': 'bold'
         }
-        return {};
     }
     """)
 
-    # ----------------- Construcción Grid -----------------
+    # JS para resaltar con colores diferencias
+    js_code_dif = JsCode("""
+    function(params) {
+        let v = params.value;
+        if (v.includes("⬇")) {
+            return {'backgroundColor': '#184E08', 'color': 'white', 'textAlign': 'left'};
+        } else if (v.includes("⬆")) {
+            return {'backgroundColor': '#7D1F08', 'color': 'white', 'textAlign': 'left'};
+        }
+        return {'textAlign': 'left'};
+    }
+    """)
+
+    # ----------------- GridOptionsBuilder -----------------
     gb = GridOptionsBuilder.from_dataframe(df_comp)
 
-    # Configurar columnas
-    gb.configure_column("Mes", pinned="left", minWidth=130, **header_style)
-    gb.configure_column("Total Comprado", cellStyle={'textAlign': 'center'}, minWidth=150, **header_style)
-    gb.configure_column("Diferencia ($)", cellStyle=js_code_estilo, minWidth=150, **header_style)
-    gb.configure_column("Variación (%)", cellStyle=js_code_estilo, minWidth=150, **header_style)
+    # Mes alineado a la derecha y con fondo morado
+    gb.configure_column("Mes", pinned="left", cellStyle=cell_style_mes, minWidth=130, maxWidth=160)
 
-    # Otras opciones
+    # Las demás columnas alineadas a la izquierda, con resaltado
+    gb.configure_column("Total Comprado", cellStyle={'textAlign': 'left'}, minWidth=150)
+    gb.configure_column("Diferencia ($)", cellStyle=js_code_dif, minWidth=150)
+    gb.configure_column("Variación (%)", cellStyle=js_code_dif, minWidth=150)
+
+    # Comportamiento general
     gb.configure_default_column(resizable=True, wrapText=True)
     gridOptions = gb.build()
 
-    # Inyectar CSS personalizado para encabezado morado
+    # ----------------- CSS personalizado -----------------
     st.markdown("""
         <style>
+            .ag-theme-streamlit {
+                border: none !important;
+            }
             .ag-theme-streamlit .ag-header-cell-label {
                 justify-content: center;
             }
-            .encabezado-morado {
+            .ag-theme-streamlit .ag-header {
                 background-color: #390570 !important;
                 color: white !important;
+            }
+            .ag-theme-streamlit .ag-header-cell {
+                color: white !important;
                 font-weight: bold;
-                text-align: center !important;
             }
         </style>
     """, unsafe_allow_html=True)
 
-    # Altura dinámica
+    # ----------------- Mostrar tabla -----------------
     altura = 40 * (len(df_comp) + 1)
 
-    # Mostrar AgGrid
     AgGrid(
         df_comp,
         gridOptions=gridOptions,
         theme="streamlit",
-        fit_columns_on_grid_load=True,
         height=altura,
+        fit_columns_on_grid_load=True,
         allow_unsafe_jscode=True,
         enable_enterprise_modules=False
     )
