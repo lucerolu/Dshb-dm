@@ -291,23 +291,32 @@ if opcion == "Resumen General":
                 width: 100%;
                 border-collapse: collapse;
                 overflow-x: auto;
+                display: block;
             }
-            .tabla-comparativa th {
+            .tabla-comparativa thead th {
                 background-color: #390570;
                 color: white;
                 padding: 8px;
                 text-align: center;
+                position: sticky;
+                top: 0;
+                z-index: 2;
             }
-            .tabla-comparativa td {
+            .tabla-comparativa td, .tabla-comparativa th {
+                min-width: 140px;
                 padding: 8px;
                 font-size: 15px;
             }
-            .columna-mes {
+            .tabla-comparativa tbody td:first-child {
+                position: sticky;
+                left: 0;
                 background-color: #503063;
                 color: white;
                 font-weight: bold;
                 text-align: right;
+                z-index: 1;
             }
+
             .subida {
                 background-color: #7D1F08;
                 color: white;
@@ -321,17 +330,29 @@ if opcion == "Resumen General":
             .neutra {
                 text-align: left;
             }
+
+            .total-subida {
+                background-color: #184E08;
+                color: white;
+                text-align: left;
+            }
+            .total-bajada {
+                background-color: #7D1F08;
+                color: white;
+                text-align: left;
+            }
+            .total-neutra {
+                text-align: left;
+            }
+
             @media screen and (max-width: 768px) {
                 .tabla-comparativa {
-                    display: block;
-                    overflow-x: auto;
                     white-space: nowrap;
                 }
             }
         </style>
         """
 
-        # Construir tabla HTML
         html = f"{estilos_css}<table class='tabla-comparativa'>"
         html += "<thead><tr>"
         for col in df.columns:
@@ -340,12 +361,30 @@ if opcion == "Resumen General":
 
         for _, row in df.iterrows():
             html += "<tr>"
-            html += f"<td class='columna-mes'>{row['Mes']}</td>"
-            html += f"<td>{row['Total Comprado']}</td>"
 
+            # Fijada
+            html += f"<td>{row['Mes']}</td>"
+
+            # Total Comprado
+            try:
+                monto_valor = float(row['Total Comprado'].replace("$", "").replace(",", "").replace("⬆", "").replace("⬇", "").strip())
+                diferencia = float(row["Diferencia ($)"].replace("⬆", "").replace("⬇", "").replace("$", "").replace(",", "").strip())
+            except:
+                monto_valor = 0
+                diferencia = 0
+
+            clase_monto = (
+                "total-subida" if diferencia > 0 else
+                "total-bajada" if diferencia < 0 else
+                "total-neutra"
+            )
+            html += f"<td class='{clase_monto}'>{row['Total Comprado']}</td>"
+
+            # Diferencia
             clase_dif = "subida" if "⬆" in row["Diferencia ($)"] else "bajada" if "⬇" in row["Diferencia ($)"] else "neutra"
             html += f"<td class='{clase_dif}'>{row['Diferencia ($)']}</td>"
 
+            # Variación
             clase_var = "subida" if "⬆" in row["Variación (%)"] else "bajada" if "⬇" in row["Variación (%)"] else "neutra"
             html += f"<td class='{clase_var}'>{row['Variación (%)']}</td>"
 
