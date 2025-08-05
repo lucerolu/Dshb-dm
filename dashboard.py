@@ -279,85 +279,83 @@ if opcion == "Resumen General":
         lambda x: f"{x:.1f}% ⬆" if x > 0 else f"{x:.1f}% ⬇" if x < 0 else "0.0% ➖"
     )
 
-    # Tabla final
+    # Tabla base
     df_comp = df_mensual[["mes_nombre", "monto_str", "diferencia_str", "variacion_str"]]
     df_comp.columns = ["Mes", "Total Comprado", "Diferencia ($)", "Variación (%)"]
 
-    # ----------------- Estilo por columna -----------------
-
-    # JS para pintar fondo de columna "Mes"
-    cell_style_mes = JsCode("""
-    function(params) {
-        return {
-            'backgroundColor': '#503063',
-            'color': 'white',
-            'textAlign': 'right',
-            'fontWeight': 'bold'
-        }
-    }
-    """)
-
-    # JS para resaltar con colores diferencias
-    js_code_dif = JsCode("""
-    function(params) {
-        let v = params.value;
-        if (v.includes("⬇")) {
-            return {'backgroundColor': '#184E08', 'color': 'white', 'textAlign': 'left'};
-        } else if (v.includes("⬆")) {
-            return {'backgroundColor': '#7D1F08', 'color': 'white', 'textAlign': 'left'};
-        }
-        return {'textAlign': 'left'};
-    }
-    """)
-
-    # ----------------- GridOptionsBuilder -----------------
-    gb = GridOptionsBuilder.from_dataframe(df_comp)
-
-    # Mes alineado a la derecha y con fondo morado
-    gb.configure_column("Mes", pinned="left", cellStyle=cell_style_mes, minWidth=130, maxWidth=160)
-
-    # Las demás columnas alineadas a la izquierda, con resaltado
-    gb.configure_column("Total Comprado", cellStyle={'textAlign': 'left'}, minWidth=150)
-    gb.configure_column("Diferencia ($)", cellStyle=js_code_dif, minWidth=150)
-    gb.configure_column("Variación (%)", cellStyle=js_code_dif, minWidth=150)
-
-    # Comportamiento general
-    gb.configure_default_column(resizable=True, wrapText=True)
-    gridOptions = gb.build()
-
-    # ----------------- CSS personalizado -----------------
-    st.markdown("""
+    # Convertir a HTML
+    def construir_tabla_html(df):
+        estilos_css = """
         <style>
-            .ag-theme-streamlit {
-                border: none !important;
+            .tabla-comparativa {
+                width: 100%;
+                border-collapse: collapse;
+                overflow-x: auto;
             }
-            .ag-theme-streamlit .ag-header-cell-label {
-                justify-content: center;
+            .tabla-comparativa th {
+                background-color: #390570;
+                color: white;
+                padding: 8px;
+                text-align: center;
             }
-            .ag-theme-streamlit .ag-header {
-                background-color: #390570 !important;
-                color: white !important;
+            .tabla-comparativa td {
+                padding: 8px;
+                font-size: 15px;
             }
-            .ag-theme-streamlit .ag-header-cell {
-                color: white !important;
+            .columna-mes {
+                background-color: #503063;
+                color: white;
                 font-weight: bold;
+                text-align: right;
+            }
+            .subida {
+                background-color: #7D1F08;
+                color: white;
+                text-align: left;
+            }
+            .bajada {
+                background-color: #184E08;
+                color: white;
+                text-align: left;
+            }
+            .neutra {
+                text-align: left;
+            }
+            @media screen and (max-width: 768px) {
+                .tabla-comparativa {
+                    display: block;
+                    overflow-x: auto;
+                    white-space: nowrap;
+                }
             }
         </style>
-    """, unsafe_allow_html=True)
+        """
 
-    # ----------------- Mostrar tabla -----------------
-    altura = 40 * (len(df_comp) + 1)
+        # Construir tabla HTML
+        html = f"{estilos_css}<table class='tabla-comparativa'>"
+        html += "<thead><tr>"
+        for col in df.columns:
+            html += f"<th>{col}</th>"
+        html += "</tr></thead><tbody>"
 
-    AgGrid(
-        df_comp,
-        gridOptions=gridOptions,
-        theme="streamlit",
-        height=altura,
-        fit_columns_on_grid_load=True,
-        allow_unsafe_jscode=True,
-        enable_enterprise_modules=False
-    )
-    st.markdown("<br><br>", unsafe_allow_html=True)
+        for _, row in df.iterrows():
+            html += "<tr>"
+            html += f"<td class='columna-mes'>{row['Mes']}</td>"
+            html += f"<td>{row['Total Comprado']}</td>"
+
+            clase_dif = "subida" if "⬆" in row["Diferencia ($)"] else "bajada" if "⬇" in row["Diferencia ($)"] else "neutra"
+            html += f"<td class='{clase_dif}'>{row['Diferencia ($)']}</td>"
+
+            clase_var = "subida" if "⬆" in row["Variación (%)"] else "bajada" if "⬇" in row["Variación (%)"] else "neutra"
+            html += f"<td class='{clase_var}'>{row['Variación (%)']}</td>"
+
+            html += "</tr>"
+        html += "</tbody></table>"
+        return html
+
+    # Mostrar tabla
+    tabla_html = construir_tabla_html(df_comp)
+    st.markdown(tabla_html, unsafe_allow_html=True)
 
     # --------------------------------------- GRÁFICA DE DIFERENCIAS MENSUALES --------------------------------------------------------------------------------------------
     st.markdown("### Variación de compras respecto al mes anterior")
