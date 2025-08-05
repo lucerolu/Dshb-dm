@@ -302,11 +302,18 @@ if opcion == "Resumen General":
             estilos = [''] * len(row)
         return estilos
 
+    def estilo_con_encabezado_morado(styler):
+        return (
+            styler
+            .apply(resaltar_con_bordes, axis=1)
+            .set_properties(**{"text-align": "center"})
+            .set_table_styles([
+                {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
+            ])
+        )
     # Mostrar tabla
     st.dataframe(
-        df_comp.style
-            .apply(resaltar_con_bordes, axis=1)
-            .set_properties(**{"text-align": "center"}),
+        df_comp.style.pipe(estilo_con_encabezado_morado),
         use_container_width=True,
         hide_index=True
     )
@@ -352,7 +359,7 @@ if opcion == "Resumen General":
 
 
 # ================================================================================================================================
-# ============================= COMPRA POR DIVISION =======================================
+# ============================================= COMPRA POR DIVISION ==================================================================
 # ================================================================================================================================
 elif opcion == "Compra por División":
     st.title("Distribución de Compras por División - 2025")
