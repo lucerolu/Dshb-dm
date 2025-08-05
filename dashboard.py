@@ -176,24 +176,28 @@ if opcion == "Resumen General":
     cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
     tabla_horizontal_df = tabla_horizontal_df[cols]
 
-    # Formatear los valores como moneda
+    # Formatear a moneda
     tabla_html = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
-    # Construir HTML
-    header_html = ''.join([f'<th style="background-color:#390570;color:white;padding:8px">{col}</th>' for col in tabla_html.columns])
+    # Construir encabezado: dejar primera celda vacía
+    header_html = ''.join([f'<th style="background-color:#390570;color:white;padding:8px;text-align:right">{col}</th>' for col in tabla_html.columns])
+
+    # Construir celdas de contenido
     row_html = ''.join([f'<td style="padding:8px;text-align:right">{val}</td>' for val in tabla_html.iloc[0]])
+
+    # HTML completo
     html_table = f"""
     <div style="overflow-x:auto;">
     <table style="border-collapse:collapse; width:100%;">
         <thead>
         <tr>
-            <th style="background-color:#4F079C;color:white;padding:8px;text-align:left">Total Comprado</th>
+            <th style="background-color:#4F079C;color:white;padding:8px;"></th>  <!-- Encabezado de primera columna vacío -->
             {header_html}
         </tr>
         </thead>
         <tbody>
         <tr>
-            <td style="padding:8px; font-weight:bold;">Total Comprado</td>
+            <td style="padding:8px; text-align:left; font-weight:bold;">Total Comprado</td> <!-- Solo esta celda a la izquierda -->
             {row_html}
         </tr>
         </tbody>
