@@ -172,25 +172,40 @@ if opcion == "Resumen General":
     # Calcular Total
     tabla_horizontal_df["Total"] = tabla_horizontal_df.sum(axis=1)
 
-    # Transponer para mostrar como columna vertical (más estética en móvil)
-    tabla_vertical = tabla_horizontal_df.T
-    tabla_vertical.columns = ["Monto"]
-    tabla_vertical.index.name = "Mes"
-    tabla_vertical.reset_index(inplace=True)
+    # Reordenar columnas
+    cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
+    tabla_horizontal_df = tabla_horizontal_df[cols]
 
-    # Estilo personalizado
-    def estilo_tabla(styler):
-        return (
-            styler
-            .applymap(lambda _: "background-color: #390570; color: white", subset=["Mes"])  # pinta la columna de los meses
-            .format({"Monto": "${:,.2f}"})
-        )
+    # Formatear los valores como moneda
+    tabla_html = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
+
+    # Construir HTML
+    header_html = ''.join([f'<th style="background-color:#390570;color:white;padding:8px">{col}</th>' for col in tabla_html.columns])
+    row_html = ''.join([f'<td style="padding:8px;text-align:right">{val}</td>' for val in tabla_html.iloc[0]])
+    html_table = f"""
+    <div style="overflow-x:auto;">
+    <table style="border-collapse:collapse; width:100%;">
+        <thead>
+        <tr>
+            <th style="background-color:#4F079C;color:white;padding:8px;text-align:left">Total Comprado</th>
+            {header_html}
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td style="padding:8px; font-weight:bold;">Total Comprado</td>
+            {row_html}
+        </tr>
+        </tbody>
+    </table>
+    </div>
+    """
 
     # Mostrar tabla
-    st.dataframe(tabla_vertical.style.pipe(estilo_tabla), use_container_width=True)
+    st.markdown(html_table, unsafe_allow_html=True)
 
 
-# ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
+# -------------------------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
     #st.markdown("### Gráfica de Total comprado por mes")
     # Agrupar de nuevo (en bruto, sin formato)
     df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
