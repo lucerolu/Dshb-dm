@@ -176,18 +176,18 @@ if opcion == "Resumen General":
     cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
     tabla_horizontal_df = tabla_horizontal_df[cols]
 
-    # Formatear valores
+    # Formatear como moneda
     tabla_html = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
-    # Construir cabecera: todos los meses y "Total", alineados a la derecha, con fondo morado
+    # Cabecera: alineado a la izquierda, con fondo morado
     header_html = ''.join([
-        f'<th style="background-color:#390570;color:white;padding:8px;text-align:right">{col}</th>'
+        f'<th style="background-color:#390570; color:white; padding:8px; text-align:left;">{col}</th>'
         for col in tabla_html.columns
     ])
 
-    # Celdas de monto: alineadas a la derecha
+    # Celdas de monto: también alineadas a la izquierda
     row_html = ''.join([
-        f'<td style="padding:8px;text-align:right">{val}</td>'
+        f'<td style="padding:8px; text-align:left;">{val}</td>'
         for val in tabla_html.iloc[0]
     ])
 
@@ -197,15 +197,15 @@ if opcion == "Resumen General":
     <table style="border-collapse:collapse; width:100%;">
         <thead>
         <tr>
-            <th style="background-color:transparent; padding:8px;"></th>  <!-- Esquina vacía sin color -->
+            <th style="background-color:transparent; padding:8px;"></th>  <!-- Celda vacía -->
             {header_html}
         </tr>
         </thead>
         <tbody>
         <tr>
-            <td style="padding:8px; text-align:left; background-color:#4F079C; color:white; font-weight:bold;">
-                Total Comprado
-            </td>  <!-- Solo esta celda con fondo morado y texto blanco -->
+            <td style="padding:8px; text-align:right; background-color:#4F079C; color:white; font-weight:bold;">
+            Total Comprado
+            </td>
             {row_html}
         </tr>
         </tbody>
