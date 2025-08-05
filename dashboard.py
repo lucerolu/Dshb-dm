@@ -358,14 +358,28 @@ if opcion == "Resumen General":
                     overflow-x: auto;
                 }
             }
+
+            .th-mes {
+                text-align: right;
+            }
+            .th-total,
+            .th-diferencia,
+            .th-variacion {
+                text-align: left;
+            }
         </style>
+
         """
 
         html = f"{estilos_css}<table class='tabla-comparativa'>"
-        html += "<thead><tr>"
-        for col in df.columns:
-            html += f"<th>{col}</th>"
-        html += "</tr></thead><tbody>"
+        html += (
+            "<thead><tr>"
+            "<th class='th-mes'>Mes</th>"
+            "<th class='th-total'>Total Comprado</th>"
+            "<th class='th-diferencia'>Diferencia ($)</th>"
+            "<th class='th-variacion'>Variación (%)</th>"
+            "</tr></thead><tbody>"
+        )
 
         for _, row in df.iterrows():
             html += "<tr>"
