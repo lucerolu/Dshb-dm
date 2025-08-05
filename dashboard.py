@@ -204,7 +204,7 @@ if opcion == "Resumen General":
         </thead>
         <tbody>
         <tr>
-            <td style="padding:8px; text-align:right; background-color:#271730; color:white; font-weight:bold; position:sticky; left:0; z-index:1;">
+            <td style="padding:8px; text-align:right; background-color:#281436; color:white; font-weight:bold; position:sticky; left:0; z-index:1;">
             Total Comprado
             </td>
             {row_html}
