@@ -176,34 +176,36 @@ if opcion == "Resumen General":
     cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
     tabla_horizontal_df = tabla_horizontal_df[cols]
 
-    # Formatear como moneda
+    # Formatear montos como moneda
     tabla_html = tabla_horizontal_df.applymap(lambda x: f"${x:,.2f}")
 
-    # Cabecera: alineado a la izquierda, con fondo morado
+    # HTML dinámico
     header_html = ''.join([
         f'<th style="background-color:#390570; color:white; padding:8px; text-align:left;">{col}</th>'
         for col in tabla_html.columns
     ])
 
-    # Celdas de monto: también alineadas a la izquierda
+    # Fila de montos (alineados izquierda)
     row_html = ''.join([
         f'<td style="padding:8px; text-align:left;">{val}</td>'
         for val in tabla_html.iloc[0]
     ])
 
-    # HTML completo
+    # HTML completo con estilos y scroll fijo en la primera columna
     html_table = f"""
     <div style="overflow-x:auto;">
-    <table style="border-collapse:collapse; width:100%;">
+    <table style="border-collapse:collapse; min-width:800px;">
         <thead>
         <tr>
-            <th style="background-color:transparent; padding:8px;"></th>  <!-- Celda vacía -->
+            <th style="background-color:#390570; padding:8px; color:white; text-align:left; position:sticky; left:0; z-index:1;">
+            <!-- celda vacía pintada -->
+            </th>
             {header_html}
         </tr>
         </thead>
         <tbody>
         <tr>
-            <td style="padding:8px; text-align:right; background-color:#4F079C; color:white; font-weight:bold;">
+            <td style="padding:8px; text-align:right; background-color:#503063; color:white; font-weight:bold; position:sticky; left:0; z-index:1;">
             Total Comprado
             </td>
             {row_html}
@@ -213,7 +215,7 @@ if opcion == "Resumen General":
     </div>
     """
 
-    # Mostrar en Streamlit
+    # Mostrar tabla en Streamlit
     st.markdown(html_table, unsafe_allow_html=True)
 
 
