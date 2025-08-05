@@ -193,19 +193,18 @@ if opcion == "Resumen General":
 
     # HTML completo con estilos y scroll fijo en la primera columna
     html_table = f"""
-    <div style="overflow-x:auto;">
-    <table style="border-collapse:collapse; min-width:800px;">
+    <div style="overflow-x:auto; width: 100%;">
+    <table style="border-collapse:collapse; min-width:800px; width:100%;">
         <thead>
         <tr>
             <th style="background-color:#390570; padding:8px; color:white; text-align:left; position:sticky; left:0; z-index:1;">
-            <!-- celda vacía pintada -->
             </th>
             {header_html}
         </tr>
         </thead>
         <tbody>
         <tr>
-            <td style="padding:8px; text-align:right; background-color:#503063; color:white; font-weight:bold; position:sticky; left:0; z-index:1;">
+            <td style="padding:8px; text-align:right; background-color:#271730; color:white; font-weight:bold; position:sticky; left:0; z-index:1;">
             Total Comprado
             </td>
             {row_html}
