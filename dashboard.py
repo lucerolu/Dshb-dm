@@ -17,7 +17,7 @@ import locale
 import io
 import requests
 import itertools
-from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 
 #==========================================================================================================
@@ -259,7 +259,7 @@ if opcion == "Resumen General":
 
     #------------------------------------------ COMPARATIVO: MES VS MES ANTERIOR ---------------------------------------------------------------------------------------------------------
     st.markdown("### Comparativo de compras mensuales")
-    st.markdown("#### Compra vs mes anterior")  # Subtítulo
+    st.markdown("#### Compra vs mes anterior")
 
     # Agrupar y ordenar por mes
     df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
@@ -270,52 +270,78 @@ if opcion == "Resumen General":
     df_mensual["diferencia"] = df_mensual["monto"].diff().fillna(0)
     df_mensual["variacion_pct"] = df_mensual["monto"].pct_change().fillna(0) * 100
 
-    # Función con flechas negras en HTML
-    def formatear_flecha_html(dif, pct):
-        if dif > 0:
-            return f"⬆ +${dif:,.2f}", f"⬆ +{pct:.1f}%"
-        elif dif < 0:
-            return f"⬇ ${dif:,.2f}", f"⬇ {pct:.1f}%"
-        else:
-            return "➖ $0", "➖ 0.0%"
-
-    df_mensual[["diferencia_str", "variacion_str"]] = df_mensual.apply(
-        lambda row: pd.Series(formatear_flecha_html(row["diferencia"], row["variacion_pct"])),
-        axis=1
-    )
-
-    # Formato del monto
+    # Formato
     df_mensual["monto_str"] = df_mensual["monto"].apply(lambda x: f"${x:,.2f}")
+    df_mensual["diferencia_str"] = df_mensual["diferencia"].apply(
+        lambda x: f"⬆ +${x:,.2f}" if x > 0 else f"⬇ ${x:,.2f}" if x < 0 else "➖ $0"
+    )
+    df_mensual["variacion_str"] = df_mensual["variacion_pct"].apply(
+        lambda x: f"⬆ +{x:.1f}%" if x > 0 else f"⬇ {x:.1f}%" if x < 0 else "➖ 0.0%"
+    )
 
     # Tabla final
     df_comp = df_mensual[["mes_nombre", "monto_str", "diferencia_str", "variacion_str"]]
     df_comp.columns = ["Mes", "Total Comprado", "Diferencia ($)", "Variación (%)"]
 
-    # Resaltar con bordes
-    def resaltar_con_bordes(row):
-        estilos = []
-        if "⬇" in row["Diferencia ($)"]:
-            estilos = ['border: 1px solid black; background-color: #184E08'] * len(row)
-        elif "⬆" in row["Diferencia ($)"]:
-            estilos = ['border: 1px solid black; background-color: #7D1F08'] * len(row)
-        else:
-            estilos = [''] * len(row)
-        return estilos
+    # ----------------- Estilos con JS -----------------
+    # Colorear encabezado
+    header_style = {
+        "headerClass": "encabezado-morado"
+    }
 
-    def estilo_con_encabezado_morado(styler):
-        return (
-            styler
-            .apply(resaltar_con_bordes, axis=1)
-            .set_properties(**{"text-align": "center"})
-            .set_table_styles([
-                {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
-            ])
-        )
-    # Mostrar tabla
-    st.dataframe(
-        df_comp.style.pipe(estilo_con_encabezado_morado),
-        use_container_width=True,
-        hide_index=True
+    # JS para pintar filas según contenido
+    js_code_estilo = JsCode("""
+    function(params) {
+        let value = params.value;
+        if (value && value.includes("⬇")) {
+            return {'color': 'white', 'backgroundColor': '#184E08'};
+        } else if (value && value.includes("⬆")) {
+            return {'color': 'white', 'backgroundColor': '#7D1F08'};
+        }
+        return {};
+    }
+    """)
+
+    # ----------------- Construcción Grid -----------------
+    gb = GridOptionsBuilder.from_dataframe(df_comp)
+
+    # Configurar columnas
+    gb.configure_column("Mes", pinned="left", minWidth=130, **header_style)
+    gb.configure_column("Total Comprado", cellStyle={'textAlign': 'center'}, minWidth=150, **header_style)
+    gb.configure_column("Diferencia ($)", cellStyle=js_code_estilo, minWidth=150, **header_style)
+    gb.configure_column("Variación (%)", cellStyle=js_code_estilo, minWidth=150, **header_style)
+
+    # Otras opciones
+    gb.configure_default_column(resizable=True, wrapText=True)
+    gridOptions = gb.build()
+
+    # Inyectar CSS personalizado para encabezado morado
+    st.markdown("""
+        <style>
+            .ag-theme-streamlit .ag-header-cell-label {
+                justify-content: center;
+            }
+            .encabezado-morado {
+                background-color: #390570 !important;
+                color: white !important;
+                font-weight: bold;
+                text-align: center !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Altura dinámica
+    altura = 40 * (len(df_comp) + 1)
+
+    # Mostrar AgGrid
+    AgGrid(
+        df_comp,
+        gridOptions=gridOptions,
+        theme="streamlit",
+        fit_columns_on_grid_load=True,
+        height=altura,
+        allow_unsafe_jscode=True,
+        enable_enterprise_modules=False
     )
     st.markdown("<br><br>", unsafe_allow_html=True)
 
