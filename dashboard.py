@@ -290,9 +290,10 @@ if opcion == "Resumen General":
             .tabla-comparativa {
                 width: 100%;
                 border-collapse: collapse;
-                overflow-x: auto;
-                display: block;
+                display: table;
+                table-layout: auto;
             }
+
             .tabla-comparativa thead th {
                 background-color: #390570;
                 color: white;
@@ -302,11 +303,12 @@ if opcion == "Resumen General":
                 top: 0;
                 z-index: 2;
             }
+
             .tabla-comparativa td, .tabla-comparativa th {
-                min-width: 140px;
                 padding: 8px;
                 font-size: 15px;
             }
+
             .tabla-comparativa tbody td:first-child {
                 position: sticky;
                 left: 0;
@@ -315,6 +317,7 @@ if opcion == "Resumen General":
                 font-weight: bold;
                 text-align: right;
                 z-index: 1;
+                white-space: nowrap;
             }
 
             .subida {
@@ -322,11 +325,13 @@ if opcion == "Resumen General":
                 color: white;
                 text-align: left;
             }
+
             .bajada {
                 background-color: #184E08;
                 color: white;
                 text-align: left;
             }
+
             .neutra {
                 text-align: left;
             }
@@ -336,18 +341,21 @@ if opcion == "Resumen General":
                 color: white;
                 text-align: left;
             }
+
             .total-bajada {
                 background-color: #7D1F08;
                 color: white;
                 text-align: left;
             }
+
             .total-neutra {
                 text-align: left;
             }
 
             @media screen and (max-width: 768px) {
                 .tabla-comparativa {
-                    white-space: nowrap;
+                    display: block;
+                    overflow-x: auto;
                 }
             }
         </style>
