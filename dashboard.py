@@ -172,22 +172,22 @@ if opcion == "Resumen General":
     # Calcular Total
     tabla_horizontal_df["Total"] = tabla_horizontal_df.sum(axis=1)
 
-    # Reordenar columnas (opcional)
-    cols = [col for col in tabla_horizontal_df.columns if col != "Total"] + ["Total"]
-    tabla_horizontal_df = tabla_horizontal_df[cols]
+    # Transponer para mostrar como columna vertical (más estética en móvil)
+    tabla_vertical = tabla_horizontal_df.T
+    tabla_vertical.columns = ["Monto"]
+    tabla_vertical.index.name = "Mes"
+    tabla_vertical.reset_index(inplace=True)
 
-    # Estilo personalizado (solo encabezado)
+    # Estilo personalizado
     def estilo_tabla(styler):
         return (
             styler
-            .set_table_styles([
-                {"selector": "thead th", "props": [("background-color", "#390570"), ("color", "white")]}
-            ])
-            .format("${:,.2f}")  # Formatear como moneda
+            .applymap(lambda _: "background-color: #390570; color: white", subset=["Mes"])  # pinta la columna de los meses
+            .format({"Monto": "${:,.2f}"})
         )
 
     # Mostrar tabla
-    st.dataframe(tabla_horizontal_df.style.pipe(estilo_tabla), use_container_width=True)
+    st.dataframe(tabla_vertical.style.pipe(estilo_tabla), use_container_width=True)
 
 
 # ---------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
