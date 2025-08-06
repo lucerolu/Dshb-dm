@@ -551,9 +551,16 @@ elif opcion == "Compra por División":
                 text-align: center;
                 position: sticky;
                 top: 0;
-                z-index: 2;
+                z-index: 3;
                 white-space: nowrap;
                 border: 1px solid white;
+            }
+
+            /* Fijar el encabezado de la columna División */
+            .tabla-divisiones thead th:first-child {
+                left: 0;
+                position: sticky;
+                z-index: 5;
             }
 
             .tabla-divisiones td, .tabla-divisiones th {
@@ -563,13 +570,23 @@ elif opcion == "Compra por División":
                 border: 1px solid white;
             }
 
-            .tabla-divisiones tbody td:first-child {
+            /* Fijar toda la columna División (incluyendo celdas del tbody y tfoot) */
+            .tabla-divisiones tbody td:first-child,
+            .tabla-divisiones tfoot td:first-child {
                 position: sticky;
                 left: 0;
                 background-color: #eeeeee;
                 color: black;
                 font-weight: bold;
-                text-align: right; /* División alineada a la derecha */
+                text-align: right;
+                z-index: 4;
+            }
+
+            /* También fijar la celda total primera columna (la última fila) */
+            .tabla-divisiones tbody tr:last-child td:first-child {
+                background-color: #0B083D;
+                color: white;
+                z-index: 6;
             }
 
             /* Texto columnas excepto División alineado a la izquierda */
@@ -678,8 +695,6 @@ elif opcion == "Compra por División":
     # Mostrar tabla
     st.markdown("### Comparativo por división")
     st.markdown(construir_tabla_divisiones_html(tabla_pivot), unsafe_allow_html=True)
-
-
 
     # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
     df_mes_div = df_divisiones.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
