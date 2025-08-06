@@ -528,7 +528,7 @@ elif opcion == "Compra por División":
     tabla_pivot.index.name = "División"
     tabla_pivot = tabla_pivot.reset_index()
 
-    # ---------- 1. Estilo para columna División ----------
+    # --------- 1. Estilo para columna División ----------
     cell_style_division = JsCode("""
     function(params) {
         let color = '';
@@ -547,56 +547,52 @@ elif opcion == "Compra por División":
     }
     """)
 
-    # ---------- 2. Calcular colores en Python para cada celda ----------
-    # Creamos un diccionario con estilos por celda
-    cell_styles = {}
+    # --------- 2. Configurar Grid ----------
+    gb = GridOptionsBuilder.from_dataframe(tabla_pivot)
+    gb.configure_default_column(resizable=True, sortable=True, filter=True)
+
+    # Fijar columna División
+    gb.configure_column("División", pinned="left", cellStyle=cell_style_division)
+
+    # Aplicar degradado por columna usando `cellStyle` generado desde Python
     for col in orden_meses:
         max_val = tabla_pivot[col].max()
         min_val = tabla_pivot[col].min()
         rango = max_val - min_val if max_val != min_val else 1
 
-        for idx, val in tabla_pivot[col].items():
-            ratio = (val - min_val) / rango
-            azul = int(255 - (ratio * 120))  # 135 a 255
-            bg_color = f"rgb({azul},{azul + 20},255)"
-            cell_styles[(idx, col)] = {
-                "backgroundColor": bg_color,
-                "color": "black",
-                "fontWeight": "bold",
-                "textAlign": "right"
-            }
-
-    # ---------- 3. Configuración de AG Grid ----------
-    gb = GridOptionsBuilder.from_dataframe(tabla_pivot)
-    gb.configure_default_column(resizable=True, sortable=True, filter=True)
-
-    # Fijar columna de División
-    gb.configure_column("División", pinned="left", cellStyle=cell_style_division)
-
-    # Aplicar los estilos por celda
-    for col in orden_meses:
+        # Crear JS dinámico para cada columna
+        js_code = f"""
+        function(params) {{
+            let valor = parseFloat(params.value);
+            let ratio = (valor - {min_val}) / {rango};
+            ratio = Math.max(0, Math.min(1, ratio));
+            let azul = Math.floor(255 - (ratio * 120));
+            let color = 'rgb(' + azul + ',' + (azul + 20) + ',255)';
+            return {{
+                'backgroundColor': color,
+                'color': 'black',
+                'fontWeight': 'bold',
+                'textAlign': 'right'
+            }};
+        }}
+        """
         gb.configure_column(
             col,
             type=["numericColumn"],
             valueFormatter="data.value.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'})",
-            cellStyle=JsCode(f"""
-                function(params) {{
-                    const estilos = {cell_styles};
-                    return estilos[[params.rowIndex, '{col}']] || {{}};
-                }}
-            """)
+            cellStyle=JsCode(js_code)
         )
 
+    # Generar opciones y mostrar tabla
     grid_options = gb.build()
 
-    # Mostrar tabla
     st.markdown("### Comparativo por división")
 
     AgGrid(
         tabla_pivot,
         gridOptions=grid_options,
         fit_columns_on_grid_load=False,
-        height=400,
+        height=450,
         enable_enterprise_modules=False,
         allow_unsafe_jscode=True,
         use_container_width=True
