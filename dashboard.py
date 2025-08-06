@@ -373,30 +373,20 @@ if opcion == "Resumen General":
             # Fijada
             html += f"<td>{row['Mes']}</td>"
 
-            # Total Comprado
-            try:
-                monto_valor = float(row['Total Comprado'].replace("$", "").replace(",", "").replace("⬆", "").replace("⬇", "").strip())
-                diferencia = float(row["Diferencia ($)"].replace("⬆", "").replace("⬇", "").replace("$", "").replace(",", "").strip())
-            except:
-                monto_valor = 0
-                diferencia = 0
-
-            clase_monto = (
-                "total-subida" if diferencia > 0 else
-                "total-bajada" if diferencia < 0 else
-                "total-neutra"
+            # Determinar clases de color
+            clase_color = (
+                "subida" if "⬆" in row["Diferencia ($)"] else
+                "bajada" if "⬇" in row["Diferencia ($)"] else
+                "neutra"
             )
-            html += f"<td class='{clase_monto}'>{row['Total Comprado']}</td>"
 
-            # Diferencia
-            clase_dif = "subida" if "⬆" in row["Diferencia ($)"] else "bajada" if "⬇" in row["Diferencia ($)"] else "neutra"
-            html += f"<td class='{clase_dif}'>{row['Diferencia ($)']}</td>"
-
-            # Variación
-            clase_var = "subida" if "⬆" in row["Variación (%)"] else "bajada" if "⬇" in row["Variación (%)"] else "neutra"
-            html += f"<td class='{clase_var}'>{row['Variación (%)']}</td>"
+            # Usar misma clase para Total Comprado, Diferencia y Variación
+            html += f"<td class='{clase_color}'>{row['Total Comprado']}</td>"
+            html += f"<td class='{clase_color}'>{row['Diferencia ($)']}</td>"
+            html += f"<td class='{clase_color}'>{row['Variación (%)']}</td>"
 
             html += "</tr>"
+            
         html += "</tbody></table>"
         return html
 
