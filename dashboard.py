@@ -68,7 +68,7 @@ def obtener_estado_cuenta_api():
 
 def mostrar_fecha_actualizacion():
     try:
-        respuesta = requests.get(f"{API_URL}/ultima_actualizacion")
+        respuesta = requests.get(f"{API_BASE}/ultima_actualizacion")
         if respuesta.status_code == 200:
             data = respuesta.json()
             # Parsear la fecha ISO a datetime
