@@ -548,12 +548,19 @@ elif opcion == "Compra por División":
                 background-color: #0B083D;
                 color: white;
                 padding: 8px;
-                text-align: center;
+                white-space: nowrap;
                 position: sticky;
                 top: 0;
                 z-index: 3;
-                white-space: nowrap;
                 border: 1px solid white;
+            }
+
+            .tabla-divisiones thead th:first-child {
+                text-align: right;
+            }
+
+            .tabla-divisiones thead th:not(:first-child) {
+                text-align: left;
             }
 
             /* Fijar el encabezado de la columna División */
