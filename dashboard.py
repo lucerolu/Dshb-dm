@@ -754,29 +754,72 @@ elif opcion == "Compra por División":
     #----------------- GRÁFICA DE BARRAS AGRUPADAS: COMPRA POR SUCURSAL Y DIVISIÓN ------------------------------------------------------------
     df_suc_div = df_divisiones.groupby(["sucursal", "division"])["monto"].sum().reset_index()
 
-    # Pivotar para que las divisiones estén como filas
-    tabla_div_suc = df_suc_div.pivot_table(
-        index="division",
-        columns="sucursal",
+    fig_suc_div = px.bar(
+        df_suc_div,
+        x="sucursal",
+        y="monto",
+        color="division",
+        text="monto",
+        color_discrete_map=colores_divisiones,
+        labels={
+            "sucursal": "Sucursal",
+            "monto": "Total Comprado",
+            "division": "División"},
+    )
+
+    fig_suc_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
+    fig_suc_div.update_layout(
+        title=dict(text="Compra anual por Sucursal y División", x=0.5, xanchor="center", y=1.0),
+        barmode="stack",
+        xaxis_tickangle=-45,
+        margin=dict(t=60, b=100),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.6,
+            xanchor="center",
+            x=0.5
+        )
+    )
+    st.plotly_chart(fig_suc_div, use_container_width=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+
+    #----------------------- Tabla de compra por division y sucursal ----------------------------------
+    tabla_sucursal_division = pd.pivot_table(
+        df_divisiones,
         values="monto",
+        index="division",       # Filas
+        columns="sucursal",     # Columnas
         aggfunc="sum",
-        fill_value=0
-    ).reset_index()
+        margins=True,           # Agrega totales
+        margins_name="Total",   # Nombre para los totales
+    )
 
-    # Orden deseado de divisiones
-    orden_divisiones = ["Agrícola", "Construcción", "Jardinería y Golf"]
-    columnas_ordenadas = [col for col in tabla_div_suc.columns if col != "division"]
-    tabla_div_suc = tabla_div_suc[["division"] + columnas_ordenadas]
+    # Renombrar índice
+    tabla_sucursal_division.index.rename("División", inplace=True)
 
-    # Colores por división
+    # Llenar NaN con 0
+    tabla_sucursal_division = tabla_sucursal_division.fillna(0)
+
+    # Convertimos el índice en columna para trabajar con HTML
+    tabla_sucursal_division = tabla_sucursal_division.reset_index()
+
+    # Reordenamos para poner "Total" al final si no lo está
+    tabla_sucursal_division = tabla_sucursal_division.sort_values(by="División", key=lambda x: x == "Total", ascending=True)
+
+    # Extraer lista de sucursales (columnas)
+    sucursales = [col for col in tabla_sucursal_division.columns if col != "División"]
+
+    # Diccionario de colores
     colores_div = {
         "Agrícola": "#367C2B",
         "Construcción": "#FFDE00",
         "Jardinería y Golf": "#FFA500"
     }
 
-    # Construcción del HTML
-    def construir_tabla_div_suc_html(df, sucursales_ordenadas):
+    # Función para construir la tabla con estilo
+    def construir_tabla_sucursal_division_html(df, columnas_sucursales):
         estilos_css = """
         <style>
             .tabla-wrapper {
@@ -820,13 +863,23 @@ elif opcion == "Compra por División":
                 border: 1px solid white;
             }
 
-            .tabla-divisiones tbody td:first-child,
-            .tabla-divisiones tfoot td:first-child {
+            .tabla-divisiones tbody td:first-child {
                 position: sticky;
                 left: 0;
                 font-weight: bold;
                 text-align: right;
+                background-color: #eeeeee;
                 z-index: 4;
+            }
+
+            .tabla-divisiones tbody tr:last-child td:first-child {
+                background-color: #0B083D;
+                color: white;
+                z-index: 6;
+            }
+
+            .tabla-divisiones tbody td:not(:first-child) {
+                text-align: left;
             }
 
             .celda-total {
@@ -844,79 +897,49 @@ elif opcion == "Compra por División":
         </style>
         """
 
-        df["Total"] = df[sucursales_ordenadas].sum(axis=1)
-        totales_columna = df[sucursales_ordenadas + ["Total"]].sum()
-        columnas_completas = sucursales_ordenadas + ["Total"]
-
         html = estilos_css + "<div class='tabla-wrapper'><table class='tabla-divisiones'>"
         html += "<thead><tr><th>División</th>"
-        for col in columnas_completas:
+        for col in columnas_sucursales:
             html += f"<th>{col}</th>"
         html += "</tr></thead><tbody>"
 
-        for _, row in df.iterrows():
-            division = row["division"]
-            color_fondo_div = colores_div.get(division, "#eeeeee")
-            html += f"<tr><td style='background-color:{color_fondo_div}; color:black'>{division}</td>"
+        for i, row in df.iterrows():
+            division = row["División"]
+            es_total_fila = division == "Total"
+            color_fondo_div = "#0B083D" if es_total_fila else colores_div.get(division, "#eeeeee")
+            color_texto = "white" if es_total_fila else ("black" if color_fondo_div != "#FFDE00" else "black")
 
-            valores_fila = [row[col] for col in sucursales_ordenadas]
-            max_val = max(valores_fila)
-            min_val = min(valores_fila)
+            html += f"<tr><td style='background-color:{color_fondo_div}; color:{color_texto}'>{division}</td>"
+
+            # Degradado por fila (excepto fila Total)
+            valores = [row[col] for col in columnas_sucursales]
+            max_val = max(valores)
+            min_val = min(valores)
             rango = max_val - min_val if max_val != min_val else 1
 
-            for col in sucursales_ordenadas:
+            for col in columnas_sucursales:
                 val = row[col]
-                ratio = (val - min_val) / rango
-                azul = int(255 - (ratio * 120))
-                color_fondo = f"rgb({azul},{azul + 20},255)"
-                html += f"<td class='grad' style='background-color:{color_fondo}'>{val:,.2f}</td>"
+                if es_total_fila or col == "Total":
+                    clase = "celda-total"
+                    html += f"<td class='{clase}'>{val:,.0f}</td>"
+                else:
+                    ratio = (val - min_val) / rango
+                    azul = int(255 - (ratio * 120))
+                    color_fondo = f"rgb({azul},{azul + 20},255)"
+                    html += f"<td class='grad' style='background-color:{color_fondo}'>{val:,.0f}</td>"
 
-            html += f"<td class='celda-total'>{row['Total']:,.2f}</td></tr>"
-
-        # Totales por columna
-        html += "<tr><td class='celda-total'>Total</td>"
-        max_total = totales_columna.max()
-        min_total = totales_columna.min()
-        rango_total = max_total - min_total if max_total != min_total else 1
-
-        for col in columnas_completas:
-            val = totales_columna[col]
-            ratio = (val - min_total) / rango_total
-            azul = int(255 - (ratio * 120))
-            color_fondo = f"rgb({azul},{azul + 20},255)"
-            html += f"<td class='celda-total' style='background-color:{color_fondo}'>{val:,.2f}</td>"
-        html += "</tr>"
+            html += "</tr>"
 
         html += "</tbody></table></div>"
         return html
-
-    # Mostrar en Streamlit
-    st.markdown("### Tabla por división y sucursal")
-    st.markdown(construir_tabla_div_suc_html(tabla_div_suc, columnas_ordenadas), unsafe_allow_html=True)
-
-
-
-
-    #----------------------- Tabla de compra por division y sucursal ----------------------------------
-    tabla_sucursal_division = pd.pivot_table(
-        df_divisiones,
-        values="monto",
-        index="division",       # Filas
-        columns="sucursal",     # Columnas
-        aggfunc="sum",
-        margins=True,           # Agrega totales
-        margins_name="Total",   # Nombre para los totales
-    )
-
-    # Renombrar índice
-    tabla_sucursal_division.index.rename("División", inplace=True)
-
-    # Reemplazar NaN por 0 para que no salga "null"
-    tabla_formateada = tabla_sucursal_division.fillna(0).applymap(lambda x: f"${x:,.0f}")
-
+    
     st.subheader("Monto anual comprado por sucursal y división")
-    st.dataframe(tabla_formateada, use_container_width=True)
+    st.markdown(
+        construir_tabla_sucursal_division_html(tabla_sucursal_division, sucursales),
+        unsafe_allow_html=True
+    )
     st.markdown("<br><br>", unsafe_allow_html=True)
+
 
     #----------- Graficos de columnas de compra mensual por división y sucursal -------------
     with open("config_colores.json", "r", encoding="utf-8") as f:
