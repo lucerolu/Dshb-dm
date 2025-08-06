@@ -532,12 +532,16 @@ elif opcion == "Compra por División":
     def construir_tabla_divisiones_html(df):
         estilos_css = """
         <style>
-            .tabla-divisiones {
+            .tabla-wrapper {
+                overflow-x: auto;
                 width: 100%;
+            }
+
+            .tabla-divisiones {
+                min-width: 100%;
+                width: max-content;
                 border-collapse: collapse;
                 table-layout: auto;
-                overflow-x: auto;
-                display: block;
             }
 
             .tabla-divisiones thead th {
@@ -554,6 +558,7 @@ elif opcion == "Compra por División":
             .tabla-divisiones td, .tabla-divisiones th {
                 padding: 8px;
                 font-size: 14px;
+                white-space: nowrap;
             }
 
             .tabla-divisiones tbody td:first-child {
@@ -562,7 +567,6 @@ elif opcion == "Compra por División":
                 background-color: #eeeeee;
                 color: black;
                 font-weight: bold;
-                white-space: nowrap;
             }
 
             .agricola {
@@ -585,17 +589,10 @@ elif opcion == "Compra por División":
                 font-weight: bold;
                 text-align: right;
             }
-
-            @media screen and (max-width: 768px) {
-                .tabla-divisiones {
-                    display: block;
-                    overflow-x: auto;
-                }
-            }
         </style>
         """
 
-        html = f"{estilos_css}<table class='tabla-divisiones'>"
+        html = estilos_css + "<div class='tabla-wrapper'><table class='tabla-divisiones'>"
         html += "<thead><tr>"
         for col in df.columns:
             html += f"<th>{col}</th>"
@@ -615,19 +612,22 @@ elif opcion == "Compra por División":
                 clase_div = "jardineria"
             html += f"<td class='{clase_div}'>{division}</td>"
 
-            # Celdas con gradiente azul por columna
+            # Calcular degradado por fila (por división)
+            valores_fila = [row[col] for col in orden_meses]
+            max_val = max(valores_fila)
+            min_val = min(valores_fila)
+            rango = max_val - min_val if max_val != min_val else 1
+
             for col in orden_meses:
                 val = row[col]
-                max_val = df[col].max()
-                min_val = df[col].min()
-                rango = max_val - min_val if max_val != min_val else 1
                 ratio = (val - min_val) / rango
                 azul = int(255 - (ratio * 120))
                 color_fondo = f"rgb({azul},{azul + 20},255)"
                 html += f"<td class='grad' style='background-color:{color_fondo}'>{val:,.2f}</td>"
 
             html += "</tr>"
-        html += "</tbody></table>"
+
+        html += "</tbody></table></div>"
         return html
 
     # Mostrar tabla
