@@ -66,6 +66,31 @@ def obtener_estado_cuenta_api():
         return pd.DataFrame(), None
 
 
+def mostrar_fecha_actualizacion():
+    try:
+        respuesta = requests.get(f"{API_URL}/ultima_actualizacion")
+        if respuesta.status_code == 200:
+            data = respuesta.json()
+            # Parsear la fecha ISO a datetime
+            fecha_dt = datetime.fromisoformat(data['fecha'])
+            # Formatear la fecha a español, ejemplo: 6 de agosto de 2025, 5:25 PM
+            fecha_formateada = fecha_dt.strftime("%-d de %B de %Y, %-I:%M %p")
+
+            # Mostrar badge con color verde y texto
+            st.markdown(
+                f'<p style="background-color:#DFF2BF; color:#4F8A10; padding:10px; border-radius:5px;">'
+                f'🕒 <b>Última actualización de datos:</b> {fecha_formateada}<br>'
+                f'📋 <i>{data["descripcion"]}</i>'
+                f'</p>', unsafe_allow_html=True
+            )
+        else:
+            st.warning("No se pudo obtener la fecha de última actualización.")
+    except Exception as e:
+        st.error(f"Error de conexión con la API: {e}")
+
+with st.sidebar:
+    mostrar_fecha_actualizacion() 
+
 # ----------------------------------------------- OBTENER DATOS -------------------------------------------------------------------------------
 df = obtener_datos_api()
 if not df.empty:
