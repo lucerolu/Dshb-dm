@@ -284,114 +284,113 @@ if opcion == "Resumen General":
     df_comp.columns = ["Mes", "Total Comprado", "Diferencia ($)", "Variación (%)"]
 
     # Convertir a HTML
-    def construir_tabla_html(df):
+    def construir_tabla_comparativa(df):
         estilos_css = """
         <style>
-            .tabla-comparativa {
+            .tabla-wrapper {
+                overflow-x: auto;
                 width: 100%;
+            }
+
+            .tabla-comparativa {
+                min-width: 100%;
+                width: max-content;
                 border-collapse: collapse;
-                display: table;
                 table-layout: auto;
             }
 
             .tabla-comparativa thead th {
-                background-color: #390570;
+                background-color: #0B083D;
                 color: white;
                 padding: 8px;
-                text-align: center;
+                white-space: nowrap;
                 position: sticky;
                 top: 0;
-                z-index: 2;
+                z-index: 3;
+                border: 1px solid white;
+            }
+
+            .tabla-comparativa thead th:first-child {
+                text-align: right;
+                left: 0;
+                position: sticky;
+                z-index: 5;
+            }
+
+            .tabla-comparativa thead th:not(:first-child) {
+                text-align: left;
             }
 
             .tabla-comparativa td, .tabla-comparativa th {
                 padding: 8px;
-                font-size: 15px;
+                font-size: 14px;
+                white-space: nowrap;
+                border: 1px solid white;
             }
 
-            .tabla-comparativa tbody td:first-child {
+            .tabla-comparativa tbody td:first-child,
+            .tabla-comparativa tfoot td:first-child {
                 position: sticky;
                 left: 0;
-                background-color: #503063;
+                background-color: #0B083D;
                 color: white;
                 font-weight: bold;
                 text-align: right;
-                z-index: 1;
-                white-space: nowrap;
+                z-index: 4;
+            }
+
+            .tabla-comparativa tbody td:not(:first-child) {
+                text-align: left;
             }
 
             .subida {
                 background-color: #7D1F08;
                 color: white;
-                text-align: left;
             }
 
             .bajada {
                 background-color: #184E08;
                 color: white;
-                text-align: left;
             }
 
             .neutra {
-                text-align: left;
-            }
-
-            .total-subida {
-                background-color: #184E08;
-                color: white;
-                text-align: left;
-            }
-
-            .total-bajada {
-                background-color: #7D1F08;
-                color: white;
-                text-align: left;
-            }
-
-            .total-neutra {
-                text-align: left;
-            }
-
-            @media screen and (max-width: 768px) {
-                .tabla-comparativa {
-                    display: block;
-                    overflow-x: auto;
-                }
+                color: black;
             }
         </style>
         """
 
-        html = f"{estilos_css}<table class='tabla-comparativa'>"
-        html += "<thead><tr>"
-        for col in df.columns:
-            html += f"<th>{col}</th>"
-        html += "</tr></thead><tbody>"
+        html = f"{estilos_css}<div class='tabla-wrapper'><table class='tabla-comparativa'>"
+        html += (
+            "<thead><tr>"
+            "<th>Mes</th>"
+            "<th>Total Comprado</th>"
+            "<th>Diferencia ($)</th>"
+            "<th>Variación (%)</th>"
+            "</tr></thead><tbody>"
+        )
 
         for _, row in df.iterrows():
             html += "<tr>"
 
-            # Fijada
-            html += f"<td>{row['Mes']}</td>"
-
-            # Determinar clases de color
+            # Determinar clase de color
             clase_color = (
                 "subida" if "⬆" in row["Diferencia ($)"] else
                 "bajada" if "⬇" in row["Diferencia ($)"] else
                 "neutra"
             )
 
-            # Usar misma clase para Total Comprado, Diferencia y Variación
+            html += f"<td>{row['Mes']}</td>"
             html += f"<td class='{clase_color}'>{row['Total Comprado']}</td>"
             html += f"<td class='{clase_color}'>{row['Diferencia ($)']}</td>"
             html += f"<td class='{clase_color}'>{row['Variación (%)']}</td>"
 
             html += "</tr>"
-            
-        html += "</tbody></table>"
+
+        html += "</tbody></table></div>"
         return html
 
     # Mostrar tabla
-    tabla_html = construir_tabla_html(df_comp)
+    tabla_html = construir_tabla_comparativa(df_comp)
     st.markdown(tabla_html, unsafe_allow_html=True)
 
     # --------------------------------------- GRÁFICA DE DIFERENCIAS MENSUALES --------------------------------------------------------------------------------------------
@@ -702,6 +701,7 @@ elif opcion == "Compra por División":
     # Mostrar tabla
     st.markdown("### Comparativo por división")
     st.markdown(construir_tabla_divisiones_html(tabla_pivot), unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
     df_mes_div = df_divisiones.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
