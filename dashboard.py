@@ -354,7 +354,7 @@ if opcion == "Resumen General":
             }
 
             .neutra {
-                color: black;
+                color: white;
             }
         </style>
         """
