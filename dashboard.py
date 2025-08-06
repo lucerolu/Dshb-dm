@@ -910,6 +910,7 @@ elif opcion == "Compra por División":
             color_texto = "white" if es_total_fila else ("black" if color_fondo_div != "#FFDE00" else "black")
 
             html += f"<tr><td style='background-color:{color_fondo_div}; color:{color_texto}'>{division}</td>"
+            columnas_sucursales = [col for col in df.columns if col not in ("División", "Total")]
 
             if not es_total_fila:
                 valores = [row[col] for col in columnas_sucursales]
@@ -917,7 +918,7 @@ elif opcion == "Compra por División":
                 min_val = min(valores)
                 rango = max_val - min_val if max_val != min_val else 1
 
-            for col in columnas_sucursales:
+            for col in columnas_sucursales + ["Total"]:
                 val = row[col]
                 if es_total_fila or col == "Total":
                     clase = "celda-total"
