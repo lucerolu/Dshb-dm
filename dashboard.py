@@ -528,75 +528,112 @@ elif opcion == "Compra por División":
     tabla_pivot.index.name = "División"
     tabla_pivot = tabla_pivot.reset_index()
 
-    # --------- 1. Estilo para columna División ----------
-    cell_style_division = JsCode("""
-    function(params) {
-        let color = '';
-        if (params.value === 'Agrícola') {
-            color = '#367C2B';
-        } else if (params.value === 'Construcción') {
-            color = '#FFDE00';
-        } else if (params.value === 'Jardinería' || params.value === 'Golf' || params.value === 'Jardinería y Golf') {
-            color = '#FFA500';
-        }
-        return {
-            'backgroundColor': color,
-            'color': 'black',
-            'fontWeight': 'bold'
-        };
-    }
-    """)
+    # Convertir a HTML con estilo
+    def construir_tabla_divisiones_html(df):
+        estilos_css = """
+        <style>
+            .tabla-divisiones {
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: auto;
+                overflow-x: auto;
+                display: block;
+            }
 
-    # --------- 2. Configurar Grid ----------
-    gb = GridOptionsBuilder.from_dataframe(tabla_pivot)
-    gb.configure_default_column(resizable=True, sortable=True, filter=True)
+            .tabla-divisiones thead th {
+                background-color: #390570;
+                color: white;
+                padding: 8px;
+                text-align: center;
+                position: sticky;
+                top: 0;
+                z-index: 2;
+                white-space: nowrap;
+            }
 
-    # Fijar columna División
-    gb.configure_column("División", pinned="left", cellStyle=cell_style_division)
+            .tabla-divisiones td, .tabla-divisiones th {
+                padding: 8px;
+                font-size: 14px;
+            }
 
-    # Aplicar degradado por columna usando `cellStyle` generado desde Python
-    for col in orden_meses:
-        max_val = tabla_pivot[col].max()
-        min_val = tabla_pivot[col].min()
-        rango = max_val - min_val if max_val != min_val else 1
+            .tabla-divisiones tbody td:first-child {
+                position: sticky;
+                left: 0;
+                background-color: #eeeeee;
+                color: black;
+                font-weight: bold;
+                white-space: nowrap;
+            }
 
-        # Crear JS dinámico para cada columna
-        js_code = f"""
-        function(params) {{
-            let valor = parseFloat(params.value);
-            let ratio = (valor - {min_val}) / {rango};
-            ratio = Math.max(0, Math.min(1, ratio));
-            let azul = Math.floor(255 - (ratio * 120));
-            let color = 'rgb(' + azul + ',' + (azul + 20) + ',255)';
-            return {{
-                'backgroundColor': color,
-                'color': 'black',
-                'fontWeight': 'bold',
-                'textAlign': 'right'
-            }};
-        }}
+            .agricola {
+                background-color: #367C2B !important;
+                color: white;
+            }
+
+            .construccion {
+                background-color: #FFDE00 !important;
+                color: black;
+            }
+
+            .jardineria {
+                background-color: #FFA500 !important;
+                color: black;
+            }
+
+            .grad {
+                color: black;
+                font-weight: bold;
+                text-align: right;
+            }
+
+            @media screen and (max-width: 768px) {
+                .tabla-divisiones {
+                    display: block;
+                    overflow-x: auto;
+                }
+            }
+        </style>
         """
-        gb.configure_column(
-            col,
-            type=["numericColumn"],
-            valueFormatter="data.value.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'})",
-            cellStyle=JsCode(js_code)
-        )
 
-    # Generar opciones y mostrar tabla
-    grid_options = gb.build()
+        html = f"{estilos_css}<table class='tabla-divisiones'>"
+        html += "<thead><tr>"
+        for col in df.columns:
+            html += f"<th>{col}</th>"
+        html += "</tr></thead><tbody>"
 
+        for _, row in df.iterrows():
+            html += "<tr>"
+
+            # Estilo para División
+            division = row["División"]
+            clase_div = ""
+            if "Agrícola" in division:
+                clase_div = "agricola"
+            elif "Construcción" in division:
+                clase_div = "construccion"
+            elif "Jardinería" in division or "Golf" in division:
+                clase_div = "jardineria"
+            html += f"<td class='{clase_div}'>{division}</td>"
+
+            # Celdas con gradiente azul por columna
+            for col in orden_meses:
+                val = row[col]
+                max_val = df[col].max()
+                min_val = df[col].min()
+                rango = max_val - min_val if max_val != min_val else 1
+                ratio = (val - min_val) / rango
+                azul = int(255 - (ratio * 120))
+                color_fondo = f"rgb({azul},{azul + 20},255)"
+                html += f"<td class='grad' style='background-color:{color_fondo}'>{val:,.2f}</td>"
+
+            html += "</tr>"
+        html += "</tbody></table>"
+        return html
+
+    # Mostrar tabla
     st.markdown("### Comparativo por división")
+    st.markdown(construir_tabla_divisiones_html(tabla_pivot), unsafe_allow_html=True)
 
-    AgGrid(
-        tabla_pivot,
-        gridOptions=grid_options,
-        fit_columns_on_grid_load=False,
-        height=450,
-        enable_enterprise_modules=False,
-        allow_unsafe_jscode=True,
-        use_container_width=True
-    )
 
     # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
     df_mes_div = df_divisiones.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
