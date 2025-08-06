@@ -514,23 +514,94 @@ elif opcion == "Compra por División":
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ---------------- TABLA: TOTAL MENSUAL COMPRADO POR DIVISIÓN ---------------------------------------------------------------------------
+    # Crear tabla pivote
     tabla_pivot = df_divisiones.pivot_table(
         index="division",
         columns="mes_nombre",
         values="monto",
         aggfunc="sum",
-        fill_value=0  # ya reemplaza nulls por 0
+        fill_value=0
     )
 
-    # Renombrar índice (nombre de la columna del índice)
-    tabla_pivot.index.rename("División", inplace=True)
+    # Reordenar columnas según el orden cronológico
+    tabla_pivot = tabla_pivot[orden_meses]
+    tabla_pivot.index.name = "División"
+    tabla_pivot = tabla_pivot.reset_index()
 
-    # Mostrar la tabla formateada
-    st.dataframe(
-        tabla_pivot.style.format("${:,.2f}"),
+    # Estilo para colorear la columna de División
+    cell_style_division = JsCode("""
+    function(params) {
+        let color = '';
+        if (params.value === 'Agrícola') {
+            color = '#367C2B';
+        } else if (params.value === 'Construcción') {
+            color = '#FFDE00';
+        } else if (params.value === 'Jardinería' || params.value === 'Golf' || params.value === 'Jardinería y Golf') {
+            color = '#FFA500';
+        }
+        return {
+            'backgroundColor': color,
+            'color': 'black',
+            'fontWeight': 'bold'
+        };
+    }
+    """)
+
+    # JS para aplicar gradiente azul basado en el valor (más alto = más oscuro)
+    gradient_js = JsCode("""
+    function(params) {
+        const max = Math.max(...params.colDef.fieldValues);
+        const min = Math.min(...params.colDef.fieldValues);
+        const val = params.value;
+        let ratio = (val - min) / (max - min);
+        if (isNaN(ratio)) ratio = 0;
+
+        const blueIntensity = Math.floor(255 - (ratio * 120)); // 135 a 255 (más oscuro = mayor valor)
+        return {
+            backgroundColor: `rgb(${blueIntensity}, ${blueIntensity + 20}, 255)`,
+            color: 'black',
+            fontWeight: 'bold',
+            textAlign: 'right'
+        };
+    }
+    """)
+
+    # Crear opciones
+    gb = GridOptionsBuilder.from_dataframe(tabla_pivot)
+    gb.configure_default_column(
+        resizable=True,
+        sortable=True,
+        filter=True,
+        cellStyle={'textAlign': 'right'}
+    )
+
+    # Fijar División y aplicar color personalizado
+    gb.configure_column("División", pinned="left", cellStyle=cell_style_division)
+
+    # Aplicar degradado por cada mes
+    for mes in orden_meses:
+        if mes in tabla_pivot.columns:
+            gb.configure_column(
+                mes,
+                type=["numericColumn"],
+                valueFormatter="data.value.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'})",
+                cellStyle=gradient_js
+            )
+
+    grid_options = gb.build()
+
+    # Mostrar tabla
+    st.markdown("### Comparativo por división")
+
+    AgGrid(
+        tabla_pivot,
+        gridOptions=grid_options,
+        fit_columns_on_grid_load=False,
+        height=400,
+        enable_enterprise_modules=False,
+        allow_unsafe_jscode=True,
         use_container_width=True
     )
-    st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
     df_mes_div = df_divisiones.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
