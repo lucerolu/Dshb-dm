@@ -911,11 +911,11 @@ elif opcion == "Compra por División":
 
             html += f"<tr><td style='background-color:{color_fondo_div}; color:{color_texto}'>{division}</td>"
 
-            # Degradado por fila (excepto fila Total)
-            valores = [row[col] for col in columnas_sucursales]
-            max_val = max(valores)
-            min_val = min(valores)
-            rango = max_val - min_val if max_val != min_val else 1
+            if not es_total_fila:
+                valores = [row[col] for col in columnas_sucursales]
+                max_val = max(valores)
+                min_val = min(valores)
+                rango = max_val - min_val if max_val != min_val else 1
 
             for col in columnas_sucursales:
                 val = row[col]
