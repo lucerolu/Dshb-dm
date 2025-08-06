@@ -752,7 +752,7 @@ elif opcion == "Compra por División":
 
 
     #----------------- GRÁFICA DE BARRAS AGRUPADAS: COMPRA POR SUCURSAL Y DIVISIÓN ------------------------------------------------------------
-    #df_suc_div = df_divisiones.groupby(["sucursal", "division"])["monto"].sum().reset_index()
+    df_suc_div = df_divisiones.groupby(["sucursal", "division"])["monto"].sum().reset_index()
 
     # Pivotar para que las divisiones estén como filas
     tabla_div_suc = df_suc_div.pivot_table(
