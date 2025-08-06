@@ -528,7 +528,7 @@ elif opcion == "Compra por División":
     tabla_pivot.index.name = "División"
     tabla_pivot = tabla_pivot.reset_index()
 
-    # Estilo para colorear la columna de División
+    # ---------- 1. Estilo para columna División ----------
     cell_style_division = JsCode("""
     function(params) {
         let color = '';
@@ -547,46 +547,45 @@ elif opcion == "Compra por División":
     }
     """)
 
-    # JS para aplicar gradiente azul basado en el valor (más alto = más oscuro)
-    gradient_js = JsCode("""
-    function(params) {
-        const max = Math.max(...params.colDef.fieldValues);
-        const min = Math.min(...params.colDef.fieldValues);
-        const val = params.value;
-        let ratio = (val - min) / (max - min);
-        if (isNaN(ratio)) ratio = 0;
+    # ---------- 2. Calcular colores en Python para cada celda ----------
+    # Creamos un diccionario con estilos por celda
+    cell_styles = {}
+    for col in orden_meses:
+        max_val = tabla_pivot[col].max()
+        min_val = tabla_pivot[col].min()
+        rango = max_val - min_val if max_val != min_val else 1
 
-        const blueIntensity = Math.floor(255 - (ratio * 120)); // 135 a 255 (más oscuro = mayor valor)
-        return {
-            backgroundColor: `rgb(${blueIntensity}, ${blueIntensity + 20}, 255)`,
-            color: 'black',
-            fontWeight: 'bold',
-            textAlign: 'right'
-        };
-    }
-    """)
+        for idx, val in tabla_pivot[col].items():
+            ratio = (val - min_val) / rango
+            azul = int(255 - (ratio * 120))  # 135 a 255
+            bg_color = f"rgb({azul},{azul + 20},255)"
+            cell_styles[(idx, col)] = {
+                "backgroundColor": bg_color,
+                "color": "black",
+                "fontWeight": "bold",
+                "textAlign": "right"
+            }
 
-    # Crear opciones
+    # ---------- 3. Configuración de AG Grid ----------
     gb = GridOptionsBuilder.from_dataframe(tabla_pivot)
-    gb.configure_default_column(
-        resizable=True,
-        sortable=True,
-        filter=True,
-        cellStyle={'textAlign': 'right'}
-    )
+    gb.configure_default_column(resizable=True, sortable=True, filter=True)
 
-    # Fijar División y aplicar color personalizado
+    # Fijar columna de División
     gb.configure_column("División", pinned="left", cellStyle=cell_style_division)
 
-    # Aplicar degradado por cada mes
-    for mes in orden_meses:
-        if mes in tabla_pivot.columns:
-            gb.configure_column(
-                mes,
-                type=["numericColumn"],
-                valueFormatter="data.value.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'})",
-                cellStyle=gradient_js
-            )
+    # Aplicar los estilos por celda
+    for col in orden_meses:
+        gb.configure_column(
+            col,
+            type=["numericColumn"],
+            valueFormatter="data.value.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'})",
+            cellStyle=JsCode(f"""
+                function(params) {{
+                    const estilos = {cell_styles};
+                    return estilos[[params.rowIndex, '{col}']] || {{}};
+                }}
+            """)
+        )
 
     grid_options = gb.build()
 
