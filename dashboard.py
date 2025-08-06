@@ -545,7 +545,7 @@ elif opcion == "Compra por División":
             }
 
             .tabla-divisiones thead th {
-                background-color: #390570;
+                background-color: #0B083D;
                 color: white;
                 padding: 8px;
                 text-align: center;
@@ -553,12 +553,14 @@ elif opcion == "Compra por División":
                 top: 0;
                 z-index: 2;
                 white-space: nowrap;
+                border: 1px solid white;
             }
 
             .tabla-divisiones td, .tabla-divisiones th {
                 padding: 8px;
                 font-size: 14px;
                 white-space: nowrap;
+                border: 1px solid white;
             }
 
             .tabla-divisiones tbody td:first-child {
@@ -567,6 +569,12 @@ elif opcion == "Compra por División":
                 background-color: #eeeeee;
                 color: black;
                 font-weight: bold;
+                text-align: right; /* División alineada a la derecha */
+            }
+
+            /* Texto columnas excepto División alineado a la izquierda */
+            .tabla-divisiones tbody td:not(:first-child) {
+                text-align: left;
             }
 
             .agricola {
@@ -587,10 +595,27 @@ elif opcion == "Compra por División":
             .grad {
                 color: black;
                 font-weight: bold;
-                text-align: right;
+                text-align: left;
+            }
+
+            /* Estilo celdas totales */
+            .celda-total {
+                background-color: #0B083D !important;
+                color: white !important;
+                font-weight: bold;
+                text-align: left;
             }
         </style>
         """
+
+        # Calcular totales por fila (división)
+        df['Total'] = df[orden_meses].sum(axis=1)
+
+        # Calcular totales por columna (meses + total)
+        totales_columna = df[orden_meses + ['Total']].sum()
+
+        # Añadimos columna Total a orden_meses para pintar totales por columna
+        columnas_completas = orden_meses + ['Total']
 
         html = estilos_css + "<div class='tabla-wrapper'><table class='tabla-divisiones'>"
         html += "<thead><tr>"
@@ -612,12 +637,13 @@ elif opcion == "Compra por División":
                 clase_div = "jardineria"
             html += f"<td class='{clase_div}'>{division}</td>"
 
-            # Calcular degradado por fila (por división)
+            # Valores por fila (incluyendo total)
             valores_fila = [row[col] for col in orden_meses]
             max_val = max(valores_fila)
             min_val = min(valores_fila)
             rango = max_val - min_val if max_val != min_val else 1
 
+            # Mostrar celdas de meses con degradado azul por fila
             for col in orden_meses:
                 val = row[col]
                 ratio = (val - min_val) / rango
@@ -625,7 +651,26 @@ elif opcion == "Compra por División":
                 color_fondo = f"rgb({azul},{azul + 20},255)"
                 html += f"<td class='grad' style='background-color:{color_fondo}'>{val:,.2f}</td>"
 
+            # Mostrar total por fila (sin degradado, con color fijo)
+            total_fila = row['Total']
+            html += f"<td class='celda-total'>{total_fila:,.2f}</td>"
+
             html += "</tr>"
+
+        # Fila totales por columna
+        html += "<tr>"
+        html += "<td class='celda-total'>Total</td>"
+        max_total = totales_columna.max()
+        min_total = totales_columna.min()
+        rango_total = max_total - min_total if max_total != min_total else 1
+
+        for col in columnas_completas:
+            val = totales_columna[col]
+            ratio = (val - min_total) / rango_total
+            azul = int(255 - (ratio * 120))
+            color_fondo = f"rgb({azul},{azul + 20},255)"
+            html += f"<td class='celda-total' style='background-color:{color_fondo}'>{val:,.2f}</td>"
+        html += "</tr>"
 
         html += "</tbody></table></div>"
         return html
@@ -633,6 +678,7 @@ elif opcion == "Compra por División":
     # Mostrar tabla
     st.markdown("### Comparativo por división")
     st.markdown(construir_tabla_divisiones_html(tabla_pivot), unsafe_allow_html=True)
+
 
 
     # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
