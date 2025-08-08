@@ -177,8 +177,8 @@ if authentication_status:
         # Botón cerrar sesión
         authenticator.logout("Cerrar sesión", "sidebar")
 
-    # Mostrar fecha de actualización fuera del sidebar, o donde la tengas definida
-    mostrar_fecha_actualizacion()
+        # Mostrar fecha de actualización fuera del sidebar, o donde la tengas definida
+        mostrar_fecha_actualizacion()
 
 
     # ==========================================================================================================
