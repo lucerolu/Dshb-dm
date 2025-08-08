@@ -1192,7 +1192,7 @@ if authentication_status:
         # Agrupar monto total por cuenta y sucursal
         df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
 
-        # Crear cuenta_sucursal en df con abreviatura
+        # Crear cuenta_sucursal con abreviatura
         def obtener_cuenta_sucursal(codigo, sucursal):
             if codigo in codigo_division_map:
                 abrev = codigo_division_map[codigo]["abreviatura"]
@@ -1231,37 +1231,52 @@ if authentication_status:
         tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
         tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
-        # Renombrar índice
-        tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
+        # Renombrar índice y reset
+        tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal").reset_index()
 
-        # Reset index
-        tabla_compras_reset = tabla_compras.reset_index()
+        # ===========================
+        #   Mostrar con AgGrid
+        # ===========================
 
-        # Detectar columnas numéricas
-        cols_numericas = tabla_compras_reset.select_dtypes(include=["number"]).columns
+        # JavaScript para alinear
+        align_right = JsCode("""
+        function(params) {
+            return {'text-align': 'right'}
+        }
+        """)
+        align_left = JsCode("""
+        function(params) {
+            return {'text-align': 'left'}
+        }
+        """)
 
-        # Alinear primera columna a la derecha (truco con padding)
-        tabla_compras_reset["Cuenta - Sucursal"] = tabla_compras_reset["Cuenta - Sucursal"].apply(lambda x: f"{x:>50}")
+        # Construir opciones de AgGrid
+        gb = GridOptionsBuilder.from_dataframe(tabla_compras)
 
-        # Formatear solo las columnas numéricas
-        tabla_compras_formateada = tabla_compras_reset.style.format("{:,.2f}", subset=cols_numericas)
+        for col in tabla_compras.columns:
+            if col == "Cuenta - Sucursal":
+                gb.configure_column(col, headerClass="ag-right-aligned-header", cellStyle=align_right)
+            else:
+                gb.configure_column(col, type=["numericColumn"], valueFormatter="Number(params.value).toLocaleString('es-MX', {minimumFractionDigits: 2})", cellStyle=align_left)
 
-        # Mostrar tabla con scroll y estilos básicos
-        st.dataframe(tabla_compras_formateada, use_container_width=True)
+        # Opciones finales
+        grid_options = gb.build()
 
+        AgGrid(
+            tabla_compras,
+            gridOptions=grid_options,
+            height=500,
+            fit_columns_on_grid_load=True
+        )
 
-        # Formatear números con comas y dos decimales
-        #tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
-        # Mostrar tabla con scroll y encabezado fijo (st.dataframe lo maneja)
-        #st.dataframe(tabla_compras_formateada, use_container_width=True)
-
-        # Crear archivo Excel en memoria para descarga (sin formateo visual, solo valores)
+        # ===========================
+        #   Descargar Excel
+        # ===========================
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             tabla_compras.to_excel(writer, sheet_name='Compras')
         processed_data = output.getvalue()
 
-        # Botón para descargar Excel
         st.download_button(
             label="📥 Descargar tabla en Excel",
             data=processed_data,
