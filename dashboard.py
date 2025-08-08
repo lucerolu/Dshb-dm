@@ -1235,27 +1235,42 @@ if authentication_status:
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal").reset_index()
 
         # 🔹 Convertir todo a tipos serializables para AgGrid
-        tabla_compras = tabla_compras.applymap(lambda x: float(x) if isinstance(x, (int, float)) else str(x))
+        tabla_compras = tabla_compras.applymap(
+            lambda x: float(x) if isinstance(x, (int, float)) else str(x)
+        )
 
-        # ===========================
-        #   Mostrar con AgGrid
-        # ===========================
+        # JS para alinear celdas
+        align_right = JsCode("""
+        function(params) {
+            return {'text-align': 'right'};
+        }
+        """)
 
-        # JavaScript para alinear
-        align_right = JsCode("function(params) {return {'text-align': 'right'}}")
-        align_left = JsCode("function(params) {return {'text-align': 'left'}}")
+        align_left = JsCode("""
+        function(params) {
+            return {'text-align': 'left'};
+        }
+        """)
 
-        # Construir opciones de AgGrid
+        # JS para formatear números en español con 2 decimales
+        formatter_num = JsCode("""
+        function(params) {
+            if (params.value === null || params.value === undefined) {
+                return '';
+            }
+            return Number(params.value).toLocaleString('es-MX', {minimumFractionDigits: 2});
+        }
+        """)
+
         gb = GridOptionsBuilder.from_dataframe(tabla_compras)
 
         for col in tabla_compras.columns:
             if col == "Cuenta - Sucursal":
-                gb.configure_column(col, headerClass="ag-right-aligned-header", cellStyle=align_right)
+                gb.configure_column(col, cellStyle=align_right)
             else:
-                gb.configure_column(
-                    col,
+                gb.configure_column(col,
                     type=["numericColumn"],
-                    valueFormatter="Number(params.value).toLocaleString('es-MX', {minimumFractionDigits: 2})",
+                    valueFormatter=formatter_num,
                     cellStyle=align_left
                 )
 
