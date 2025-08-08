@@ -159,11 +159,10 @@ if authentication_status:
 
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
-        # Mostrar bienvenida solo si el usuario está autenticado
+        # Bienvenida, menú y botón cerrar sesión
         if "user_name" in st.session_state:
             st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
 
-        # Menú para las vistas
         opcion = st.selectbox("Selecciona una vista", [
             "Resumen General",
             "Compra por División",
@@ -174,12 +173,29 @@ if authentication_status:
             "Estado de cuenta"
         ])
 
-        # Botón cerrar sesión
         authenticator.logout("Cerrar sesión", "sidebar")
 
-        # Mostrar fecha de actualización fuera del sidebar, o donde la tengas definida
-        mostrar_fecha_actualizacion()
+        # Espacio que empuja el contenido hacia abajo
+        st.markdown(
+            """
+            <style>
+            .stSidebar > div:first-child {
+                display: flex;
+                flex-direction: column;
+                height: 85vh;
+            }
+            .stSidebar > div:first-child > div:first-child {
+                flex-grow: 1;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        # Este div vacío toma el espacio flexible
+        st.markdown("<div></div>", unsafe_allow_html=True)
 
+        # Finalmente la fecha que quedará abajo
+        mostrar_fecha_actualizacion()
 
     # ==========================================================================================================
     # ============================= RESUMEN GENERAL ============================================================
