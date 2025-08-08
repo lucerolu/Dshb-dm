@@ -159,42 +159,26 @@ if authentication_status:
 
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
-        # Contenedor para todo lo que va arriba (menú, bienvenida, botón)
-        st.markdown(
-            """
-            <div style="display: flex; flex-direction: column; height: 90vh;">
-                <div>
-                    <!-- Aquí va bienvenida, menú y botón cerrar sesión -->
-                </div>
-                <div style="flex-grow: 1;"></div>  <!-- Este espacio vacío empuja la fecha hacia abajo -->
-                <div>
-                    <!-- Aquí va la fecha que quieres que quede abajo -->
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Mostrar bienvenida solo si el usuario está autenticado
+        if "user_name" in st.session_state:
+            st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
 
-        # Para hacer que el contenido sea dinámico, usa placeholders:
-        # 1. Primera parte: bienvenida, menú y botón
-        placeholder_arriba = st.empty()
-        with placeholder_arriba.container():
-            if "user_name" in st.session_state:
-                st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
-            opcion = st.selectbox("Selecciona una vista", [
-                "Resumen General",
-                "Compra por División",
-                "Compra por Cuenta",
-                "Compra por Sucursal",
-                "Vista por Sucursal",
-                "Estado de Ligado",
-                "Estado de cuenta"
-            ])
-            authenticator.logout("Cerrar sesión", "sidebar")
+        # Menú para las vistas
+        opcion = st.selectbox("Selecciona una vista", [
+            "Resumen General",
+            "Compra por División",
+            "Compra por Cuenta",
+            "Compra por Sucursal",
+            "Vista por Sucursal",
+            "Estado de Ligado",
+            "Estado de cuenta"
+        ])
 
-        # 2. Finalmente mostrar la fecha al final, fuera del contenedor flexible
+        # Botón cerrar sesión
+        authenticator.logout("Cerrar sesión", "sidebar")
+
+        # Fecha de última actualización al final del sidebar
         mostrar_fecha_actualizacion()
-
 
     # ==========================================================================================================
     # ============================= RESUMEN GENERAL ============================================================
