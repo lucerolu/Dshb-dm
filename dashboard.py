@@ -22,6 +22,7 @@ from babel.dates import format_datetime
 import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
+import time 
 
 
 # Cargar configuración desde secrets y convertirla a dict normal
@@ -45,7 +46,10 @@ name, authentication_status, username = authenticator.login("Iniciar Sesión", "
 # Proteger contenido
 if authentication_status:
     authenticator.logout("Cerrar sesión", "sidebar")
+    placeholder = st.empty()
     st.success(f"Bienvenido {name} 👋")
+    time.sleep(3)
+    placeholder.empty() 
 
     #==========================================================================================================
     # -------------- CONFIGURACION GENERAL --------------------------------------------------------------------
@@ -1482,7 +1486,7 @@ if authentication_status:
 
         st.markdown("### Compras por Sucursal, mes a mes")
 
-        for mes in orden_meses_reversa:
+        for i, mes in enumerate(orden_meses_reversa):
             df_mes = df[df["mes_nombre"] == mes].copy()
             
             # Agrupar solo por sucursal, sumando los montos de todas las divisiones
@@ -1515,7 +1519,7 @@ if authentication_status:
                 hovertemplate=None
             )
             fig_mes.update_layout(showlegend=False)
-            st.plotly_chart(fig_mes, use_container_width=True, key=f"bar_{mes}")
+            st.plotly_chart(fig_mes, use_container_width=True, key=f"bar_{i}_{mes}")
 
 
     # ==========================================================================================================
