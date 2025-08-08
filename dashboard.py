@@ -157,6 +157,21 @@ if authentication_status:
         st.warning("No hay datos disponibles para mostrar.")
 
 
+    #------------------------------ MAPEO COLOR ABREVIATURA -------------------------------------------------------------------------
+    # Cargar configuración de colores
+    with open("config_colores.json", "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    # Crear un dict {codigo: (color, abreviatura)}
+    codigo_division_map = {}
+    for division, datos in config["divisiones"].items():
+        for cod in datos["codigos"]:
+            codigo_division_map[cod] = {
+                "color": datos["color"],
+                "abreviatura": datos["abreviatura"],
+                "division": division
+            }
+
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
         # Mostrar bienvenida solo si el usuario está autenticado
@@ -1204,11 +1219,46 @@ if authentication_status:
         # Cambiar nombre del índice para que se vea mejor el encabezado
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
 
-        # Formatear números con comas y dos decimales
-        tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
+        # Reset index para que "Cuenta - Sucursal" sea columna y podamos estilizarla fácilmente
+        tabla_compras_reset = tabla_compras.reset_index()
 
+        def color_cuenta_sucursal(val):
+            if pd.isna(val):
+                return ""
+            codigo = val.split(" - ")[0]
+            if codigo in codigo_division_map:
+                color = codigo_division_map[codigo]["color"]
+                return f"background-color: {color}; color: white; font-weight: bold;"
+            return ""
+
+        def alinear_columnas(col):
+            if col == "Cuenta - Sucursal":
+                return "text-align: right;"
+            return "text-align: left;"
+
+        # Estilo
+        styled_table = (
+            tabla_compras_reset.style
+            .applymap(color_cuenta_sucursal, subset=["Cuenta - Sucursal"])
+            .set_table_styles([
+                # Encabezado sombreado
+                {"selector": "thead th", "props": "background-color: #f0f0f0; font-weight: bold;"},
+                # Alineación de columnas
+                *[
+                    {"selector": f"td.col{i}", "props": alinear_columnas(col)}
+                    for i, col in enumerate(tabla_compras_reset.columns)
+                ]
+            ], overwrite=False)
+            .format("{:,.2f}", subset=tabla_compras_reset.columns[1:])  # No formatear la primera col
+        )
+
+        # Mostrar tabla con scroll y estilos
+        st.dataframe(styled_table, use_container_width=True)
+
+        # Formatear números con comas y dos decimales
+        #tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
         # Mostrar tabla con scroll y encabezado fijo (st.dataframe lo maneja)
-        st.dataframe(tabla_compras_formateada, use_container_width=True)
+        #st.dataframe(tabla_compras_formateada, use_container_width=True)
 
         # Crear archivo Excel en memoria para descarga (sin formateo visual, solo valores)
         output = io.BytesIO()
