@@ -24,19 +24,15 @@ import yaml
 from yaml.loader import SafeLoader
 
 
-# Función para convertir un st.secrets o un dict anidado a dict normal
-def to_dict(obj):
-    if isinstance(obj, dict):
-        return {k: to_dict(v) for k, v in obj.items()}
-    else:
-        return obj
+# Cargar configuración desde secrets y convertirla a dict normal
+auth_config = dict(st.secrets["auth"])
 
-# Convertir la sección "auth" en un dict normal
-auth_config = to_dict(st.secrets["auth"])
+# Convertir la parte de credenciales a dict normal
+credentials = {k: dict(v) if isinstance(v, dict) else v for k, v in auth_config["credentials"].items()}
 
-# Inicializar autenticador
+# Crear autenticador usando una copia modificable
 authenticator = stauth.Authenticate(
-    auth_config["credentials"],
+    credentials,
     auth_config["cookie"]["name"],
     auth_config["cookie"]["key"],
     auth_config["cookie"]["expiry_days"],
