@@ -23,16 +23,14 @@ import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
 
-# Cargar credenciales desde secrets
-auth_config = yaml.load(st.secrets["auth"]["credentials"], Loader=SafeLoader)
+auth_config = st.secrets["auth"]
 
-# Crear autenticador
 authenticator = stauth.Authenticate(
-    auth_config['usernames'],
-    auth_config['cookie']['name'],
-    auth_config['cookie']['key'],
-    auth_config['cookie']['expiry_days'],
-    auth_config.get('preauthorized', {}).get('emails', [])
+    auth_config["credentials"],
+    auth_config["cookie"]["name"],
+    auth_config["cookie"]["key"],
+    auth_config["cookie"]["expiry_days"],
+    auth_config.get("preauthorized", {}).get("emails", [])
 )
 
 # Login
