@@ -19,6 +19,31 @@ import requests
 import itertools
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from babel.dates import format_datetime
+import streamlit_authenticator as stauth
+import yaml
+from yaml.loader import SafeLoader
+
+# Cargar credenciales desde secrets
+auth_config = yaml.load(st.secrets["auth"]["credentials"], Loader=SafeLoader)
+
+# Crear autenticador
+authenticator = stauth.Authenticate(
+    auth_config['usernames'],
+    auth_config['cookie']['name'],
+    auth_config['cookie']['key'],
+    auth_config['cookie']['expiry_days'],
+    auth_config.get('preauthorized', {}).get('emails', [])
+)
+
+# Login
+name, authentication_status, username = authenticator.login("Iniciar Sesión", "main")
+
+if authentication_status:
+    st.success(f"Bienvenido {name} 👋")
+elif authentication_status is False:
+    st.error("Usuario o contraseña incorrectos")
+elif authentication_status is None:
+    st.warning("Por favor ingresa tus credenciales")
 
 
 #==========================================================================================================
