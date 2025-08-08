@@ -47,7 +47,7 @@ name, authentication_status, username = authenticator.login("Iniciar Sesión", "
 if authentication_status:
     authenticator.logout("Cerrar sesión", "sidebar")
     placeholder = st.empty()
-    st.success(f"Bienvenido {name} 👋")
+    placeholder.success(f"Bienvenido {name} 👋") 
     time.sleep(3)
     placeholder.empty() 
 
