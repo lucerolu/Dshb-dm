@@ -1231,15 +1231,19 @@ if authentication_status:
         tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
         tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
-        # Renombrar índice y reset
+        # 1. Separar fila "Total General" para que no esté en el DataFrame principal
+        total_general = tabla_compras.loc["Total General"]
+        tabla_compras = tabla_compras.drop("Total General")
+
+        # 2. Resetear índice y preparar para AgGrid
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal").reset_index()
 
-        # 🔹 Convertir todo a tipos serializables para AgGrid
-        tabla_compras = tabla_compras.applymap(
+        # 3. Rellenar valores nulos y convertir todo a tipos serializables
+        tabla_compras = tabla_compras.fillna("").applymap(
             lambda x: float(x) if isinstance(x, (int, float)) else str(x)
         )
 
-        # JS para alinear celdas
+        # 4. Definir JsCode para estilos y formateo
         align_right = JsCode("""
         function(params) {
             return {'text-align': 'right'};
@@ -1252,23 +1256,24 @@ if authentication_status:
         }
         """)
 
-        # JS para formatear números en español con 2 decimales
         formatter_num = JsCode("""
         function(params) {
-            if (params.value === null || params.value === undefined) {
+            if (params.value === null || params.value === undefined || params.value === '') {
                 return '';
             }
             return Number(params.value).toLocaleString('es-MX', {minimumFractionDigits: 2});
         }
         """)
 
+        # 5. Construir GridOptions
         gb = GridOptionsBuilder.from_dataframe(tabla_compras)
 
         for col in tabla_compras.columns:
             if col == "Cuenta - Sucursal":
                 gb.configure_column(col, cellStyle=align_right)
             else:
-                gb.configure_column(col,
+                gb.configure_column(
+                    col,
                     type=["numericColumn"],
                     valueFormatter=formatter_num,
                     cellStyle=align_left
@@ -1276,12 +1281,17 @@ if authentication_status:
 
         grid_options = gb.build()
 
+        # 6. Mostrar tabla sin la fila Total General
         AgGrid(
             tabla_compras,
             gridOptions=grid_options,
             height=500,
             fit_columns_on_grid_load=True
         )
+
+        # 7. Mostrar fila Total General manualmente en Streamlit (si quieres)
+        st.write("**Total General:**")
+        st.write(total_general)
 
         # ===========================
         #   Descargar Excel
