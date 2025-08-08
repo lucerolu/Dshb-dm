@@ -22,8 +22,10 @@ from babel.dates import format_datetime
 import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
+from copy import deepcopy
 
-auth_config = st.secrets["auth"]
+# Convertir a un dict normal para evitar el error de inmutabilidad
+auth_config = deepcopy(st.secrets["auth"])
 
 authenticator = stauth.Authenticate(
     auth_config["credentials"],
