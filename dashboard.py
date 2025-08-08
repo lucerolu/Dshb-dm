@@ -158,7 +158,7 @@ if authentication_status:
 
 
     # ------------------- MENU LATERAL -------------------------------------------------
-        with st.sidebar:
+    with st.sidebar:
         # Contenedor para todo lo que va arriba (menú, bienvenida, botón)
         st.markdown(
             """
