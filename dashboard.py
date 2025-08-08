@@ -1189,17 +1189,26 @@ if authentication_status:
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title("Compra mensual por Cuenta (2025)")
 
-        # Agrupar monto total por cuenta y sucursal (no se usa directamente aquí pero puede servir)
+        # Agrupar monto total por cuenta y sucursal
         df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
 
-        # Crear cuenta_sucursal en df
-        df["cuenta_sucursal"] = df["codigo_normalizado"] + " - " + df["sucursal"]
+        # Crear cuenta_sucursal en df con abreviatura
+        def obtener_cuenta_sucursal(codigo, sucursal):
+            if codigo in codigo_division_map:
+                abrev = codigo_division_map[codigo]["abreviatura"]
+                return f"{codigo} ({abrev}) - {sucursal}"
+            return f"{codigo} - {sucursal}"
 
-        # Crear mes_anio y orden_mes en df
+        df["cuenta_sucursal"] = df.apply(
+            lambda row: obtener_cuenta_sucursal(row["codigo_normalizado"], row["sucursal"]),
+            axis=1
+        )
+
+        # Crear mes_anio y orden_mes
         df["mes_anio"] = df["mes_dt"].dt.strftime('%b %Y').str.capitalize()
         df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
-        # Crear tabla pivote con fill_value para completar con ceros
+        # Crear tabla pivote
         tabla_compras = df.pivot_table(
             index="cuenta_sucursal",
             columns="mes_anio",
@@ -1208,7 +1217,7 @@ if authentication_status:
             fill_value=0
         )
 
-        # Ordenar columnas según orden_mes
+        # Ordenar columnas
         orden_columnas = df.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
         tabla_compras = tabla_compras[orden_columnas]
 
@@ -1216,34 +1225,23 @@ if authentication_status:
         tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
         tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
-        # Cambiar nombre del índice para que se vea mejor el encabezado
+        # Renombrar índice
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
 
-        # Reset index para que "Cuenta - Sucursal" sea columna y podamos estilizarla fácilmente
+        # Reset index
         tabla_compras_reset = tabla_compras.reset_index()
 
-        def color_cuenta_sucursal(val):
-            if pd.isna(val):
-                return ""
-            codigo = val.split(" - ")[0]
-            if codigo in codigo_division_map:
-                color = codigo_division_map[codigo]["color"]
-                return f"background-color: {color}; color: white; font-weight: bold;"
-            return ""
-
+        # Alineación de columnas
         def alinear_columnas(col):
             if col == "Cuenta - Sucursal":
                 return "text-align: right;"
             return "text-align: left;"
 
-        # Estilo
+        # Estilo de tabla
         styled_table = (
             tabla_compras_reset.style
-            .applymap(color_cuenta_sucursal, subset=["Cuenta - Sucursal"])
             .set_table_styles([
-                # Encabezado sombreado
                 {"selector": "thead th", "props": "background-color: #f0f0f0; font-weight: bold;"},
-                # Alineación de columnas
                 *[
                     {"selector": f"td.col{i}", "props": alinear_columnas(col)}
                     for i, col in enumerate(tabla_compras_reset.columns)
@@ -1252,8 +1250,9 @@ if authentication_status:
             .format("{:,.2f}", subset=tabla_compras_reset.columns[1:])  # No formatear la primera col
         )
 
-        # Mostrar tabla con scroll y estilos
+        # Mostrar tabla
         st.dataframe(styled_table, use_container_width=True)
+
 
         # Formatear números con comas y dos decimales
         #tabla_compras_formateada = tabla_compras.style.format("{:,.2f}")
