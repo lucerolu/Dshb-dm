@@ -1237,13 +1237,17 @@ if authentication_status:
         # Reset index
         tabla_compras_reset = tabla_compras.reset_index()
 
-        # Alinear primera columna a la derecha agregando padding
+        # Detectar columnas numéricas
+        cols_numericas = tabla_compras_reset.select_dtypes(include=["number"]).columns
+
+        # Alinear primera columna a la derecha (truco con padding)
         tabla_compras_reset["Cuenta - Sucursal"] = tabla_compras_reset["Cuenta - Sucursal"].apply(lambda x: f"{x:>50}")
 
-        # Mostrar tabla formateada
-        tabla_compras_formateada = tabla_compras_reset.style.format("{:,.2f}")
-        st.dataframe(tabla_compras_formateada, use_container_width=True)
+        # Formatear solo las columnas numéricas
+        tabla_compras_formateada = tabla_compras_reset.style.format("{:,.2f}", subset=cols_numericas)
 
+        # Mostrar tabla con scroll y estilos básicos
+        st.dataframe(tabla_compras_formateada, use_container_width=True)
 
 
         # Formatear números con comas y dos decimales
