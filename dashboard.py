@@ -1204,8 +1204,14 @@ if authentication_status:
             axis=1
         )
 
-        # Crear mes_anio y orden_mes
-        df["mes_anio"] = df["mes_dt"].dt.strftime('%b %Y').str.capitalize()
+        # Meses en español
+        meses_es = {
+            'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
+            'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
+            'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+        }
+
+        df["mes_anio"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
         df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
         # Crear tabla pivote
@@ -1231,27 +1237,13 @@ if authentication_status:
         # Reset index
         tabla_compras_reset = tabla_compras.reset_index()
 
-        # Alineación de columnas
-        def alinear_columnas(col):
-            if col == "Cuenta - Sucursal":
-                return "text-align: right;"
-            return "text-align: left;"
+        # Alinear primera columna a la derecha agregando padding
+        tabla_compras_reset["Cuenta - Sucursal"] = tabla_compras_reset["Cuenta - Sucursal"].apply(lambda x: f"{x:>50}")
 
-        # Estilo de tabla
-        styled_table = (
-            tabla_compras_reset.style
-            .set_table_styles([
-                {"selector": "thead th", "props": "background-color: #f0f0f0; font-weight: bold;"},
-                *[
-                    {"selector": f"td.col{i}", "props": alinear_columnas(col)}
-                    for i, col in enumerate(tabla_compras_reset.columns)
-                ]
-            ], overwrite=False)
-            .format("{:,.2f}", subset=tabla_compras_reset.columns[1:])  # No formatear la primera col
-        )
+        # Mostrar tabla formateada
+        tabla_compras_formateada = tabla_compras_reset.style.format("{:,.2f}")
+        st.dataframe(tabla_compras_formateada, use_container_width=True)
 
-        # Mostrar tabla
-        st.dataframe(styled_table, use_container_width=True)
 
 
         # Formatear números con comas y dos decimales
