@@ -165,15 +165,23 @@ if authentication_status:
 
 
     # ------------------- MENU LATERAL -------------------------------------------------
-    opcion = st.sidebar.selectbox("Selecciona una vista", [
-        "Resumen General",
-        "Compra por División",
-        "Compra por Cuenta",
-        "Compra por Sucursal",
-        "Vista por Sucursal",
-        "Estado de Ligado",
-        "Estado de cuenta"
-    ])
+    with st.sidebar:
+        # 1. Menú para las vistas
+        opcion = st.selectbox("Selecciona una vista", [
+            "Resumen General",
+            "Compra por División",
+            "Compra por Cuenta",
+            "Compra por Sucursal",
+            "Vista por Sucursal",
+            "Estado de Ligado",
+            "Estado de cuenta"
+        ])
+
+        # 2. Botón cerrar sesión
+        authenticator.logout("Cerrar sesión", "sidebar")
+
+        # 3. Cuadro de última actualización (al final)
+        mostrar_fecha_actualizacion()
 
     # ==========================================================================================================
     # ============================= RESUMEN GENERAL ============================================================
