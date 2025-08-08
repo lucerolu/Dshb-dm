@@ -1234,21 +1234,16 @@ if authentication_status:
         # Renombrar índice y reset
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal").reset_index()
 
+        # 🔹 Convertir todo a tipos serializables para AgGrid
+        tabla_compras = tabla_compras.applymap(lambda x: float(x) if isinstance(x, (int, float)) else str(x))
+
         # ===========================
         #   Mostrar con AgGrid
         # ===========================
 
         # JavaScript para alinear
-        align_right = JsCode("""
-        function(params) {
-            return {'text-align': 'right'}
-        }
-        """)
-        align_left = JsCode("""
-        function(params) {
-            return {'text-align': 'left'}
-        }
-        """)
+        align_right = JsCode("function(params) {return {'text-align': 'right'}}")
+        align_left = JsCode("function(params) {return {'text-align': 'left'}}")
 
         # Construir opciones de AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_compras)
@@ -1257,9 +1252,13 @@ if authentication_status:
             if col == "Cuenta - Sucursal":
                 gb.configure_column(col, headerClass="ag-right-aligned-header", cellStyle=align_right)
             else:
-                gb.configure_column(col, type=["numericColumn"], valueFormatter="Number(params.value).toLocaleString('es-MX', {minimumFractionDigits: 2})", cellStyle=align_left)
+                gb.configure_column(
+                    col,
+                    type=["numericColumn"],
+                    valueFormatter="Number(params.value).toLocaleString('es-MX', {minimumFractionDigits: 2})",
+                    cellStyle=align_left
+                )
 
-        # Opciones finales
         grid_options = gb.build()
 
         AgGrid(
@@ -1274,7 +1273,7 @@ if authentication_status:
         # ===========================
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            tabla_compras.to_excel(writer, sheet_name='Compras')
+            tabla_compras.to_excel(writer, sheet_name='Compras', index=False)
         processed_data = output.getvalue()
 
         st.download_button(
