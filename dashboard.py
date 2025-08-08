@@ -45,12 +45,9 @@ name, authentication_status, username = authenticator.login("Iniciar Sesión", "
 
 # Proteger contenido
 if authentication_status:
-    authenticator.logout("Cerrar sesión", "sidebar")
-    placeholder = st.empty()
-    placeholder.success(f"Bienvenido {name} 👋") 
-    time.sleep(3)
-    placeholder.empty() 
-
+    # Solo aquí guardas el nombre para usar en el sidebar más adelante
+    st.session_state["user_name"] = name
+    
     #==========================================================================================================
     # -------------- CONFIGURACION GENERAL --------------------------------------------------------------------
     #==========================================================================================================
@@ -117,10 +114,6 @@ if authentication_status:
         except Exception as e:
             st.error(f"Error de conexión con la API: {e}")
 
-    # En tu sidebar
-    with st.sidebar:
-        mostrar_fecha_actualizacion()
-
     # ----------------------------------------------- OBTENER DATOS -------------------------------------------------------------------------------
     df = obtener_datos_api()
     if not df.empty:
@@ -166,7 +159,11 @@ if authentication_status:
 
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
-        # 1. Menú para las vistas
+        # Mostrar bienvenida solo si el usuario está autenticado
+        if "user_name" in st.session_state:
+            st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
+
+        # Menú para las vistas
         opcion = st.selectbox("Selecciona una vista", [
             "Resumen General",
             "Compra por División",
@@ -177,11 +174,12 @@ if authentication_status:
             "Estado de cuenta"
         ])
 
-        # 2. Botón cerrar sesión
+        # Botón cerrar sesión
         authenticator.logout("Cerrar sesión", "sidebar")
 
-        # 3. Cuadro de última actualización (al final)
-        mostrar_fecha_actualizacion()
+    # Mostrar fecha de actualización fuera del sidebar, o donde la tengas definida
+    mostrar_fecha_actualizacion()
+
 
     # ==========================================================================================================
     # ============================= RESUMEN GENERAL ============================================================
