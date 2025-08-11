@@ -1293,6 +1293,7 @@ if authentication_status:
         st.write("**Total General:**")
         st.write(total_general)
 
+
         # ===========================
         #   Descargar Excel
         # ===========================
