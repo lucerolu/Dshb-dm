@@ -1268,19 +1268,19 @@ if authentication_status:
         }
         """)
 
-        # Configurar GridOptions
         gb = GridOptionsBuilder.from_dataframe(tabla_compras)
         for col in tabla_compras.columns:
             if col == "Cuenta - Sucursal":
-                gb.configure_column(col, cellStyle=align_right)
+                # Aquí agregamos .js_code para pasar solo el código JS como string
+                gb.configure_column(col, cellStyle=align_right.js_code)
             else:
                 gb.configure_column(
                     col,
                     type=["numericColumn"],
-                    valueFormatter=formatter_num,
-                    cellStyle=align_left
+                    valueFormatter=formatter_num.js_code,  # <-- cambiar aquí
+                    cellStyle=align_left.js_code            # <-- y aquí
                 )
-
+                
         grid_options = gb.build()
 
         # Mostrar tabla
