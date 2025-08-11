@@ -1623,13 +1623,21 @@ if authentication_status:
 
         # CSS personalizado para pintar header y controlar estilos
         custom_css = """
-        .ag-theme-alpine .ag-header-cell.header-cell {
+        /* Color de fondo del header */
+        .ag-theme-quartz .ag-header {
             background-color: #0B083D !important;
-            color: white !important;
-            font-weight: bold !important;
+            color: white !important; /* color del texto */
         }
-        .ag-theme-alpine .ag-cell {
-            white-space: nowrap;
+
+        /* Color del texto de los títulos */
+        .ag-theme-quartz .ag-header-cell-text {
+            color: white !important;
+            font-weight: bold;
+        }
+
+        /* Quitar barra blanca de redimensionado */
+        .ag-theme-quartz .ag-header-cell-resize {
+            background-color: transparent !important;
         }
         """
 
