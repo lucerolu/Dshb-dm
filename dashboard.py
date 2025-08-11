@@ -1597,18 +1597,15 @@ if authentication_status:
                         cellStyle={'textAlign': 'left'}
                     )
 
-        grid_options = gb.build()
-        grid_options['domLayout'] = 'autoHeight'
-        grid_options['suppressMovableColumns'] = True
-        grid_options['suppressColumnResize'] = True
-        grid_options['suppressDragLeaveHidesColumns'] = True
-
+        # CSS personalizado para forzar visibilidad y color en headers
         custom_css = {
             ".ag-header-cell-menu-button": {
-                "display": "none !important"
+                "background-color": "#0B083D !important",
+                "color": "#0B083D !important"
             },
             ".ag-header-cell-resize": {
-                "display": "none !important"
+                "background-color": "#0B083D !important",
+                "color": "#0B083D !important"
             },
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
@@ -1621,6 +1618,10 @@ if authentication_status:
                 "font-weight": "bold !important"
             }
         }
+
+
+        grid_options = gb.build()
+        grid_options['domLayout'] = 'autoHeight'
 
         AgGrid(
             tabla_reset,
