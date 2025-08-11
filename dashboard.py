@@ -1284,6 +1284,13 @@ if authentication_status:
                 )
         grid_options = gb.build()
 
+
+        try:
+            json.dumps(grid_options)
+            st.write("✅ grid_options OK")
+        except Exception as e:
+            st.write("❌ grid_options con error:", e)
+
         # Mostrar en AgGrid
         AgGrid(
             tabla_compras,
