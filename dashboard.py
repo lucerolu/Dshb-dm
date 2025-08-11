@@ -1610,9 +1610,10 @@ if authentication_status:
                 "font-weight": "bold !important"
             },
             ".ag-header-cell-resize": {
-                "background-color": "transparent !important"  # quita barra blanca
+                "display": "none !important"  # oculta el control de redimensionado
             }
         }
+
 
         grid_options = gb.build()
         grid_options['domLayout'] = 'autoHeight'
