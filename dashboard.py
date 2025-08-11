@@ -1238,6 +1238,12 @@ if authentication_status:
         # Resetear índice
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal").reset_index()
 
+        try:
+            json.dumps(tabla_compras.to_dict(orient="records"))
+            print("Todo bien con tabla_compras")
+        except Exception as e:
+            print("Error en tabla_compras:", e)
+
         # --- LIMPIEZA para evitar error JSON ---
         for col in tabla_compras.columns:
             # Convertir fechas a string
