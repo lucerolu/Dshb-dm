@@ -1604,14 +1604,26 @@ if authentication_status:
                 "border": "none !important",
                 "box-shadow": "none !important",
                 "width": "18px",
-                "height": "18px"
+                "height": "18px",
+                "background-clip": "padding-box !important"
+            },
+            ".ag-header-cell-menu-button::before": {
+                "background-color": "#0B083D !important",
+                "border": "none !important",
+                "box-shadow": "none !important"
             },
             ".ag-header-cell-resize": {
                 "background-color": "#0B083D !important",
                 "color": "#0B083D !important",
                 "border-left": "none !important",
                 "box-shadow": "none !important",
-                "width": "6px"
+                "width": "6px",
+                "background-clip": "padding-box !important"
+            },
+            ".ag-header-cell-resize::before": {
+                "background-color": "#0B083D !important",
+                "border-left": "none !important",
+                "box-shadow": "none !important"
             },
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
@@ -1624,8 +1636,6 @@ if authentication_status:
                 "font-weight": "bold !important"
             }
         }
-
-
 
         grid_options = gb.build()
         grid_options['domLayout'] = 'autoHeight'
