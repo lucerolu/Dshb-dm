@@ -1555,30 +1555,6 @@ if authentication_status:
             if col != "Mes":
                 tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.2f}")
 
-        
-        # JS para colorear los controles de header (menu y resize)
-        header_style_js = JsCode("""
-        function(params) {
-            let el = params.eGridCell;
-            if(el) {
-                let resize = el.querySelector('.ag-header-cell-resize');
-                if(resize) {
-                    resize.style.backgroundColor = '#0B083D';
-                    resize.style.border = 'none';
-                    resize.style.width = '6px';
-                }
-                let menuBtn = el.querySelector('.ag-header-cell-menu-button');
-                if(menuBtn) {
-                    menuBtn.style.backgroundColor = '#0B083D';
-                    menuBtn.style.border = 'none';
-                    menuBtn.style.width = '18px';
-                    menuBtn.style.height = '18px';
-                }
-            }
-            return null;
-        }
-        """)
-
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_reset)
 
@@ -1597,8 +1573,7 @@ if authentication_status:
                 'backgroundColor': '#0B083D',
                 'color': 'white',
                 'fontWeight': 'bold'
-            },
-            # No se puede pasar JsCode directo a header, pero sí a cellStyle
+            }
         )
 
         # Configurar resto de columnas
@@ -1622,37 +1597,30 @@ if authentication_status:
                         cellStyle={'textAlign': 'left'}
                     )
 
-        # Usar JsCode para pintar celdas (esto no cambia header, pero ayuda en filas)
-        gb.configure_columns(tabla_reset.columns.tolist(), cellStyle=header_style_js)
-
+        # CSS personalizado para forzar visibilidad y color en headers
         custom_css = {
             ".ag-header-cell-menu-button": {
-                "background-color": "#0B083D !important",
-                "border": "none !important",
-                "width": "18px",
-                "height": "18px"
+                "display": "none !important"  # oculta el icono que permite mover columnas
             },
             ".ag-header-cell-resize": {
-                "background-color": "#0B083D !important",
-                "border-left": "none !important",
-                "width": "6px"
+                "display": "none !important"  # oculta la barra de redimensionar
             },
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
                 "color": "white !important",
                 "font-weight": "bold !important",
-                "justify-content": "center !important",
-                "padding": "0 6px !important"
+                "justify-content": "center !important",  # centrado del texto
+                "justify-content": "center !important"
             },
             ".ag-header-cell-text": {
                 "color": "white !important",
                 "font-weight": "bold !important"
             },
-
-            ".ag-header-cell": {
-                "border-right": "1px solid #0B083D !important"
+            ".ag-header-cell-resize": {
+                "display": "none !important"  # oculta el control de redimensionado
             }
         }
+
 
         grid_options = gb.build()
         grid_options['domLayout'] = 'autoHeight'
@@ -1667,7 +1635,6 @@ if authentication_status:
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
         )
-
 
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
