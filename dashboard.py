@@ -1547,10 +1547,10 @@ if authentication_status:
         # Cambiar nombre índice
         tabla.index.name = "Mes"
 
-        # Resetear índice para AgGrid (pasa índice a columna)
+        # Resetear índice para AgGrid
         tabla_reset = tabla.reset_index()
 
-        # Formatear números en columnas (excepto 'Mes') a dos decimales (para mostrar en tabla)
+        # Formatear números (excepto 'Mes') a dos decimales
         for col in tabla_reset.columns:
             if col != "Mes":
                 tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.2f}")
@@ -1558,28 +1558,12 @@ if authentication_status:
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_reset)
 
-        # Aplica para todas las columnas: header con texto alineado a la derecha
+        # Configuración general de columnas
         gb.configure_default_column(
-            headerComponentParams={
-                "template":
-                    '<div class="ag-cell-label-container" role="presentation">' +
-                    '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
-                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="justify-content: flex-end;">' +
-                    '    <span ref="eSortOrder" class="ag-header-icon ag-sort-order"></span>' +
-                    '    <span ref="eSortAsc" class="ag-header-icon ag-sort-ascending-icon"></span>' +
-                    '    <span ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon"></span>' +
-                    '    <span ref="eSortNone" class="ag-header-icon ag-sort-none-icon"></span>' +
-                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="white-space: normal; text-align: right;"></span>' +
-                    '    <span ref="eFilter" class="ag-header-icon ag-filter-icon"></span>' +
-                    '  </div>' +
-                    '</div>'
-            }
+            resizable=True
         )
 
-
-
-        # Configura columnas con estilos de fondo y color texto
-        # Primero la columna "Mes"
+        # Configurar primera columna "Mes"
         gb.configure_column(
             "Mes",
             pinned="left",
@@ -1589,11 +1573,10 @@ if authentication_status:
                 'backgroundColor': '#0B083D',
                 'color': 'white',
                 'fontWeight': 'bold'
-            },
-            headerClass='header-cell'
+            }
         )
 
-        # Luego las demás columnas
+        # Configurar resto de columnas
         for col in tabla_reset.columns:
             if col != "Mes":
                 if col == "Total":
@@ -1605,36 +1588,31 @@ if authentication_status:
                             'backgroundColor': '#0B083D',
                             'color': 'white',
                             'fontWeight': 'bold'
-                        },
-                        headerClass='header-cell'
+                        }
                     )
                 else:
                     gb.configure_column(
                         col,
                         width=120,
-                        cellStyle={'textAlign': 'left'},
-                        headerClass='header-cell'
+                        cellStyle={'textAlign': 'left'}
                     )
 
-        # CSS personalizado para pintar header y controlar estilos
-        custom_css = """
-        /* Color de fondo del header */
-        .ag-theme-quartz .ag-header {
-            background-color: #0B083D !important;
-            color: white !important; /* color del texto */
+        # CSS personalizado para forzar visibilidad y color en headers
+        custom_css = {
+            ".ag-header-cell-label": {
+                "background-color": "#0B083D !important",
+                "color": "white !important",
+                "font-weight": "bold !important",
+                "justify-content": "center !important"  # centrado del texto
+            },
+            ".ag-header-cell-text": {
+                "color": "white !important",
+                "font-weight": "bold !important"
+            },
+            ".ag-header-cell-resize": {
+                "background-color": "transparent !important"  # quita barra blanca
+            }
         }
-
-        /* Color del texto de los títulos */
-        .ag-theme-quartz .ag-header-cell-text {
-            color: white !important;
-            font-weight: bold;
-        }
-
-        /* Quitar barra blanca de redimensionado */
-        .ag-theme-quartz .ag-header-cell-resize {
-            background-color: transparent !important;
-        }
-        """
 
         grid_options = gb.build()
         grid_options['domLayout'] = 'autoHeight'
@@ -1649,9 +1627,6 @@ if authentication_status:
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
         )
-
-
-
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
