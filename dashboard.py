@@ -1256,43 +1256,64 @@ if authentication_status:
         except Exception as e:
             st.write("❌ Error en tabla_compras:", e)
 
-        # Definir JsCode
-        align_right = JsCode("function(params) { return {'text-align': 'right'}; }")
-        align_left = JsCode("function(params) { return {'text-align': 'left'}; }")
-        formatter_num = JsCode("""
-        function(params) {
-            if (params.value === null || params.value === undefined || params.value === '') {
-                return '';
-            }
-            return Number(params.value).toLocaleString('es-MX', {minimumFractionDigits: 2});
-        }
-        """)
 
-        gb = GridOptionsBuilder.from_dataframe(tabla_compras)
-        for col in tabla_compras.columns:
-            if col == "Cuenta - Sucursal":
-                # Aquí agregamos .js_code para pasar solo el código JS como string
-                gb.configure_column(col, cellStyle=align_right.js_code)
-            else:
-                gb.configure_column(
-                    col,
-                    type=["numericColumn"],
-                    valueFormatter=formatter_num.js_code,  # <-- cambiar aquí
-                    cellStyle=align_left.js_code            # <-- y aquí
-                )
-                
-        grid_options = gb.build()
+        def mostrar_tabla_con_scroll(df, altura=400, ancho='100%'):
+            tabla_html = df.to_html(index=False, classes='mi_tabla', border=0)
 
-        # Mostrar tabla
-        AgGrid(
-            tabla_compras,
-            gridOptions=grid_options,
-            height=500,
-            fit_columns_on_grid_load=True
-        )
+            css = f"""
+            <style>
+            .tabla_con_scroll {{
+                width: {ancho};
+                max-height: {altura}px;
+                overflow: auto;
+                border: 1px solid #ddd;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+            }}
+            .mi_tabla {{
+                border-collapse: collapse;
+                width: 100%;
+                min-width: 800px;
+            }}
+            .mi_tabla th, .mi_tabla td {{
+                border: 1px solid #ccc;
+                padding: 6px 10px;
+                text-align: right;
+                white-space: nowrap;
+            }}
+            .mi_tabla th {{
+                background-color: #f0f0f0;
+                text-align: center;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }}
+            .mi_tabla td:first-child {{
+                text-align: left;
+                font-weight: bold;
+                position: sticky;
+                left: 0;
+                background-color: #fff;
+                z-index: 2;
+            }}
+            </style>
+            """
 
-        # Mostrar total general aparte
-        st.write("**Total General:**")
+            html_contenido = f"""
+            {css}
+            <div class="tabla_con_scroll">
+                {tabla_html}
+            </div>
+            """
+
+            st.markdown(html_contenido, unsafe_allow_html=True)
+
+
+        # Mostrar tabla con scroll y formato
+        mostrar_tabla_con_scroll(tabla_compras, altura=500, ancho='100%')
+
+        # Mostrar total general separado
+        st.markdown("### Total General")
         st.write(total_general)
 
         # ===========================
