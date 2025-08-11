@@ -1597,13 +1597,18 @@ if authentication_status:
                         cellStyle={'textAlign': 'left'}
                     )
 
-        # CSS personalizado para forzar visibilidad y color en headers
+        grid_options = gb.build()
+        grid_options['domLayout'] = 'autoHeight'
+        grid_options['suppressMovableColumns'] = True
+        grid_options['suppressColumnResize'] = True
+        grid_options['suppressDragLeaveHidesColumns'] = True
+
         custom_css = {
             ".ag-header-cell-menu-button": {
-                "display": "none !important"  # oculta el icono que permite mover columnas
+                "display": "none !important"
             },
             ".ag-header-cell-resize": {
-                "display": "none !important"  # oculta la barra de redimensionar
+                "display": "none !important"
             },
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
@@ -1617,9 +1622,6 @@ if authentication_status:
             }
         }
 
-        grid_options = gb.build()
-        grid_options['domLayout'] = 'autoHeight'
-
         AgGrid(
             tabla_reset,
             gridOptions=grid_options,
@@ -1630,6 +1632,7 @@ if authentication_status:
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
         )
+
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
