@@ -1235,16 +1235,17 @@ if authentication_status:
         total_general = tabla_compras.loc["Total General"]
         tabla_compras = tabla_compras.drop("Total General")
 
-        # Resetear índice
-        tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal").reset_index()
+        # Resetear índice y nombres como texto plano
+        tabla_compras = tabla_compras.rename_axis(None, axis=0).rename_axis(None, axis=1)
 
-        # Limpiar y convertir a tipos nativos
+        # Forzar que todas las columnas sean str
+        tabla_compras.columns = [str(c) for c in tabla_compras.columns]
+
+        # Limpiar NaN y convertir valores
         tabla_compras = tabla_compras.fillna("")
-
-        # Convertir todos los tipos numpy a tipos nativos
         for col in tabla_compras.columns:
             if pd.api.types.is_numeric_dtype(tabla_compras[col]):
-                tabla_compras[col] = tabla_compras[col].astype(float)  # float nativo de Python
+                tabla_compras[col] = tabla_compras[col].astype(float)
             else:
                 tabla_compras[col] = tabla_compras[col].astype(str)
 
