@@ -1578,7 +1578,6 @@ if authentication_status:
         # Configurar resto de columnas con alineación izquierda y header azul con texto blanco
         for col in tabla_reset.columns:
             if col != "Mes":
-                # Si es la columna "Total" (última), pintamos con estilo azul y negrita
                 if col == "Total":
                     gb.configure_column(
                         col,
@@ -1599,7 +1598,7 @@ if authentication_status:
                         headerClass='header-cell'
                     )
 
-        # Definir estilos CSS para AgGrid vía custom_css para header y alineación
+        # CSS para pintar headers y alinear header "Mes" a la derecha
         custom_css = """
         .ag-header-cell.header-cell {
             background-color: #0B083D !important;
@@ -1613,7 +1612,7 @@ if authentication_status:
         }
         """
 
-        # Usar JsCode para pintar fila Total entera
+        # JS para pintar toda la fila 'Total' de azul con texto blanco y negrita
         get_row_style = JsCode("""
         function(params) {
             if(params.data && params.data.Mes === 'Total') {
@@ -1625,7 +1624,7 @@ if authentication_status:
 
         grid_options = gb.build()
         grid_options['getRowStyle'] = get_row_style
-        grid_options['domLayout'] = 'autoHeight'
+        grid_options['domLayout'] = 'autoHeight'  # Ajusta altura según contenido
 
         AgGrid(
             tabla_reset,
@@ -1636,6 +1635,7 @@ if authentication_status:
             custom_css=custom_css,
             enable_enterprise_modules=False,
         )
+
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
