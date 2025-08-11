@@ -1597,15 +1597,21 @@ if authentication_status:
                         cellStyle={'textAlign': 'left'}
                     )
 
-        # CSS personalizado para forzar visibilidad y color en headers
         custom_css = {
             ".ag-header-cell-menu-button": {
                 "background-color": "#0B083D !important",
-                "color": "#0B083D !important"
+                "color": "#0B083D !important",
+                "border": "none !important",
+                "box-shadow": "none !important",
+                "width": "18px",
+                "height": "18px"
             },
             ".ag-header-cell-resize": {
                 "background-color": "#0B083D !important",
-                "color": "#0B083D !important"
+                "color": "#0B083D !important",
+                "border-left": "none !important",
+                "box-shadow": "none !important",
+                "width": "6px"
             },
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
@@ -1618,6 +1624,7 @@ if authentication_status:
                 "font-weight": "bold !important"
             }
         }
+
 
 
         grid_options = gb.build()
@@ -1633,6 +1640,7 @@ if authentication_status:
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
         )
+
 
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
