@@ -1238,22 +1238,21 @@ if authentication_status:
         # Resetear índice
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal").reset_index()
 
-        try:
-            json.dumps(tabla_compras.to_dict(orient="records"))
-            print("Todo bien con tabla_compras")
-        except Exception as e:
-            print("Error en tabla_compras:", e)
-
         # --- LIMPIEZA para evitar error JSON ---
         for col in tabla_compras.columns:
-            # Convertir fechas a string
             if pd.api.types.is_datetime64_any_dtype(tabla_compras[col]):
                 tabla_compras[col] = tabla_compras[col].astype(str)
 
-        # Reemplazar NaN y convertir objetos no serializables
         tabla_compras = tabla_compras.fillna("").applymap(
             lambda x: float(x) if isinstance(x, (int, float)) else str(x)
         )
+
+        # Probar serialización
+        try:
+            json.dumps(tabla_compras.to_dict(orient="records"))
+            st.write("✅ Todo bien con tabla_compras")
+        except Exception as e:
+            st.write("❌ Error en tabla_compras:", e)
 
         # Definir JsCode
         align_right = JsCode("""
