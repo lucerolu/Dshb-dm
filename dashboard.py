@@ -1189,32 +1189,22 @@ if authentication_status:
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title("Compra mensual por Cuenta (2025)")
 
-        # Agrupar monto total por cuenta y sucursal
-        df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
+        # Función para obtener abreviatura dada una cuenta (codigo)
+        def obtener_abreviatura(codigo):
+            for division, info in divisiones.items():
+                if codigo in info["codigos"]:
+                    return info["abreviatura"]
+            return ""  # Si no encuentra
 
-        # Crear cuenta_sucursal con abreviatura
-        def obtener_cuenta_sucursal(codigo, sucursal):
-            if codigo in codigo_division_map:
-                abrev = codigo_division_map[codigo]["abreviatura"]
-                return f"{codigo} ({abrev}) - {sucursal}"
-            return f"{codigo} - {sucursal}"
+        # Crear columna cuenta_sucursal con abreviatura entre paréntesis
+        df["abreviatura"] = df["codigo_normalizado"].apply(obtener_abreviatura)
+        df["cuenta_sucursal"] = df["codigo_normalizado"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
 
-        df["cuenta_sucursal"] = df.apply(
-            lambda row: obtener_cuenta_sucursal(row["codigo_normalizado"], row["sucursal"]),
-            axis=1
-        )
-
-        # Meses en español
-        meses_es = {
-            'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
-            'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
-            'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
-        }
-
-        df["mes_anio"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
+        # Crear mes_anio y orden_mes en df
+        df["mes_anio"] = df["mes_dt"].dt.strftime('%b %Y').str.capitalize()
         df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
-        # Crear tabla pivote
+        # Crear tabla pivote con fill_value para completar con ceros
         tabla_compras = df.pivot_table(
             index="cuenta_sucursal",
             columns="mes_anio",
@@ -1223,7 +1213,7 @@ if authentication_status:
             fill_value=0
         )
 
-        # Ordenar columnas
+        # Ordenar columnas según orden_mes
         orden_columnas = df.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
         tabla_compras = tabla_compras[orden_columnas]
 
@@ -1231,91 +1221,75 @@ if authentication_status:
         tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
         tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
-        # Separar fila "Total General"
-        total_general = tabla_compras.loc["Total General"]
-        tabla_compras = tabla_compras.drop("Total General")
+        # Cambiar nombre del índice para encabezado
+        tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
 
-        # Resetear índice y nombres como texto plano
-        tabla_compras = tabla_compras.rename_axis(None, axis=0).rename_axis(None, axis=1)
+        # Para facilitar estilo: resetear índice para que cuenta_sucursal sea columna normal
+        tabla_compras_reset = tabla_compras.reset_index()
 
-        # Forzar que todas las columnas sean str
-        tabla_compras.columns = [str(c) for c in tabla_compras.columns]
+        # Colores y estilo para celdas especiales
+        color_fondo_titulos = "#0B083D"
+        color_texto_titulos = "#FFFFFF"
 
-        # Limpiar NaN y convertir valores
-        tabla_compras = tabla_compras.fillna("")
-        for col in tabla_compras.columns:
-            if pd.api.types.is_numeric_dtype(tabla_compras[col]):
-                tabla_compras[col] = tabla_compras[col].astype(float)
-            else:
-                tabla_compras[col] = tabla_compras[col].astype(str)
+        def estilo_tabla(df):
+            # Crear DataFrame vacío para estilos
+            estilos = pd.DataFrame("", index=df.index, columns=df.columns)
+            
+            # Primera columna: fondo y texto especiales
+            estilos.iloc[:, 0] = f"background-color: {color_fondo_titulos}; color: {color_texto_titulos}; text-align: right; font-weight: bold;"
+            
+            # Primera fila (encabezado): fondo y texto especiales (pandas.style usa headers separately, así que agregamos después)
+            # Lo hacemos con set_table_styles
+            
+            # Totales: última fila y última columna tienen fondo y texto especiales
+            estilos.iloc[-1, :] = f"background-color: {color_fondo_titulos}; color: {color_texto_titulos}; font-weight: bold;"
+            estilos.iloc[:, -1] = f"background-color: {color_fondo_titulos}; color: {color_texto_titulos}; font-weight: bold;"
+            
+            # Alineaciones
+            # Primera columna ya alineada a la derecha arriba
+            # Resto columnas alineadas a la izquierda
+            for col in df.columns[1:]:
+                estilos[col] = estilos[col].apply(lambda x: x + "text-align: left;")
+            
+            return estilos
 
-        # Validar serialización
-        try:
-            json.dumps(tabla_compras.to_dict(orient="records"))
-            st.write("✅ tabla_compras serializable")
-        except Exception as e:
-            st.write("❌ Error en tabla_compras:", e)
+        # Formato números con comas y 2 decimales
+        formato_numeros = {col: "{:,.2f}" for col in tabla_compras_reset.columns if col != "Cuenta - Sucursal"}
 
+        # Aplicar estilos y formato
+        tabla_formateada = (
+            tabla_compras_reset.style
+            .format(formato_numeros)
+            .apply(estilo_tabla, axis=None)
+            .set_table_styles(
+                [{
+                    "selector": "th",
+                    "props": [
+                        ("background-color", color_fondo_titulos),
+                        ("color", color_texto_titulos),
+                        ("text-align", "left")
+                    ]
+                }]
+            )
+            .set_properties(subset=["Cuenta - Sucursal"], **{"text-align": "right", "font-weight": "bold"})
+        )
 
-        def mostrar_tabla_con_scroll(df, altura=400, ancho='100%'):
-            tabla_html = df.to_html(index=False, classes='mi_tabla', border=0)
+        # Mostrar tabla con scroll
+        st.dataframe(tabla_formateada, use_container_width=True)
 
-            css = f"""
-            <style>
-            .tabla_con_scroll {{
-                width: {ancho};
-                max-height: {altura}px;
-                overflow: auto;
-                border: 1px solid #ddd;
-                font-family: Arial, sans-serif;
-                font-size: 14px;
-            }}
-            .mi_tabla {{
-                border-collapse: collapse;
-                width: 100%;
-                min-width: 800px;
-            }}
-            .mi_tabla th, .mi_tabla td {{
-                border: 1px solid #ccc;
-                padding: 6px 10px;
-                text-align: right;
-                white-space: nowrap;
-            }}
-            .mi_tabla th {{
-                background-color: #f0f0f0;
-                text-align: center;
-                position: sticky;
-                top: 0;
-                z-index: 1;
-            }}
-            .mi_tabla td:first-child {{
-                text-align: left;
-                font-weight: bold;
-                position: sticky;
-                left: 0;
-                background-color: #fff;
-                z-index: 2;
-            }}
-            </style>
-            """
+        # Crear archivo Excel en memoria para descarga (sin formateo visual, solo valores)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            tabla_compras.to_excel(writer, sheet_name='Compras')
+        processed_data = output.getvalue()
 
-            html_contenido = f"""
-            {css}
-            <div class="tabla_con_scroll">
-                {tabla_html}
-            </div>
-            """
-
-            st.markdown(html_contenido, unsafe_allow_html=True)
-
-
-        # Mostrar tabla con scroll y formato
-        mostrar_tabla_con_scroll(tabla_compras, altura=500, ancho='100%')
-
-        # Mostrar total general separado
-        st.markdown("### Total General")
-        st.write(total_general)
-
+        # Botón para descargar Excel
+        st.download_button(
+            label="📥 Descargar tabla en Excel",
+            data=processed_data,
+            file_name="compras_por_mes_por_cuenta.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         # ===========================
         #   Descargar Excel
         # ===========================
