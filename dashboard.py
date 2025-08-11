@@ -1564,21 +1564,23 @@ if authentication_status:
             min_column_width=10,
             maxWidth=110,
             headerComponentParams={
-                "template":
-                    '<div class="ag-cell-label-container" role="presentation" style="background-color: #0B083D;">' +
-                    '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
-                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation">' +
-                    '    <span ref="eSortOrder" class="ag-header-icon ag-sort-order"></span>' +
-                    '    <span ref="eSortAsc" class="ag-header-icon ag-sort-ascending-icon"></span>' +
-                    '    <span ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon"></span>' +
-                    '    <span ref="eSortNone" class="ag-header-icon ag-sort-none-icon"></span>' +
-                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" ' +
-                    '          style="white-space: normal; text-align: right; color: white; font-weight: bold;"></span>' +
-                    '    <span ref="eFilter" class="ag-header-icon ag-filter-icon"></span>' +
-                    '  </div>' +
-                    '</div>'
-            }   
+                "template": '''
+                    <div class="ag-cell-label-container" role="presentation" style="background-color:#0B083D; color:white; padding:4px; border:none;">
+                        <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>
+                        <div ref="eLabel" class="ag-header-cell-label" role="presentation">
+                            <span ref="eSortOrder" class="ag-header-icon ag-sort-order" style="color:white;"></span>
+                            <span ref="eSortAsc" class="ag-header-icon ag-sort-ascending-icon" style="color:white;"></span>
+                            <span ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon" style="color:white;"></span>
+                            <span ref="eSortNone" class="ag-header-icon ag-sort-none-icon" style="color:white;"></span>
+                            <span ref="eText" class="ag-header-cell-text" role="columnheader" 
+                                style="white-space: normal; text-align: center; font-weight:bold; color:white;"></span>
+                            <span ref="eFilter" class="ag-header-icon ag-filter-icon" style="color:white;"></span>
+                        </div>
+                    </div>
+                '''
+            }
         )
+
 
 
         # Configura columnas con estilos de fondo y color texto
