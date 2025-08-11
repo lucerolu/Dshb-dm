@@ -1599,21 +1599,23 @@ if authentication_status:
 
         # CSS personalizado para forzar visibilidad y color en headers
         custom_css = {
+            ".ag-header-cell-menu-button": {
+                "display": "none !important"  # oculta el icono que permite mover columnas
+            },
+            ".ag-header-cell-resize": {
+                "display": "none !important"  # oculta la barra de redimensionar
+            },
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
                 "color": "white !important",
                 "font-weight": "bold !important",
-                "justify-content": "center !important"  # centrado del texto
+                "justify-content": "center !important"
             },
             ".ag-header-cell-text": {
                 "color": "white !important",
                 "font-weight": "bold !important"
-            },
-            ".ag-header-cell-resize": {
-                "display": "none !important"  # oculta el control de redimensionado
             }
         }
-
 
         grid_options = gb.build()
         grid_options['domLayout'] = 'autoHeight'
