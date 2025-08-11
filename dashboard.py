@@ -1238,19 +1238,20 @@ if authentication_status:
         # Resetear índice
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal").reset_index()
 
-        # --- LIMPIEZA para evitar error JSON ---
+        # Limpiar y convertir a tipos nativos
+        tabla_compras = tabla_compras.fillna("")
+
+        # Convertir todos los tipos numpy a tipos nativos
         for col in tabla_compras.columns:
-            if pd.api.types.is_datetime64_any_dtype(tabla_compras[col]):
+            if pd.api.types.is_numeric_dtype(tabla_compras[col]):
+                tabla_compras[col] = tabla_compras[col].astype(float)  # float nativo de Python
+            else:
                 tabla_compras[col] = tabla_compras[col].astype(str)
 
-        tabla_compras = tabla_compras.fillna("").applymap(
-            lambda x: float(x) if isinstance(x, (int, float)) else str(x)
-        )
-
-        # Probar serialización
+        # Validar serialización
         try:
             json.dumps(tabla_compras.to_dict(orient="records"))
-            st.write("✅ Todo bien con tabla_compras")
+            st.write("✅ tabla_compras serializable")
         except Exception as e:
             st.write("❌ Error en tabla_compras:", e)
 
