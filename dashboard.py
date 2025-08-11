@@ -1550,33 +1550,63 @@ if authentication_status:
         # Resetear índice para AgGrid (pasa el índice a columna)
         tabla_reset = tabla.reset_index()
 
-        # Formatear números en las columnas (excepto 'Mes')
+        # Formatear números en las columnas (excepto 'Mes') a dos decimales
         for col in tabla_reset.columns:
             if col != "Mes":
-                tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.0f}")
+                tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.2f}")
 
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_reset)
 
         # Alinear columna 'Mes' a la derecha
-        gb.configure_column("Mes", cellStyle={"textAlign": "right"})
+        gb.configure_column("Mes", cellStyle={"textAlign": "right"}, pinned="left", headerClass="header-cell", cellClass="first-col")
 
         # Alinear demás columnas a la izquierda
         for col in tabla_reset.columns:
             if col != "Mes":
-                gb.configure_column(col, cellStyle={"textAlign": "left"})
+                gb.configure_column(
+                    col,
+                    cellStyle={"textAlign": "left"},
+                    headerClass="header-cell"
+                )
 
-        # Opcional: hacer sticky header
+        # Definir estilos CSS para AgGrid via JS code para filas y columnas con colores especiales
+        custom_css = """
+        .ag-header-cell.header-cell {
+            background-color: #0B083D !important;
+            color: white !important;
+        }
+        .ag-cell.first-col {
+            background-color: #0B083D !important;
+            color: white !important;
+            font-weight: bold;
+        }
+        .ag-row:last-child .ag-cell {
+            background-color: #0B083D !important;
+            color: white !important;
+            font-weight: bold;
+        }
+        .ag-row:last-child .ag-cell.first-col {
+            background-color: #0B083D !important;
+            color: white !important;
+            font-weight: bold;
+        }
+        """
+
+        # Activar scroll horizontal y vertical automático con altura ajustable
         grid_options = gb.build()
+        grid_options['domLayout'] = 'autoHeight'  # Para que el contenedor se ajuste a contenido
+        grid_options['suppressRowHoverHighlight'] = False  # Opcional para mejor UX
 
-        # Mostrar con AgGrid
+        # Mostrar tabla con AgGrid
         AgGrid(
             tabla_reset,
             gridOptions=grid_options,
-            height=400,
-            fit_columns_on_grid_load=True,
+            height=400,  # altura fija con scroll si sobrepasa
+            fit_columns_on_grid_load=False,  # Para respetar ancho columnas
             enable_enterprise_modules=False,
-            allow_unsafe_jscode=True
+            allow_unsafe_jscode=True,
+            custom_css=custom_css
         )
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
