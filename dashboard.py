@@ -1558,38 +1558,62 @@ if authentication_status:
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_reset)
 
+        # Ancho fijo para columnas numéricas (ejemplo: 120 px, ajusta si quieres)
+        width_num = 120
+
         # Configurar primera columna: fija, fondo azul, texto blanco, alineación derecha y negrita
         gb.configure_column(
             "Mes",
             pinned="left",
+            width=180,
             cellStyle={
                 'textAlign': 'right',
                 'backgroundColor': '#0B083D',
                 'color': 'white',
                 'fontWeight': 'bold'
             },
-            headerClass='header-cell'
+            headerClass='header-cell right-align-header'
         )
 
         # Configurar resto de columnas con alineación izquierda y header azul con texto blanco
         for col in tabla_reset.columns:
             if col != "Mes":
-                gb.configure_column(
-                    col,
-                    cellStyle={'textAlign': 'left'},
-                    headerClass='header-cell'
-                )
+                # Si es la columna "Total" (última), pintamos con estilo azul y negrita
+                if col == "Total":
+                    gb.configure_column(
+                        col,
+                        width=width_num,
+                        cellStyle={
+                            'textAlign': 'left',
+                            'backgroundColor': '#0B083D',
+                            'color': 'white',
+                            'fontWeight': 'bold'
+                        },
+                        headerClass='header-cell'
+                    )
+                else:
+                    gb.configure_column(
+                        col,
+                        width=width_num,
+                        cellStyle={'textAlign': 'left'},
+                        headerClass='header-cell'
+                    )
 
-        # Definir estilo para header: fondo azul y texto blanco
+        # Definir estilos CSS para AgGrid vía custom_css para header y alineación
         custom_css = """
         .ag-header-cell.header-cell {
             background-color: #0B083D !important;
             color: white !important;
             font-weight: bold !important;
         }
+
+        /* Alinear a la derecha solo el header de 'Mes' */
+        .ag-header-cell.right-align-header {
+            text-align: right !important;
+        }
         """
 
-        # Usar JsCode para getRowStyle
+        # Usar JsCode para pintar fila Total entera
         get_row_style = JsCode("""
         function(params) {
             if(params.data && params.data.Mes === 'Total') {
