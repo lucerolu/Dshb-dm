@@ -1571,19 +1571,34 @@ if authentication_status:
             "Mes",
             pinned="left",
             width=180,
-            cellStyle={
-                'textAlign': 'right',
+            cellStyle={'textAlign': 'right'},
+            # Pintar azul si fila está fijada (Total)
+            cellClassRules={
+                'pinned-total-cell': 'node.rowPinned === true'
             }
         )
+
+        # Nombre de la última columna (Total vertical)
+        ultima_col = tabla_reset.columns[-1]
 
         # Configurar resto de columnas
         for col in data_sin_total.columns:
             if col != "Mes":
-                gb.configure_column(
-                    col,
-                    width=120,
-                    cellStyle={'textAlign': 'left'}
-                )
+                if col == ultima_col:
+                    gb.configure_column(
+                        col,
+                        width=120,
+                        cellStyle={'textAlign': 'left'},
+                        cellClassRules={
+                            'pinned-total-cell': 'node.rowPinned === true'
+                        }
+                    )
+                else:
+                    gb.configure_column(
+                        col,
+                        width=120,
+                        cellStyle={'textAlign': 'left'}
+                    )
 
         # JsCode para pintar fila total con fondo azul y texto blanco
         get_row_style = JsCode("""
@@ -1593,7 +1608,7 @@ if authentication_status:
                     backgroundColor: '#0B083D',
                     color: 'white',
                     fontWeight: 'bold'
-                }
+                };
             }
             return null;
         }
@@ -1604,7 +1619,7 @@ if authentication_status:
         grid_options['getRowStyle'] = get_row_style
         grid_options['domLayout'] = 'autoHeight'
 
-        # CSS para header azul y texto blanco
+        # CSS para pintar celdas específicas con fondo azul (filas fijadas)
         custom_css = {
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
@@ -1613,6 +1628,11 @@ if authentication_status:
                 "justify-content": "center !important"
             },
             ".ag-header-cell-text": {
+                "color": "white !important",
+                "font-weight": "bold !important"
+            },
+            ".pinned-total-cell": {
+                "background-color": "#0B083D !important",
                 "color": "white !important",
                 "font-weight": "bold !important"
             }
