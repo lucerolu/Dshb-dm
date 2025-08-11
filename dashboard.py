@@ -1189,22 +1189,18 @@ if authentication_status:
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title("Compra mensual por Cuenta (2025)")
 
-        # Función para obtener abreviatura dada una cuenta (codigo)
         def obtener_abreviatura(codigo):
             for division, info in divisiones.items():
                 if codigo in info["codigos"]:
                     return info["abreviatura"]
-            return ""  # Si no encuentra
+            return ""
 
-        # Crear columna cuenta_sucursal con abreviatura entre paréntesis
         df["abreviatura"] = df["codigo_normalizado"].apply(obtener_abreviatura)
         df["cuenta_sucursal"] = df["codigo_normalizado"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
 
-        # Crear mes_anio y orden_mes en df
         df["mes_anio"] = df["mes_dt"].dt.strftime('%b %Y').str.capitalize()
         df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
-        # Crear tabla pivote con fill_value para completar con ceros
         tabla_compras = df.pivot_table(
             index="cuenta_sucursal",
             columns="mes_anio",
@@ -1213,98 +1209,111 @@ if authentication_status:
             fill_value=0
         )
 
-        # Ordenar columnas según orden_mes
         orden_columnas = df.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
         tabla_compras = tabla_compras[orden_columnas]
 
-        # Agregar totales
         tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
         tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
-        # Cambiar nombre del índice para encabezado
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
-
-        # Para facilitar estilo: resetear índice para que cuenta_sucursal sea columna normal
         tabla_compras_reset = tabla_compras.reset_index()
 
-        # Colores y estilo para celdas especiales
-        color_fondo_titulos = "#0B083D"
-        color_texto_titulos = "#FFFFFF"
+        # Función para formatear números con comas y 2 decimales
+        def formato_numero(x):
+            if isinstance(x, (int, float)):
+                return f"{x:,.2f}"
+            return x
 
-        def estilo_tabla(df):
-            # Crear DataFrame vacío para estilos
-            estilos = pd.DataFrame("", index=df.index, columns=df.columns)
-            
-            # Primera columna: fondo y texto especiales
-            estilos.iloc[:, 0] = f"background-color: {color_fondo_titulos}; color: {color_texto_titulos}; text-align: right; font-weight: bold;"
-            
-            # Primera fila (encabezado): fondo y texto especiales (pandas.style usa headers separately, así que agregamos después)
-            # Lo hacemos con set_table_styles
-            
-            # Totales: última fila y última columna tienen fondo y texto especiales
-            estilos.iloc[-1, :] = f"background-color: {color_fondo_titulos}; color: {color_texto_titulos}; font-weight: bold;"
-            estilos.iloc[:, -1] = f"background-color: {color_fondo_titulos}; color: {color_texto_titulos}; font-weight: bold;"
-            
-            # Alineaciones
-            # Primera columna ya alineada a la derecha arriba
-            # Resto columnas alineadas a la izquierda
-            for col in df.columns[1:]:
-                estilos[col] = estilos[col].apply(lambda x: x + "text-align: left;")
-            
-            return estilos
+        # Formatear tabla (convertir todos a str, aplicando formato a números)
+        tabla_formateada = tabla_compras_reset.copy()
+        for col in tabla_formateada.columns[1:]:
+            tabla_formateada[col] = tabla_formateada[col].apply(formato_numero)
 
-        # Formato números con comas y 2 decimales
-        formato_numeros = {col: "{:,.2f}" for col in tabla_compras_reset.columns if col != "Cuenta - Sucursal"}
+        # Construir HTML con CSS para la tabla
+        estilo_css = """
+        <style>
+        .tabla-scroll {
+            max-height: 500px;
+            overflow: auto;
+            border: 1px solid #ddd;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 900px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            white-space: nowrap;
+        }
+        th {
+            background-color: #0B083D;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            text-align: left;
+        }
+        /* Primera columna celdas y encabezado */
+        th:first-child, td:first-child {
+            background-color: #0B083D;
+            color: white;
+            text-align: right;
+            font-weight: bold;
+            position: sticky;
+            left: 0;
+            z-index: 3;
+        }
+        /* Totales: última fila */
+        tr:last-child td {
+            background-color: #0B083D;
+            color: white;
+            font-weight: bold;
+        }
+        /* Totales: última columna */
+        td:last-child {
+            background-color: #0B083D;
+            color: white;
+            font-weight: bold;
+        }
+        </style>
+        """
 
-        # Aplicar estilos y formato
-        tabla_formateada = (
-            tabla_compras_reset.style
-            .format(formato_numeros)
-            .apply(estilo_tabla, axis=None)
-            .set_table_styles(
-                [{
-                    "selector": "th",
-                    "props": [
-                        ("background-color", color_fondo_titulos),
-                        ("color", color_texto_titulos),
-                        ("text-align", "left")
-                    ]
-                }]
-            )
-            .set_properties(subset=["Cuenta - Sucursal"], **{"text-align": "right", "font-weight": "bold"})
-        )
+        # Construir la tabla HTML manualmente
+        def generar_html_tabla(df):
+            html = "<div class='tabla-scroll'><table>"
+            # Encabezado
+            html += "<thead><tr>"
+            for col in df.columns:
+                html += f"<th>{col}</th>"
+            html += "</tr></thead>"
+            # Cuerpo
+            html += "<tbody>"
+            for i, row in df.iterrows():
+                html += "<tr>"
+                for j, val in enumerate(row):
+                    html += f"<td>{val}</td>"
+                html += "</tr>"
+            html += "</tbody></table></div>"
+            return html
 
-        # Mostrar tabla con scroll
-        st.dataframe(tabla_formateada, use_container_width=True)
+        html_tabla = estilo_css + generar_html_tabla(tabla_formateada)
 
-        # Crear archivo Excel en memoria para descarga (sin formateo visual, solo valores)
+        st.markdown(html_tabla, unsafe_allow_html=True)
+
+        # Excel para descarga (sin formato)
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             tabla_compras.to_excel(writer, sheet_name='Compras')
         processed_data = output.getvalue()
 
-        # Botón para descargar Excel
         st.download_button(
             label="📥 Descargar tabla en Excel",
             data=processed_data,
             file_name="compras_por_mes_por_cuenta.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        # ===========================
-        #   Descargar Excel
-        # ===========================
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            tabla_compras.to_excel(writer, sheet_name='Compras', index=False)
-        processed_data = output.getvalue()
-
-        st.download_button(
-            label="📥 Descargar tabla en Excel",
-            data=processed_data,
-            file_name="compras_por_mes_por_cuenta.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
 
         #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
         # Asegúrate de que la columna mes_dt existe
