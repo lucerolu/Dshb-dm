@@ -1550,7 +1550,7 @@ if authentication_status:
         # Resetear índice para AgGrid (pasa índice a columna)
         tabla_reset = tabla.reset_index()
 
-        # Formatear números en columnas (excepto 'Mes') a dos decimales
+        # Formatear números en columnas (excepto 'Mes') a dos decimales (para mostrar en tabla)
         for col in tabla_reset.columns:
             if col != "Mes":
                 tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.2f}")
@@ -1558,60 +1558,59 @@ if authentication_status:
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_reset)
 
-        # Alinear columna 'Mes' a la derecha, fijarla, y aplicar clases
+        # Configurar primera columna: fija, fondo azul, texto blanco, alineación derecha y negrita
         gb.configure_column(
             "Mes",
-            cellStyle={"textAlign": "right"},
             pinned="left",
-            headerClass="header-cell",
-            cellClass="first-col"
+            cellStyle={
+                'textAlign': 'right',
+                'backgroundColor': '#0B083D',
+                'color': 'white',
+                'fontWeight': 'bold'
+            },
+            headerClass='header-cell'
         )
 
-        # Alinear demás columnas a la izquierda y agregar clase header
+        # Configurar resto de columnas con alineación izquierda y header azul con texto blanco
         for col in tabla_reset.columns:
             if col != "Mes":
                 gb.configure_column(
                     col,
-                    cellStyle={"textAlign": "left"},
-                    headerClass="header-cell"
+                    cellStyle={'textAlign': 'left'},
+                    headerClass='header-cell'
                 )
 
-        # Construir grid options
-        grid_options = gb.build()
-
-        # Definir estilos CSS para AgGrid
+        # Definir estilo para header: fondo azul y texto blanco
         custom_css = """
         .ag-header-cell.header-cell {
             background-color: #0B083D !important;
             color: white !important;
             font-weight: bold !important;
         }
-        .ag-cell.first-col {
-            background-color: #0B083D !important;
-            color: white !important;
-            font-weight: bold !important;
-        }
-        .ag-row:last-child .ag-cell {
-            background-color: #0B083D !important;
-            color: white !important;
-            font-weight: bold !important;
-        }
-        .ag-row:last-child .ag-cell.first-col {
-            background-color: #0B083D !important;
-            color: white !important;
-            font-weight: bold !important;
+        """
+
+        # Función JS para pintar la fila total con fondo azul y texto blanco
+        js_getRowStyle = """
+        function(params) {
+            if(params.data && params.data.Mes === 'Total') {
+                return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold' };
+            }
+            return null;
         }
         """
 
-        # Mostrar tabla con AgGrid
+        grid_options = gb.build()
+        grid_options['getRowStyle'] = js_getRowStyle
+        grid_options['domLayout'] = 'autoHeight'  # Para adaptar altura al contenido con scroll si es necesario
+
         AgGrid(
             tabla_reset,
             gridOptions=grid_options,
-            height=400,  # altura visible con scroll vertical
+            height=400,
             fit_columns_on_grid_load=False,
-            enable_enterprise_modules=False,
             allow_unsafe_jscode=True,
-            custom_css=custom_css
+            custom_css=custom_css,
+            enable_enterprise_modules=False,
         )
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
