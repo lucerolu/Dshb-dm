@@ -1547,10 +1547,10 @@ if authentication_status:
         # Cambiar nombre índice
         tabla.index.name = "Mes"
 
-        # Resetear índice para AgGrid (pasa el índice a columna)
+        # Resetear índice para AgGrid (pasa índice a columna)
         tabla_reset = tabla.reset_index()
 
-        # Formatear números en las columnas (excepto 'Mes') a dos decimales
+        # Formatear números en columnas (excepto 'Mes') a dos decimales
         for col in tabla_reset.columns:
             if col != "Mes":
                 tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.2f}")
@@ -1558,10 +1558,16 @@ if authentication_status:
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_reset)
 
-        # Alinear columna 'Mes' a la derecha
-        gb.configure_column("Mes", cellStyle={"textAlign": "right"}, pinned="left", headerClass="header-cell", cellClass="first-col")
+        # Alinear columna 'Mes' a la derecha, fijarla, y aplicar clases
+        gb.configure_column(
+            "Mes",
+            cellStyle={"textAlign": "right"},
+            pinned="left",
+            headerClass="header-cell",
+            cellClass="first-col"
+        )
 
-        # Alinear demás columnas a la izquierda
+        # Alinear demás columnas a la izquierda y agregar clase header
         for col in tabla_reset.columns:
             if col != "Mes":
                 gb.configure_column(
@@ -1570,40 +1576,39 @@ if authentication_status:
                     headerClass="header-cell"
                 )
 
-        # Definir estilos CSS para AgGrid via JS code para filas y columnas con colores especiales
+        # Construir grid options
+        grid_options = gb.build()
+
+        # Definir estilos CSS para AgGrid
         custom_css = """
         .ag-header-cell.header-cell {
             background-color: #0B083D !important;
             color: white !important;
+            font-weight: bold !important;
         }
         .ag-cell.first-col {
             background-color: #0B083D !important;
             color: white !important;
-            font-weight: bold;
+            font-weight: bold !important;
         }
         .ag-row:last-child .ag-cell {
             background-color: #0B083D !important;
             color: white !important;
-            font-weight: bold;
+            font-weight: bold !important;
         }
         .ag-row:last-child .ag-cell.first-col {
             background-color: #0B083D !important;
             color: white !important;
-            font-weight: bold;
+            font-weight: bold !important;
         }
         """
-
-        # Activar scroll horizontal y vertical automático con altura ajustable
-        grid_options = gb.build()
-        grid_options['domLayout'] = 'autoHeight'  # Para que el contenedor se ajuste a contenido
-        grid_options['suppressRowHoverHighlight'] = False  # Opcional para mejor UX
 
         # Mostrar tabla con AgGrid
         AgGrid(
             tabla_reset,
             gridOptions=grid_options,
-            height=400,  # altura fija con scroll si sobrepasa
-            fit_columns_on_grid_load=False,  # Para respetar ancho columnas
+            height=400,  # altura visible con scroll vertical
+            fit_columns_on_grid_load=False,
             enable_enterprise_modules=False,
             allow_unsafe_jscode=True,
             custom_css=custom_css
