@@ -1198,7 +1198,8 @@ if authentication_status:
         df["abreviatura"] = df["codigo_normalizado"].apply(obtener_abreviatura)
         df["cuenta_sucursal"] = df["codigo_normalizado"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
 
-        df["mes_anio"] = df["mes_dt"].dt.strftime('%b %Y').str.capitalize()
+        # Usar meses en español con tu diccionario meses_es para formatear mes_año
+        df["mes_anio"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
         df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
         tabla_compras = df.pivot_table(
@@ -1218,18 +1219,15 @@ if authentication_status:
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
         tabla_compras_reset = tabla_compras.reset_index()
 
-        # Función para formatear números con comas y 2 decimales
         def formato_numero(x):
             if isinstance(x, (int, float)):
                 return f"{x:,.2f}"
             return x
 
-        # Formatear tabla (convertir todos a str, aplicando formato a números)
         tabla_formateada = tabla_compras_reset.copy()
         for col in tabla_formateada.columns[1:]:
             tabla_formateada[col] = tabla_formateada[col].apply(formato_numero)
 
-        # Construir HTML con CSS para la tabla
         estilo_css = """
         <style>
         .tabla-scroll {
@@ -1239,6 +1237,13 @@ if authentication_status:
             padding: 0;
             border: 0;
         }
+
+        /* Margen inferior para separar del botón */
+        .spacer {
+            height: 16px;
+        }
+
+        /* Tabla */
         table {
             border-collapse: collapse;
             width: 100%;
@@ -1249,6 +1254,7 @@ if authentication_status:
             padding: 8px 12px;
             white-space: nowrap;
         }
+        /* Encabezado */
         th {
             background-color: #0B083D;
             color: white;
@@ -1257,7 +1263,7 @@ if authentication_status:
             z-index: 2;
             text-align: left;
         }
-        /* Primera columna celdas y encabezado */
+        /* Primera columna (cuenta) */
         th:first-child, td:first-child {
             background-color: #0B083D;
             color: white;
@@ -1282,7 +1288,6 @@ if authentication_status:
         </style>
         """
 
-        # Construir la tabla HTML manualmente
         def generar_html_tabla(df):
             html = "<div class='tabla-scroll'><table>"
             # Encabezado
@@ -1304,7 +1309,9 @@ if authentication_status:
 
         st.markdown(html_tabla, unsafe_allow_html=True)
 
-        # Excel para descarga (sin formato)
+        # Aquí agregamos un div vacío con altura para separar visualmente
+        st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
+
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             tabla_compras.to_excel(writer, sheet_name='Compras')
