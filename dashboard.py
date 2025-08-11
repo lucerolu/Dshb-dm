@@ -1255,12 +1255,8 @@ if authentication_status:
             st.write("❌ Error en tabla_compras:", e)
 
         # Definir JsCode
-        align_right = JsCode("""
-        function(params) { return {'text-align': 'right'}; }
-        """)
-        align_left = JsCode("""
-        function(params) { return {'text-align': 'left'}; }
-        """)
+        align_right = JsCode("function(params) { return {'text-align': 'right'}; }")
+        align_left = JsCode("function(params) { return {'text-align': 'left'}; }")
         formatter_num = JsCode("""
         function(params) {
             if (params.value === null || params.value === undefined || params.value === '') {
@@ -1270,7 +1266,7 @@ if authentication_status:
         }
         """)
 
-        # Configurar Grid
+        # Configurar GridOptions
         gb = GridOptionsBuilder.from_dataframe(tabla_compras)
         for col in tabla_compras.columns:
             if col == "Cuenta - Sucursal":
@@ -1282,16 +1278,10 @@ if authentication_status:
                     valueFormatter=formatter_num,
                     cellStyle=align_left
                 )
+
         grid_options = gb.build()
 
-
-        try:
-            json.dumps(grid_options)
-            st.write("✅ grid_options OK")
-        except Exception as e:
-            st.write("❌ grid_options con error:", e)
-
-        # Mostrar en AgGrid
+        # Mostrar tabla
         AgGrid(
             tabla_compras,
             gridOptions=grid_options,
@@ -1302,7 +1292,6 @@ if authentication_status:
         # Mostrar total general aparte
         st.write("**Total General:**")
         st.write(total_general)
-
 
         # ===========================
         #   Descargar Excel
