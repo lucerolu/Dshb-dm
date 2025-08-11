@@ -1529,6 +1529,7 @@ if authentication_status:
 
 
         #------------------------------- TABLA: RESUMEN TOTAL POR MES Y SUCURSAL ------------------------------------
+        
         st.markdown("### Resumen total por mes y sucursal")
 
         # Crear tabla pivote con totales
@@ -1555,13 +1556,15 @@ if authentication_status:
             if col != "Mes":
                 tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.2f}")
 
+        # Separar la fila Total para fijarla abajo
+        total_row = tabla_reset[tabla_reset["Mes"] == "Total"]
+        data_sin_total = tabla_reset[tabla_reset["Mes"] != "Total"]
+
         # Construir opciones de grid para AgGrid
-        gb = GridOptionsBuilder.from_dataframe(tabla_reset)
+        gb = GridOptionsBuilder.from_dataframe(data_sin_total)
 
         # Configuración general de columnas
-        gb.configure_default_column(
-            resizable=True
-        )
+        gb.configure_default_column(resizable=True)
 
         # Configurar primera columna "Mes"
         gb.configure_column(
@@ -1570,63 +1573,53 @@ if authentication_status:
             width=180,
             cellStyle={
                 'textAlign': 'right',
-                'backgroundColor': '#0B083D',
-                'color': 'white',
-                'fontWeight': 'bold'
             }
         )
 
         # Configurar resto de columnas
-        for col in tabla_reset.columns:
+        for col in data_sin_total.columns:
             if col != "Mes":
-                if col == "Total":
-                    gb.configure_column(
-                        col,
-                        width=120,
-                        cellStyle={
-                            'textAlign': 'left',
-                            'backgroundColor': '#0B083D',
-                            'color': 'white',
-                            'fontWeight': 'bold'
-                        }
-                    )
-                else:
-                    gb.configure_column(
-                        col,
-                        width=120,
-                        cellStyle={'textAlign': 'left'}
-                    )
+                gb.configure_column(
+                    col,
+                    width=120,
+                    cellStyle={'textAlign': 'left'}
+                )
 
-        # CSS personalizado para forzar visibilidad y color en headers
+        # JsCode para pintar fila total con fondo azul y texto blanco
+        get_row_style = JsCode("""
+        function(params) {
+            if(params.node.rowPinned) {
+                return {
+                    backgroundColor: '#0B083D',
+                    color: 'white',
+                    fontWeight: 'bold'
+                }
+            }
+            return null;
+        }
+        """)
+
+        grid_options = gb.build()
+        grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+        grid_options['getRowStyle'] = get_row_style
+        grid_options['domLayout'] = 'autoHeight'
+
+        # CSS para header azul y texto blanco
         custom_css = {
-            ".ag-header-cell-menu-button": {
-                "display": "none !important"  # oculta el icono que permite mover columnas
-            },
-            ".ag-header-cell-resize": {
-                "display": "none !important"  # oculta la barra de redimensionar
-            },
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
                 "color": "white !important",
                 "font-weight": "bold !important",
-                "justify-content": "center !important",  # centrado del texto
                 "justify-content": "center !important"
             },
             ".ag-header-cell-text": {
                 "color": "white !important",
                 "font-weight": "bold !important"
-            },
-            ".ag-header-cell-resize": {
-                "display": "none !important"  # oculta el control de redimensionado
             }
         }
 
-
-        grid_options = gb.build()
-        grid_options['domLayout'] = 'autoHeight'
-
         AgGrid(
-            tabla_reset,
+            data_sin_total,
             gridOptions=grid_options,
             height=400,
             fit_columns_on_grid_load=False,
