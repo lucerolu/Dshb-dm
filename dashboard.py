@@ -1530,6 +1530,8 @@ if authentication_status:
 
         #------------------------------- TABLA: RESUMEN TOTAL POR MES Y SUCURSAL ------------------------------------
         st.markdown("### Resumen total por mes y sucursal")
+
+        # Crear tabla pivote con totales
         tabla = df.pivot_table(
             index="mes_nombre",
             columns="sucursal",
@@ -1539,13 +1541,43 @@ if authentication_status:
             margins_name="Total"
         ).fillna(0)
 
+        # Reordenar filas (meses + total)
         tabla = tabla.reindex(orden_meses + ["Total"])
-        # Cambiar el nombre del índice
-        tabla.index.name = "Mes"
-        # Formatear valores
-        tabla_formateada = tabla.applymap(lambda x: f"{x:,.0f}")
-        st.dataframe(tabla_formateada, use_container_width=True)
 
+        # Cambiar nombre índice
+        tabla.index.name = "Mes"
+
+        # Resetear índice para AgGrid (pasa el índice a columna)
+        tabla_reset = tabla.reset_index()
+
+        # Formatear números en las columnas (excepto 'Mes')
+        for col in tabla_reset.columns:
+            if col != "Mes":
+                tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.0f}")
+
+        # Construir opciones de grid para AgGrid
+        gb = GridOptionsBuilder.from_dataframe(tabla_reset)
+
+        # Alinear columna 'Mes' a la derecha
+        gb.configure_column("Mes", cellStyle={"textAlign": "right"})
+
+        # Alinear demás columnas a la izquierda
+        for col in tabla_reset.columns:
+            if col != "Mes":
+                gb.configure_column(col, cellStyle={"textAlign": "left"})
+
+        # Opcional: hacer sticky header
+        grid_options = gb.build()
+
+        # Mostrar con AgGrid
+        AgGrid(
+            tabla_reset,
+            gridOptions=grid_options,
+            height=400,
+            fit_columns_on_grid_load=True,
+            enable_enterprise_modules=False,
+            allow_unsafe_jscode=True
+        )
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
