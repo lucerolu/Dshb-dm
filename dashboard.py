@@ -1235,7 +1235,9 @@ if authentication_status:
         .tabla-scroll {
             max-height: 500px;
             overflow: auto;
-            border: 1px solid #ddd;
+            margin: 0; 
+            padding: 0;
+            border: 0;
         }
         table {
             border-collapse: collapse;
