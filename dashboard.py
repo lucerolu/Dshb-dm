@@ -1558,10 +1558,26 @@ if authentication_status:
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_reset)
 
-        # Ancho fijo para columnas numéricas (ejemplo: 120 px, ajusta si quieres)
-        width_num = 120
+        # Aplica para todas las columnas, o después para columnas específicas
+        gb.configure_default_column(
+            headerComponentParams={
+                "template":
+                    '<div class="ag-cell-label-container" role="presentation">' +
+                    '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
+                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation">' +
+                    '    <span ref="eSortOrder" class="ag-header-icon ag-sort-order"></span>' +
+                    '    <span ref="eSortAsc" class="ag-header-icon ag-sort-ascending-icon"></span>' +
+                    '    <span ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon"></span>' +
+                    '    <span ref="eSortNone" class="ag-header-icon ag-sort-none-icon"></span>' +
+                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="white-space: normal; text-align: right;"></span>' +
+                    '    <span ref="eFilter" class="ag-header-icon ag-filter-icon"></span>' +
+                    '  </div>' +
+                    '</div>'
+            }
+        )
 
-        # Configurar primera columna: fija, fondo azul, texto blanco, alineación derecha y negrita
+        # Configura columnas con estilos de fondo y color texto
+        # Primero la columna "Mes"
         gb.configure_column(
             "Mes",
             pinned="left",
@@ -1572,16 +1588,16 @@ if authentication_status:
                 'color': 'white',
                 'fontWeight': 'bold'
             },
-            headerClass='header-cell right-align-header'
+            headerClass='header-cell'
         )
 
-        # Configurar resto de columnas con alineación izquierda y header azul con texto blanco
+        # Luego las demás columnas
         for col in tabla_reset.columns:
             if col != "Mes":
                 if col == "Total":
                     gb.configure_column(
                         col,
-                        width=width_num,
+                        width=120,
                         cellStyle={
                             'textAlign': 'left',
                             'backgroundColor': '#0B083D',
@@ -1593,38 +1609,25 @@ if authentication_status:
                 else:
                     gb.configure_column(
                         col,
-                        width=width_num,
+                        width=120,
                         cellStyle={'textAlign': 'left'},
                         headerClass='header-cell'
                     )
 
-        # CSS para pintar headers y alinear header "Mes" a la derecha
+        # CSS personalizado para pintar header y primera columna
         custom_css = """
         .ag-header-cell.header-cell {
             background-color: #0B083D !important;
             color: white !important;
             font-weight: bold !important;
         }
-
-        /* Alinear a la derecha solo el header de 'Mes' */
-        .ag-header-cell.right-align-header {
-            text-align: right !important;
+        .ag-cell {
+            white-space: nowrap;
         }
         """
 
-        # JS para pintar toda la fila 'Total' de azul con texto blanco y negrita
-        get_row_style = JsCode("""
-        function(params) {
-            if(params.data && params.data.Mes === 'Total') {
-                return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold' };
-            }
-            return null;
-        }
-        """)
-
         grid_options = gb.build()
-        grid_options['getRowStyle'] = get_row_style
-        grid_options['domLayout'] = 'autoHeight'  # Ajusta altura según contenido
+        grid_options['domLayout'] = 'autoHeight'
 
         AgGrid(
             tabla_reset,
@@ -1634,7 +1637,9 @@ if authentication_status:
             allow_unsafe_jscode=True,
             custom_css=custom_css,
             enable_enterprise_modules=False,
+            theme="ag-theme-alpine"  # Recomendado para estilos consistentes
         )
+
 
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
