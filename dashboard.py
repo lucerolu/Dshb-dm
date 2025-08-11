@@ -1589,19 +1589,19 @@ if authentication_status:
         }
         """
 
-        # Función JS para pintar la fila total con fondo azul y texto blanco
-        js_getRowStyle = """
+        # Usar JsCode para getRowStyle
+        get_row_style = JsCode("""
         function(params) {
             if(params.data && params.data.Mes === 'Total') {
                 return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold' };
             }
             return null;
         }
-        """
+        """)
 
         grid_options = gb.build()
-        grid_options['getRowStyle'] = js_getRowStyle
-        grid_options['domLayout'] = 'autoHeight'  # Para adaptar altura al contenido con scroll si es necesario
+        grid_options['getRowStyle'] = get_row_style
+        grid_options['domLayout'] = 'autoHeight'
 
         AgGrid(
             tabla_reset,
