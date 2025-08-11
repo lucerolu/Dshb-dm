@@ -1558,13 +1558,13 @@ if authentication_status:
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(tabla_reset)
 
-        # Aplica para todas las columnas, o después para columnas específicas
+        # Aplica para todas las columnas: header con texto alineado a la derecha
         gb.configure_default_column(
             headerComponentParams={
                 "template":
                     '<div class="ag-cell-label-container" role="presentation">' +
                     '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
-                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation">' +
+                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="justify-content: flex-end;">' +
                     '    <span ref="eSortOrder" class="ag-header-icon ag-sort-order"></span>' +
                     '    <span ref="eSortAsc" class="ag-header-icon ag-sort-ascending-icon"></span>' +
                     '    <span ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon"></span>' +
@@ -1614,14 +1614,14 @@ if authentication_status:
                         headerClass='header-cell'
                     )
 
-        # CSS personalizado para pintar header y primera columna
+        # CSS personalizado para pintar header y controlar estilos
         custom_css = """
-        .ag-header-cell.header-cell {
+        .ag-theme-alpine .ag-header-cell.header-cell {
             background-color: #0B083D !important;
             color: white !important;
             font-weight: bold !important;
         }
-        .ag-cell {
+        .ag-theme-alpine .ag-cell {
             white-space: nowrap;
         }
         """
@@ -1637,8 +1637,9 @@ if authentication_status:
             allow_unsafe_jscode=True,
             custom_css=custom_css,
             enable_enterprise_modules=False,
-            theme="ag-theme-alpine"  # Recomendado para estilos consistentes
+            theme="ag-theme-alpine"
         )
+
 
 
 
