@@ -1560,21 +1560,26 @@ if authentication_status:
 
         # Aplica para todas las columnas: header con texto alineado a la derecha
         gb.configure_default_column(
+            floating_filter=True,
+            min_column_width=10,
+            maxWidth=110,
             headerComponentParams={
                 "template":
-                    '<div class="ag-cell-label-container" role="presentation">' +
+                    '<div class="ag-cell-label-container" role="presentation" style="background-color: #0B083D;">' +
                     '  <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>' +
-                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation" style="justify-content: flex-end;">' +
+                    '  <div ref="eLabel" class="ag-header-cell-label" role="presentation">' +
                     '    <span ref="eSortOrder" class="ag-header-icon ag-sort-order"></span>' +
                     '    <span ref="eSortAsc" class="ag-header-icon ag-sort-ascending-icon"></span>' +
                     '    <span ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon"></span>' +
                     '    <span ref="eSortNone" class="ag-header-icon ag-sort-none-icon"></span>' +
-                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" style="white-space: normal; text-align: right;"></span>' +
+                    '    <span ref="eText" class="ag-header-cell-text" role="columnheader" ' +
+                    '          style="white-space: normal; text-align: right; color: white; font-weight: bold;"></span>' +
                     '    <span ref="eFilter" class="ag-header-icon ag-filter-icon"></span>' +
                     '  </div>' +
                     '</div>'
-            }
+            }   
         )
+
 
         # Configura columnas con estilos de fondo y color texto
         # Primero la columna "Mes"
