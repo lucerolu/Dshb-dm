@@ -1575,18 +1575,33 @@ if authentication_status:
         gb = GridOptionsBuilder.from_dataframe(data_sin_total)
         gb.configure_default_column(resizable=True)
 
-        # JsCode para pintar celdas con escala pastel según valor
+        # JsCode para pintar celdas con escala rojo → amarillo → verde pastel
         cell_style_gradient_template = """
         function(params) {
-            if (params.colDef.field !== 'Mes' && params.colDef.field !== '%s') {
+            const totalCol = '%s';
+            if (params.colDef.field !== 'Mes' && params.colDef.field !== totalCol && params.data['Mes'] !== 'Total') {
                 let val = parseFloat(params.value.replace(/,/g, ''));
                 let min = %f;
                 let max = %f;
                 if (!isNaN(val) && max > min) {
                     let ratio = (val - min) / (max - min);
-                    let r = Math.round(255 - 155 * ratio); // pastel rojo->verde
-                    let g = Math.round(255 - 155 * (1 - ratio));
-                    let b = 200;
+
+                    // Colores definidos
+                    let r, g, b;
+                    if (ratio <= 0.5) {
+                        // Verde (#75DE54) a Amarillo (#E8E546)
+                        let t = ratio / 0.5;
+                        r = Math.round(117 + t * (232 - 117));
+                        g = Math.round(222 + t * (229 - 222));
+                        b = Math.round(84  + t * (70  - 84));
+                    } else {
+                        // Amarillo (#E8E546) a Rojo (#E86046)
+                        let t = (ratio - 0.5) / 0.5;
+                        r = Math.round(232 + t * (232 - 232));
+                        g = Math.round(229 + t * (96  - 229));
+                        b = Math.round(70  + t * (70  - 70));
+                    }
+
                     return {
                         backgroundColor: `rgb(${r},${g},${b})`,
                         textAlign: 'left'
@@ -1622,12 +1637,12 @@ if authentication_status:
             }
         )
 
-        # Configurar columnas con gradiente
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
                 min_val, max_val = min_max_dict[col]
                 gradient_code = JsCode(cell_style_gradient_template % (ultima_col, min_val, max_val))
                 gb.configure_column(col, width=120, cellStyle=gradient_code)
+
 
         # JsCode para pintar fila total
         get_row_style = JsCode("""
