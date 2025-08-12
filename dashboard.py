@@ -856,8 +856,8 @@ if authentication_status:
             texttemplate="$%{text:,.0f}",
             textposition="inside",
             hovertemplate="<b>%{x}</b><br>" +  # Nombre de la sucursal
-                        "División: <b>%{customdata[0]}</b><br>" +  # Nombre de la división
-                        "Monto: <b>$%{y:,.2f}</b><extra></extra>",
+                        "<b>División:</b> %{customdata[0]}<br>" +  # Nombre de la división
+                        "<b>Monto:</b> $%{y:,.2f}<extra></extra>",
             customdata=df_suc_div[["division"]].values
         )
 
