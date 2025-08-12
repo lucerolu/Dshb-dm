@@ -1578,11 +1578,11 @@ if authentication_status:
         # Función JS para extraer valor numérico para ordenar correctamente
         numeric_value_getter = JsCode("""
         function(params) {
+            // El valor original en data es numérico, así que sólo retornarlo
             return params.value !== undefined && params.value !== null ? params.value : 0;
         }
         """)
 
-        # Función JS para formatear números con comas y 2 decimales
         value_formatter = JsCode("""
         function(params) {
             if (params.value === undefined || params.value === null) return '';
