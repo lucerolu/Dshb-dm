@@ -1660,20 +1660,6 @@ if authentication_status:
             comparator=month_comparator
         )
 
-        # Columna Total vertical fija azul y sin orden
-        gb.configure_column(
-            ultima_col,
-            width=120,
-            cellStyle={
-                'textAlign': 'left',
-                'backgroundColor': '#0B083D',
-                'color': 'white',
-                'fontWeight': 'bold'
-            },
-            sortable=False,
-            valueFormatter=value_formatter  # <-- acá el formatter
-        )
-
         # Configurar columnas numéricas con valueGetter simple y valueFormatter
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
@@ -1695,6 +1681,20 @@ if authentication_status:
             sortable=True,
             valueGetter=JsCode(f"function(params) {{ return params.data['{col}']; }}"),
             valueFormatter=value_formatter
+        )
+
+        # Columna Total vertical fija azul y sin orden
+        gb.configure_column(
+            ultima_col,
+            width=120,
+            cellStyle={
+                'textAlign': 'left',
+                'backgroundColor': '#0B083D',
+                'color': 'white',
+                'fontWeight': 'bold'
+            },
+            sortable=False,
+            valueFormatter=value_formatter  # <-- acá el formatter
         )
 
         # JS para pintar fila total fija abajo
