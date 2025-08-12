@@ -1900,18 +1900,29 @@ if authentication_status:
         fig_lineas = go.Figure()
         for sucursal in sucursales_seleccionadas:
             if sucursal in df_pivot.columns:
+                # Crear customdata con mes y sucursal para cada punto
+                customdata = list(zip(df_pivot.index.astype(str), [sucursal]*len(df_pivot)))
+                
                 fig_lineas.add_trace(go.Scatter(
                     x=df_pivot.index,
                     y=df_pivot[sucursal],
                     mode='lines+markers',
                     name=sucursal,
-                    line=dict(color=colores_sucursales.get(sucursal))
+                    line=dict(color=colores_sucursales.get(sucursal)),
+                    customdata=customdata,
+                    hovertemplate=(
+                        "Sucursal: %{customdata[1]}<br>" +
+                        "Mes: %{customdata[0]}<br>" +
+                        "Monto: $%{y:,.2f}<extra></extra>"
+                    )
                 ))
+
         fig_lineas.update_layout(
             title="Evolución mensual por sucursal",
             xaxis_title="Mes",
             yaxis_title="Total Comprado"
         )
+
         st.plotly_chart(
             fig_lineas,
             use_container_width=True,
@@ -1926,7 +1937,6 @@ if authentication_status:
                 "displaylogo": False
             }
         )
-
 
         #------------------------------ GRÁFICA DE BARRAS: COMPRAS ACUMULADAS POR CUENTA --------------------------------------------------------------------------------------
         df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)]
