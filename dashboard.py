@@ -1821,7 +1821,7 @@ if authentication_status:
             df_mes["porcentaje"] = df_mes["monto"] / total_mes * 100
 
             df_mes["texto"] = df_mes.apply(
-                lambda row: f"${row['monto']:,.0f}<br>({row['porcentaje']:.1f}%)", axis=1
+                lambda row: f"${row['monto']:,.2f}<br>({row['porcentaje']:.1f}%)", axis=1
             )
 
             fig_mes = px.bar(
