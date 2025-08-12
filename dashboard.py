@@ -1507,7 +1507,7 @@ if authentication_status:
                 marker=dict(color=colores_sucursales.get(sucursal)),
                 customdata=df_pivot[sucursal],
                 text=[
-                    f"{df_percent.loc[mes, sucursal]:.1f}%<br>${df_pivot.loc[mes, sucursal]:,.0f}"
+                    f"{df_percent.loc[mes, sucursal]:.1f}%<br>${df_pivot.loc[mes, sucursal]:,.2f}"
                     if df_pivot.loc[mes, sucursal] > 0 else ""
                     for mes in df_percent.index
                 ],
