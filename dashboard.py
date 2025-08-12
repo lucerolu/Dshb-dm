@@ -1550,6 +1550,8 @@ if authentication_status:
         # Resetear índice para AgGrid (sin formatear números)
         tabla_reset = tabla.reset_index()
 
+        tabla_reset = tabla.reset_index().fillna(0)
+
         # Separar la fila Total para fijarla abajo
         total_row = tabla_reset[tabla_reset["Mes"] == "Total"]
         data_sin_total = tabla_reset[tabla_reset["Mes"] != "Total"].copy()
@@ -1653,8 +1655,10 @@ if authentication_status:
                 'color': 'white',
                 'fontWeight': 'bold'
             },
-            sortable=False
+            sortable=False,
+            valueFormatter=value_formatter  # <-- acá el formatter
         )
+
 
         # Configurar columnas numéricas con valueGetter simple y valueFormatter
         for col in data_sin_total.columns:
