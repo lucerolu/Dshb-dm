@@ -25,6 +25,7 @@ from yaml.loader import SafeLoader
 import time 
 
 
+
 # Cargar configuración desde secrets y convertirla a dict normal
 auth_config = dict(st.secrets["auth"])
 
@@ -1750,8 +1751,6 @@ if authentication_status:
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
         )
-
-
         # === BOTÓN DE DESCARGA ===
         buffer = io.BytesIO()
         tabla_reset.to_excel(buffer, index=False)
@@ -1767,6 +1766,7 @@ if authentication_status:
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
+
         for sucursal in df_pivot.columns:
             fig_lineas.add_trace(go.Scatter(
                 x=df_pivot.index,
@@ -1775,6 +1775,37 @@ if authentication_status:
                 name=sucursal,
                 line=dict(color=colores_sucursales.get(sucursal))
             ))
+
+        # Botones para mostrar/ocultar todas las líneas
+        fig_lineas.update_layout(
+            updatemenus=[
+                dict(
+                    type="buttons",
+                    direction="right",
+                    buttons=list([
+                        dict(
+                            label="Mostrar todas",
+                            method="update",
+                            args=[{"visible": [True] * len(df_pivot.columns)},
+                                {"title": "Todas las sucursales visibles"}],
+                        ),
+                        dict(
+                            label="Ocultar todas",
+                            method="update",
+                            args=[{"visible": [False] * len(df_pivot.columns)},
+                                {"title": "Todas las sucursales ocultas"}],
+                        ),
+                    ]),
+                    pad={"r": 10, "t": 10},
+                    showactive=True,
+                    x=0.0,
+                    xanchor="left",
+                    y=1.15,
+                    yanchor="top"
+                ),
+            ]
+        )
+
         fig_lineas.update_layout(
             title="Evolución de Compras por Mes y Sucursal (2025)",
             xaxis_title="Mes",
@@ -1783,6 +1814,7 @@ if authentication_status:
             height=500,
             margin=dict(t=60)
         )
+
         st.plotly_chart(
             fig_lineas,
             use_container_width=True,
@@ -1797,6 +1829,7 @@ if authentication_status:
                 "displaylogo": False
             }
         )
+
 
         #------------------------- GRÁFICAS DE BARRAS: COMPRAS POR SUCURSAL, MES A MES  -----------------------------------------------------
         # Obtener mes actual
