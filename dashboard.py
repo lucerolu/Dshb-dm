@@ -1529,7 +1529,6 @@ if authentication_status:
 
 
         #------------------------------- TABLA: RESUMEN TOTAL POR MES Y SUCURSAL ------------------------------------
-        
         st.markdown("### Resumen total por mes y sucursal")
 
         # Crear tabla pivote con totales
@@ -1548,7 +1547,7 @@ if authentication_status:
         # Cambiar nombre índice
         tabla.index.name = "Mes"
 
-        # Resetear índice para AgGrid (¡sin formatear los números!)
+        # Resetear índice para AgGrid (sin formatear, dejar números puros)
         tabla_reset = tabla.reset_index()
 
         # Separar la fila Total para fijarla abajo
@@ -1579,16 +1578,17 @@ if authentication_status:
         # Función JS para extraer valor numérico para ordenar correctamente
         numeric_value_getter = JsCode("""
         function(params) {
-            if (!params.value) return 0;
-            // Quitar comas y convertir a número
-            return Number(params.value.toString().replace(/,/g, ''));
+            return params.value !== undefined && params.value !== null ? params.value : 0;
         }
         """)
 
-
-        # Construir opciones de grid para AgGrid
-        gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-        gb.configure_default_column(resizable=True)
+        # Función JS para formatear números con comas y 2 decimales
+        value_formatter = JsCode("""
+        function(params) {
+            if (params.value === undefined || params.value === null) return '';
+            return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        """)
 
         # JsCode para pintar celdas con escala rojo → amarillo → verde pastel
         cell_style_gradient_template = """
@@ -1627,6 +1627,10 @@ if authentication_status:
         }
         """
 
+        # Construir opciones de grid para AgGrid
+        gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+        gb.configure_default_column(resizable=True)
+
         # Columna Mes fija en azul y con comparator para orden cronológico
         gb.configure_column(
             "Mes",
@@ -1654,7 +1658,7 @@ if authentication_status:
             sortable=False
         )
 
-        # Configurar columnas numéricas con valueGetter y valueFormatter para ordenar y mostrar bien
+        # Columnas numéricas con valueGetter y valueFormatter para ordenar y mostrar bien
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
                 min_val, max_val = min_max_dict[col]
@@ -1664,20 +1668,9 @@ if authentication_status:
                     width=120,
                     cellStyle=gradient_code,
                     sortable=True,
-                    valueGetter=JsCode("""
-                        function(params) {
-                            if (!params.value) return 0;
-                            return Number(params.value.toString().replace(/,/g, ''));
-                        }
-                    """),
-                    valueFormatter=JsCode("""
-                        function(params) {
-                            if (params.value === undefined || params.value === null) return '';
-                            return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                        }
-                    """)
+                    valueGetter=numeric_value_getter,
+                    valueFormatter=value_formatter
                 )
-
 
         # JsCode para pintar fila total fija abajo
         get_row_style = JsCode("""
@@ -1723,7 +1716,6 @@ if authentication_status:
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
         )
-
 
         # === BOTÓN DE DESCARGA ===
         buffer = io.BytesIO()
