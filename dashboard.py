@@ -1547,25 +1547,30 @@ if authentication_status:
         # Cambiar nombre índice
         tabla.index.name = "Mes"
 
-        # Resetear índice para AgGrid (sin formatear, dejar números puros)
+        # Resetear índice para AgGrid (sin formatear números)
         tabla_reset = tabla.reset_index()
 
         # Separar la fila Total para fijarla abajo
         total_row = tabla_reset[tabla_reset["Mes"] == "Total"]
-        data_sin_total = tabla_reset[tabla_reset["Mes"] != "Total"]
+        data_sin_total = tabla_reset[tabla_reset["Mes"] != "Total"].copy()
+
+        # Asegurar que columnas numéricas sean floats
+        ultima_col = tabla_reset.columns[-1]
+        for col in data_sin_total.columns:
+            if col not in ["Mes", ultima_col]:
+                data_sin_total[col] = pd.to_numeric(data_sin_total[col], errors='coerce').fillna(0)
 
         # Calcular min y max por sucursal (excluyendo total vertical)
-        ultima_col = tabla_reset.columns[-1]
         min_max_dict = {}
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
                 valores = data_sin_total[col]
                 min_max_dict[col] = (valores.min(), valores.max())
 
-        # Definir arreglo meses para orden cronológico en JS
+        # JS arreglo meses para orden cronológico
         orden_meses_js_array = str(orden_meses).replace("'", '"')
 
-        # Comparator JS para ordenar meses cronológicamente
+        # Comparator JS para ordenar meses
         month_comparator = JsCode(f"""
         function(month1, month2) {{
             var orden = {orden_meses_js_array};
@@ -1575,14 +1580,7 @@ if authentication_status:
         }}
         """)
 
-        # Función JS para extraer valor numérico para ordenar correctamente
-        numeric_value_getter = JsCode("""
-        function(params) {
-            // El valor original en data es numérico, así que sólo retornarlo
-            return params.value !== undefined && params.value !== null ? params.value : 0;
-        }
-        """)
-
+        # Formatter para mostrar números con comas y 2 decimales
         value_formatter = JsCode("""
         function(params) {
             if (params.value === undefined || params.value === null) return '';
@@ -1590,7 +1588,7 @@ if authentication_status:
         }
         """)
 
-        # JsCode para pintar celdas con escala rojo → amarillo → verde pastel
+        # JS para pintar celdas con escala rojo → amarillo → verde pastel
         cell_style_gradient_template = """
         function(params) {
             const totalCol = '%s';
@@ -1658,7 +1656,7 @@ if authentication_status:
             sortable=False
         )
 
-        # Columnas numéricas con valueGetter y valueFormatter para ordenar y mostrar bien
+        # Configurar columnas numéricas con valueGetter simple y valueFormatter
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
                 min_val, max_val = min_max_dict[col]
@@ -1668,11 +1666,11 @@ if authentication_status:
                     width=120,
                     cellStyle=gradient_code,
                     sortable=True,
-                    valueGetter=numeric_value_getter,
+                    valueGetter=f"data.{col}",
                     valueFormatter=value_formatter
                 )
 
-        # JsCode para pintar fila total fija abajo
+        # JS para pintar fila total fija abajo
         get_row_style = JsCode("""
         function(params) {
             if(params.node.rowPinned) {
@@ -1716,6 +1714,7 @@ if authentication_status:
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
         )
+
 
         # === BOTÓN DE DESCARGA ===
         buffer = io.BytesIO()
