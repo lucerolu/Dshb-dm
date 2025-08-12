@@ -1548,16 +1548,8 @@ if authentication_status:
         # Cambiar nombre índice
         tabla.index.name = "Mes"
 
-        # Resetear índice para AgGrid
+        # Resetear índice para AgGrid (¡sin formatear los números!)
         tabla_reset = tabla.reset_index()
-
-        # Guardar copia sin formato para cálculos de color
-        tabla_numerica = tabla_reset.copy()
-
-        # Formatear números (excepto 'Mes') a dos decimales para mostrar
-        for col in tabla_reset.columns:
-            if col != "Mes":
-                tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.2f}")
 
         # Separar la fila Total para fijarla abajo
         total_row = tabla_reset[tabla_reset["Mes"] == "Total"]
@@ -1568,13 +1560,13 @@ if authentication_status:
         min_max_dict = {}
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
-                valores = tabla_numerica.loc[tabla_numerica["Mes"] != "Total", col]
+                valores = data_sin_total[col]
                 min_max_dict[col] = (valores.min(), valores.max())
 
         # Definir arreglo meses para orden cronológico en JS
         orden_meses_js_array = str(orden_meses).replace("'", '"')
 
-        # Comparator JS para ordenar meses
+        # Comparator JS para ordenar meses cronológicamente
         month_comparator = JsCode(f"""
         function(month1, month2) {{
             var orden = {orden_meses_js_array};
@@ -1588,10 +1580,10 @@ if authentication_status:
         numeric_value_getter = JsCode("""
         function(params) {
             if (!params.value) return 0;
-            return Number(params.value.toString().replace(/,/g, ''));
+            return Number(params.value);
         }
         """)
-        
+
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(data_sin_total)
         gb.configure_default_column(resizable=True)
@@ -1601,7 +1593,7 @@ if authentication_status:
         function(params) {
             const totalCol = '%s';
             if (params.colDef.field !== 'Mes' && params.colDef.field !== totalCol && params.data['Mes'] !== 'Total') {
-                let val = parseFloat(params.value.replace(/,/g, ''));
+                let val = params.value;
                 let min = %f;
                 let max = %f;
                 if (!isNaN(val) && max > min) {
@@ -1633,7 +1625,7 @@ if authentication_status:
         }
         """
 
-        # Columna Mes fija en azul
+        # Columna Mes fija en azul y con comparator para orden cronológico
         gb.configure_column(
             "Mes",
             pinned="left",
@@ -1647,7 +1639,7 @@ if authentication_status:
             comparator=month_comparator
         )
 
-        # Columna Total vertical fija azul y sin sort (o puedes poner comparator igual si quieres)
+        # Columna Total vertical fija azul y sin orden
         gb.configure_column(
             ultima_col,
             width=120,
@@ -1657,10 +1649,10 @@ if authentication_status:
                 'color': 'white',
                 'fontWeight': 'bold'
             },
-            sortable=False  # si no quieres ordenar la columna total vertical
+            sortable=False
         )
 
-        # Columnas numéricas con valueGetter para ordenar por valor numérico
+        # Configurar columnas numéricas con valueGetter y valueFormatter para ordenar y mostrar bien
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
                 min_val, max_val = min_max_dict[col]
@@ -1670,11 +1662,16 @@ if authentication_status:
                     width=120,
                     cellStyle=gradient_code,
                     sortable=True,
-                    valueGetter=numeric_value_getter  # Aquí va la función para ordenar por valor numérico
+                    valueGetter=numeric_value_getter,
+                    valueFormatter=JsCode("""
+                    function(params) {
+                        if (params.value === undefined || params.value === null) return '';
+                        return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                    """)
                 )
 
-
-        # JsCode para pintar fila total
+        # JsCode para pintar fila total fija abajo
         get_row_style = JsCode("""
         function(params) {
             if(params.node.rowPinned) {
@@ -1718,6 +1715,7 @@ if authentication_status:
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
         )
+
 
         # === BOTÓN DE DESCARGA ===
         buffer = io.BytesIO()
