@@ -1776,32 +1776,38 @@ if authentication_status:
                 line=dict(color=colores_sucursales.get(sucursal))
             ))
 
-        # Botones para mostrar/ocultar todas las líneas
+        n_trazas = len(df_pivot.columns)
+
+        # Colores originales para cada traza
+        colores_originales = [colores_sucursales.get(suc, "#000000") for suc in df_pivot.columns]
+        # Colores "invisibles"
+        color_invisible = "rgba(0,0,0,0)"
+
         fig_lineas.update_layout(
             updatemenus=[
                 dict(
                     type="buttons",
-                    direction="right",
+                    direction="down",  # uno sobre otro
                     buttons=list([
                         dict(
                             label="Mostrar todas",
                             method="update",
-                            args=[{"visible": [True] * len(df_pivot.columns)},
+                            args=[{"line.color": colores_originales, "visible": [True]*n_trazas},
                                 {"title": "Todas las sucursales visibles"}],
                         ),
                         dict(
                             label="Ocultar todas",
                             method="update",
-                            args=[{"visible": [False] * len(df_pivot.columns)},
+                            args=[{"line.color": [color_invisible]*n_trazas, "visible": [True]*n_trazas},
                                 {"title": "Todas las sucursales ocultas"}],
                         ),
                     ]),
                     pad={"r": 10, "t": 10},
                     showactive=True,
-                    x=0.0,
-                    xanchor="left",
-                    y=1.15,
-                    yanchor="top"
+                    x=1,           # derecha
+                    xanchor="right",
+                    y=0,           # abajo
+                    yanchor="bottom"
                 ),
             ]
         )
@@ -1829,7 +1835,6 @@ if authentication_status:
                 "displaylogo": False
             }
         )
-
 
         #------------------------- GRÁFICAS DE BARRAS: COMPRAS POR SUCURSAL, MES A MES  -----------------------------------------------------
         # Obtener mes actual
