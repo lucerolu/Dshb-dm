@@ -1403,32 +1403,42 @@ if authentication_status:
         if df_divisiones.empty:
             st.warning("No hay datos disponibles.")
         else:
+            # Crear columna abreviatura y cuenta_sucursal igual que en tabla
+            def obtener_abreviatura(codigo):
+                for division, info in divisiones.items():
+                    if codigo in info["codigos"]:
+                        return info["abreviatura"]
+                return ""
+
+            if "abreviatura" not in df_divisiones.columns:
+                df_divisiones["abreviatura"] = df_divisiones["codigo_normalizado"].apply(obtener_abreviatura)
+
             if "cuenta_sucursal" not in df_divisiones.columns:
-                df_divisiones["cuenta_sucursal"] = df_divisiones["codigo_normalizado"] + " - " + df_divisiones["sucursal"]
+                df_divisiones["cuenta_sucursal"] = (
+                    df_divisiones["codigo_normalizado"] + " (" +
+                    df_divisiones["abreviatura"] + ") - " +
+                    df_divisiones["sucursal"]
+                )
 
             df_divisiones["sucursal_nombre"] = df_divisiones["cuenta_sucursal"].str.split(" - ").str[-1]
 
             # Crear columna mes_nombre en español
             df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
 
-            # Agrupar por mes_nombre y cuenta_sucursal
+            # Agrupar
             df_barras = df_divisiones.groupby(["mes_nombre", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-            # Obtener todas las cuentas y meses para asegurar combinaciones completas
+            # Obtener cuentas y meses para completar combinaciones
             orden_meses = [m for m in orden_meses_desc if pd.notna(m)]
             todas_cuentas = df_divisiones["cuenta_sucursal"].unique()
 
-            # Crear todas las combinaciones posibles mes-cuenta
             idx = pd.MultiIndex.from_product([orden_meses, todas_cuentas], names=["mes_nombre", "cuenta_sucursal"])
 
-            # Reindexar para completar combinaciones faltantes y rellenar con 0
             df_barras = df_barras.set_index(["mes_nombre", "cuenta_sucursal"]).reindex(idx, fill_value=0).reset_index()
 
-            # Agregar columna sucursal_nombre
             df_sucursales = df_divisiones.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
             df_barras = df_barras.merge(df_sucursales, on="cuenta_sucursal", how="left")
 
-            # Categorizar mes_nombre para orden correcto
             df_barras["mes_nombre"] = pd.Categorical(df_barras["mes_nombre"], categories=orden_meses, ordered=True)
 
             for mes in orden_meses:
