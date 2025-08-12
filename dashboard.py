@@ -1580,9 +1580,11 @@ if authentication_status:
         numeric_value_getter = JsCode("""
         function(params) {
             if (!params.value) return 0;
-            return Number(params.value);
+            // Quitar comas y convertir a número
+            return Number(params.value.toString().replace(/,/g, ''));
         }
         """)
+
 
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(data_sin_total)
@@ -1662,14 +1664,20 @@ if authentication_status:
                     width=120,
                     cellStyle=gradient_code,
                     sortable=True,
-                    valueGetter=numeric_value_getter,
+                    valueGetter=JsCode("""
+                        function(params) {
+                            if (!params.value) return 0;
+                            return Number(params.value.toString().replace(/,/g, ''));
+                        }
+                    """),
                     valueFormatter=JsCode("""
-                    function(params) {
-                        if (params.value === undefined || params.value === null) return '';
-                        return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    }
+                        function(params) {
+                            if (params.value === undefined || params.value === null) return '';
+                            return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        }
                     """)
                 )
+
 
         # JsCode para pintar fila total fija abajo
         get_row_style = JsCode("""
