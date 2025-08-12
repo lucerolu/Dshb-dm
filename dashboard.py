@@ -1405,20 +1405,19 @@ if authentication_status:
         else:
             # Crear columna abreviatura y cuenta_sucursal igual que en tabla
             def obtener_abreviatura(codigo):
+                codigo_str = str(codigo).strip()
                 for division, info in divisiones.items():
-                    if codigo in info["codigos"]:
+                    if codigo_str in info["codigos"]:
                         return info["abreviatura"]
                 return ""
 
-            if "abreviatura" not in df_divisiones.columns:
-                df_divisiones["abreviatura"] = df_divisiones["codigo_normalizado"].apply(obtener_abreviatura)
+            df_divisiones["abreviatura"] = df_divisiones["codigo_normalizado"].apply(obtener_abreviatura)
+            df_divisiones["cuenta_sucursal"] = (
+                df_divisiones["codigo_normalizado"].astype(str) + " (" +
+                df_divisiones["abreviatura"] + ") - " +
+                df_divisiones["sucursal"]
+            )
 
-            if "cuenta_sucursal" not in df_divisiones.columns:
-                df_divisiones["cuenta_sucursal"] = (
-                    df_divisiones["codigo_normalizado"] + " (" +
-                    df_divisiones["abreviatura"] + ") - " +
-                    df_divisiones["sucursal"]
-                )
 
             df_divisiones["sucursal_nombre"] = df_divisiones["cuenta_sucursal"].str.split(" - ").str[-1]
 
