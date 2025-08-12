@@ -1766,14 +1766,20 @@ if authentication_status:
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
+
         for sucursal in df_pivot.columns:
             fig_lineas.add_trace(go.Scatter(
                 x=df_pivot.index,
                 y=df_pivot[sucursal],
                 mode='lines+markers',
                 name=sucursal,
-                line=dict(color=colores_sucursales.get(sucursal))
+                line=dict(color=colores_sucursales.get(sucursal)),
+                hovertemplate=(
+                    "%{trace.name}<br>" +
+                    "Monto: $%{y:,.2f}<extra></extra>"
+                )
             ))
+
         fig_lineas.update_layout(
             title="Evolución de Compras por Mes y Sucursal (2025)",
             xaxis_title="Mes",
@@ -1782,6 +1788,7 @@ if authentication_status:
             height=500,
             margin=dict(t=60)
         )
+
         st.plotly_chart(
             fig_lineas,
             use_container_width=True,
