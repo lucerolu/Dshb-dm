@@ -1507,11 +1507,11 @@ if authentication_status:
                 marker=dict(color=colores_sucursales.get(sucursal)),
                 customdata=df_pivot[sucursal],
                 text=[
-                    f"{df_percent.loc[mes, sucursal]:.1f}%<br>${df_pivot.loc[mes, sucursal]:,.2f}"
+                    f"{df_percent.loc[mes, sucursal]:.1f}%<br>${df_pivot.loc[mes, sucursal]:,.0f}"
                     if df_pivot.loc[mes, sucursal] > 0 else ""
                     for mes in df_percent.index
                 ],
-                hovertemplate="<b>%{fullData.name}</b><br>%{x:.1f}%<br>$%{customdata:,.0f}<extra></extra>",
+                hovertemplate="<b>%{fullData.name}</b><br>%{x:.1f}%<br>$%{customdata:,.2f}<extra></extra>",
                 textposition='inside'
             ))
         fig.update_layout(
