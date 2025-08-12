@@ -1551,7 +1551,10 @@ if authentication_status:
         # Resetear índice para AgGrid
         tabla_reset = tabla.reset_index()
 
-        # Formatear números (excepto 'Mes') a dos decimales
+        # Guardar copia sin formato para cálculos de color
+        tabla_numerica = tabla_reset.copy()
+
+        # Formatear números (excepto 'Mes') a dos decimales para mostrar
         for col in tabla_reset.columns:
             if col != "Mes":
                 tabla_reset[col] = tabla_reset[col].map(lambda x: f"{x:,.2f}")
@@ -1560,28 +1563,41 @@ if authentication_status:
         total_row = tabla_reset[tabla_reset["Mes"] == "Total"]
         data_sin_total = tabla_reset[tabla_reset["Mes"] != "Total"]
 
+        # Calcular min y max por sucursal (excluyendo total vertical)
+        ultima_col = tabla_reset.columns[-1]
+        min_max_dict = {}
+        for col in data_sin_total.columns:
+            if col not in ["Mes", ultima_col]:
+                valores = tabla_numerica.loc[tabla_numerica["Mes"] != "Total", col]
+                min_max_dict[col] = (valores.min(), valores.max())
+
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-
-        # Configuración general de columnas
         gb.configure_default_column(resizable=True)
 
-        # JsCode para pintar celdas de fila pinned con fondo azul y texto blanco
-        pinnedCellStyle = JsCode("""
+        # JsCode para pintar celdas con escala pastel según valor
+        cell_style_gradient_template = """
         function(params) {
-            if (params.node.rowPinned) {
-                return {
-                    backgroundColor: '#0B083D',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    textAlign: params.colDef.field === 'Mes' ? 'right' : 'left'
-                };
+            if (params.colDef.field !== 'Mes' && params.colDef.field !== '%s') {
+                let val = parseFloat(params.value.replace(/,/g, ''));
+                let min = %f;
+                let max = %f;
+                if (!isNaN(val) && max > min) {
+                    let ratio = (val - min) / (max - min);
+                    let r = Math.round(255 - 155 * ratio); // pastel rojo->verde
+                    let g = Math.round(255 - 155 * (1 - ratio));
+                    let b = 200;
+                    return {
+                        backgroundColor: `rgb(${r},${g},${b})`,
+                        textAlign: 'left'
+                    };
+                }
             }
-            return null;
+            return { textAlign: 'left' };
         }
-        """)
+        """
 
-        # Configurar primera columna "Mes" con cellStyle dinámico
+        # Columna Mes fija en azul
         gb.configure_column(
             "Mes",
             pinned="left",
@@ -1594,8 +1610,7 @@ if authentication_status:
             }
         )
 
-        # Configurar columna Total vertical con azul
-        ultima_col = tabla_reset.columns[-1]
+        # Columna Total vertical fija en azul
         gb.configure_column(
             ultima_col,
             width=120,
@@ -1607,16 +1622,14 @@ if authentication_status:
             }
         )
 
-        # Configurar resto de columnas (excluyendo Mes y Total vertical)
+        # Configurar columnas con gradiente
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
-                gb.configure_column(
-                    col,
-                    width=120,
-                    cellStyle={'textAlign': 'left'}
-                )
+                min_val, max_val = min_max_dict[col]
+                gradient_code = JsCode(cell_style_gradient_template % (ultima_col, min_val, max_val))
+                gb.configure_column(col, width=120, cellStyle=gradient_code)
 
-        # JsCode para pintar fila total con fondo azul y texto blanco
+        # JsCode para pintar fila total
         get_row_style = JsCode("""
         function(params) {
             if(params.node.rowPinned) {
@@ -1635,7 +1648,7 @@ if authentication_status:
         grid_options['getRowStyle'] = get_row_style
         grid_options['domLayout'] = 'autoHeight'
 
-        # CSS para header azul y texto blanco
+        # CSS para header azul
         custom_css = {
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
@@ -1649,6 +1662,7 @@ if authentication_status:
             }
         }
 
+        # Mostrar tabla
         AgGrid(
             data_sin_total,
             gridOptions=grid_options,
@@ -1658,6 +1672,18 @@ if authentication_status:
             custom_css=custom_css,
             enable_enterprise_modules=False,
             theme="ag-theme-alpine"
+        )
+
+        # === BOTÓN DE DESCARGA ===
+        buffer = io.BytesIO()
+        tabla_reset.to_excel(buffer, index=False)
+        buffer.seek(0)
+
+        st.download_button(
+            label="📥 Descargar tabla en Excel",
+            data=buffer,
+            file_name="resumen_mensual.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
 
