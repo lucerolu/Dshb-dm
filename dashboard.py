@@ -1552,6 +1552,15 @@ if authentication_status:
 
         tabla_reset = tabla.reset_index().fillna(0)
 
+        for col in tabla_reset.columns:
+            if col != "Mes":
+                tabla_reset[col] = pd.to_numeric(tabla_reset[col], errors='coerce').fillna(0)
+
+        total_row = tabla_reset[tabla_reset["Mes"] == "Total"]
+        data_sin_total = tabla_reset[tabla_reset["Mes"] != "Total"]
+
+        print(data_sin_total[["Tierra blanca", "Tuxtla Gtz"]])
+
         # Separar la fila Total para fijarla abajo
         total_row = tabla_reset[tabla_reset["Mes"] == "Total"]
         data_sin_total = tabla_reset[tabla_reset["Mes"] != "Total"].copy()
