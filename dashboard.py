@@ -1566,16 +1566,27 @@ if authentication_status:
         # Configuración general de columnas
         gb.configure_default_column(resizable=True)
 
-        # Configurar primera columna "Mes"
+        # JsCode para pintar celdas de fila pinned con fondo azul y texto blanco
+        pinnedCellStyle = JsCode("""
+        function(params) {
+            if (params.node.rowPinned) {
+                return {
+                    backgroundColor: '#0B083D',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    textAlign: params.colDef.field === 'Mes' ? 'right' : 'left'
+                };
+            }
+            return null;
+        }
+        """)
+
+        # Configurar primera columna "Mes" con cellStyle dinámico
         gb.configure_column(
             "Mes",
             pinned="left",
             width=180,
-            cellStyle={'textAlign': 'right'},
-            # Pintar azul si fila está fijada (Total)
-            cellClassRules={
-                'pinned-total-cell': 'node.rowPinned === true'
-            }
+            cellStyle=pinnedCellStyle
         )
 
         # Nombre de la última columna (Total vertical)
@@ -1588,10 +1599,7 @@ if authentication_status:
                     gb.configure_column(
                         col,
                         width=120,
-                        cellStyle={'textAlign': 'left'},
-                        cellClassRules={
-                            'pinned-total-cell': 'node.rowPinned === true'
-                        }
+                        cellStyle=pinnedCellStyle
                     )
                 else:
                     gb.configure_column(
@@ -1619,7 +1627,7 @@ if authentication_status:
         grid_options['getRowStyle'] = get_row_style
         grid_options['domLayout'] = 'autoHeight'
 
-        # CSS para pintar celdas específicas con fondo azul (filas fijadas)
+        # CSS para header azul y texto blanco
         custom_css = {
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
@@ -1628,11 +1636,6 @@ if authentication_status:
                 "justify-content": "center !important"
             },
             ".ag-header-cell-text": {
-                "color": "white !important",
-                "font-weight": "bold !important"
-            },
-            ".pinned-total-cell": {
-                "background-color": "#0B083D !important",
                 "color": "white !important",
                 "font-weight": "bold !important"
             }
