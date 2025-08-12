@@ -793,7 +793,15 @@ if authentication_status:
             color_discrete_map=colores_divisiones,
             labels={"mes_nombre": "Mes", "monto": "Total Comprado", "division": "División"}
         )
-        fig_mes_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
+        fig_mes_div.update_traces(
+            texttemplate="$%{text:,.0f}",
+            textposition="inside",
+            hovertemplate="<b>Mes:</b> %{x}<br>" +
+                        "<b>División:</b> %{customdata[0]}<br>" +
+                        "<b>Total Comprado:</b> $%{y:,.2f}<extra></extra>",
+            customdata=df_mes_div[["division"]]  # Para acceder a division en el hovertemplate
+        )
+
         fig_mes_div.update_layout(
             title=dict(text="Evolución mensual de compras por División", x=0.5, xanchor="center", y=1.0),
             barmode="stack",
