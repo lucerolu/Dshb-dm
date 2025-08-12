@@ -1594,7 +1594,7 @@ if authentication_status:
             }
         )
 
-        # Columna Total vertical siempre azul
+        # Configurar columna Total vertical con azul
         ultima_col = tabla_reset.columns[-1]
         gb.configure_column(
             ultima_col,
@@ -1607,21 +1607,14 @@ if authentication_status:
             }
         )
 
-        # Configurar resto de columnas
+        # Configurar resto de columnas (excluyendo Mes y Total vertical)
         for col in data_sin_total.columns:
-            if col != "Mes":
-                if col == ultima_col:
-                    gb.configure_column(
-                        col,
-                        width=120,
-                        cellStyle=pinnedCellStyle
-                    )
-                else:
-                    gb.configure_column(
-                        col,
-                        width=120,
-                        cellStyle={'textAlign': 'left'}
-                    )
+            if col not in ["Mes", ultima_col]:
+                gb.configure_column(
+                    col,
+                    width=120,
+                    cellStyle={'textAlign': 'left'}
+                )
 
         # JsCode para pintar fila total con fondo azul y texto blanco
         get_row_style = JsCode("""
