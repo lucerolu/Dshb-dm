@@ -1571,6 +1571,27 @@ if authentication_status:
                 valores = tabla_numerica.loc[tabla_numerica["Mes"] != "Total", col]
                 min_max_dict[col] = (valores.min(), valores.max())
 
+        # Definir arreglo meses para orden cronológico en JS
+        orden_meses_js_array = str(orden_meses).replace("'", '"')
+
+        # Comparator JS para ordenar meses
+        month_comparator = JsCode(f"""
+        function(month1, month2) {{
+            var orden = {orden_meses_js_array};
+            var i1 = orden.indexOf(month1);
+            var i2 = orden.indexOf(month2);
+            return i1 - i2;
+        }}
+        """)
+
+        # Función JS para extraer valor numérico para ordenar correctamente
+        numeric_value_getter = JsCode("""
+        function(params) {
+            if (!params.value) return 0;
+            return Number(params.value.toString().replace(/,/g, ''));
+        }
+        """)
+        
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(data_sin_total)
         gb.configure_default_column(resizable=True)
@@ -1622,10 +1643,11 @@ if authentication_status:
                 'backgroundColor': '#0B083D',
                 'color': 'white',
                 'fontWeight': 'bold'
-            }
+            },
+            comparator=month_comparator
         )
 
-        # Columna Total vertical fija en azul
+        # Columna Total vertical fija azul y sin sort (o puedes poner comparator igual si quieres)
         gb.configure_column(
             ultima_col,
             width=120,
@@ -1634,14 +1656,22 @@ if authentication_status:
                 'backgroundColor': '#0B083D',
                 'color': 'white',
                 'fontWeight': 'bold'
-            }
+            },
+            sortable=False  # si no quieres ordenar la columna total vertical
         )
 
+        # Columnas numéricas con valueGetter para ordenar por valor numérico
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
                 min_val, max_val = min_max_dict[col]
                 gradient_code = JsCode(cell_style_gradient_template % (ultima_col, min_val, max_val))
-                gb.configure_column(col, width=120, cellStyle=gradient_code)
+                gb.configure_column(
+                    col,
+                    width=120,
+                    cellStyle=gradient_code,
+                    sortable=True,
+                    valueGetter=numeric_value_getter  # Aquí va la función para ordenar por valor numérico
+                )
 
 
         # JsCode para pintar fila total
