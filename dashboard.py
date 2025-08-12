@@ -1766,7 +1766,6 @@ if authentication_status:
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
-
         for sucursal in df_pivot.columns:
             fig_lineas.add_trace(go.Scatter(
                 x=df_pivot.index,
@@ -1775,43 +1774,6 @@ if authentication_status:
                 name=sucursal,
                 line=dict(color=colores_sucursales.get(sucursal))
             ))
-
-        n_trazas = len(df_pivot.columns)
-
-        # Colores originales para cada traza
-        colores_originales = [colores_sucursales.get(suc, "#000000") for suc in df_pivot.columns]
-        # Colores "invisibles"
-        color_invisible = "rgba(0,0,0,0)"
-
-        fig_lineas.update_layout(
-            updatemenus=[
-                dict(
-                    type="buttons",
-                    direction="down",  # uno sobre otro
-                    buttons=list([
-                        dict(
-                            label="Mostrar todas",
-                            method="update",
-                            args=[{"line.color": colores_originales, "visible": [True]*n_trazas},
-                                {"title": "Todas las sucursales visibles"}],
-                        ),
-                        dict(
-                            label="Ocultar todas",
-                            method="update",
-                            args=[{"line.color": [color_invisible]*n_trazas, "visible": [True]*n_trazas},
-                                {"title": "Todas las sucursales ocultas"}],
-                        ),
-                    ]),
-                    pad={"r": 10, "t": 10},
-                    showactive=True,
-                    x=1,           # derecha
-                    xanchor="right",
-                    y=0,           # abajo
-                    yanchor="bottom"
-                ),
-            ]
-        )
-
         fig_lineas.update_layout(
             title="Evolución de Compras por Mes y Sucursal (2025)",
             xaxis_title="Mes",
@@ -1820,7 +1782,6 @@ if authentication_status:
             height=500,
             margin=dict(t=60)
         )
-
         st.plotly_chart(
             fig_lineas,
             use_container_width=True,
