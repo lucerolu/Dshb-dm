@@ -851,7 +851,16 @@ if authentication_status:
                 "division": "División"},
         )
 
-        fig_suc_div.update_traces(texttemplate="$%{text:,.0f}", textposition="inside")
+        # Texto dentro de las barras
+        fig_suc_div.update_traces(
+            texttemplate="$%{text:,.0f}",
+            textposition="inside",
+            hovertemplate="<b>%{x}</b><br>" +  # Nombre de la sucursal
+                        "División: <b>%{customdata[0]}</b><br>" +  # Nombre de la división
+                        "Monto: <b>$%{y:,.2f}</b><extra></extra>",
+            customdata=df_suc_div[["division"]].values
+        )
+
         fig_suc_div.update_layout(
             title=dict(text="Compra anual por Sucursal y División", x=0.5, xanchor="center", y=1.0),
             barmode="stack",
@@ -865,9 +874,9 @@ if authentication_status:
                 x=0.5
             )
         )
+
         st.plotly_chart(fig_suc_div, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
-
 
         #----------------------- Tabla de compra por division y sucursal ----------------------------------
         tabla_sucursal_division = pd.pivot_table(
