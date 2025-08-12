@@ -1768,14 +1768,19 @@ if authentication_status:
         fig_lineas = go.Figure()
 
         for sucursal in df_pivot.columns:
+            # Prepara los datos para pasar mes y sucursal por customdata
+            customdata = list(zip(df_pivot.index.astype(str), [sucursal]*len(df_pivot)))
+
             fig_lineas.add_trace(go.Scatter(
                 x=df_pivot.index,
                 y=df_pivot[sucursal],
                 mode='lines+markers',
                 name=sucursal,
                 line=dict(color=colores_sucursales.get(sucursal)),
+                customdata=customdata,
                 hovertemplate=(
-                    "%{trace.name}<br>" +
+                    "Sucursal: %{customdata[1]}<br>" +
+                    "Mes: %{customdata[0]}<br>" +
                     "Monto: $%{y:,.2f}<extra></extra>"
                 )
             ))
