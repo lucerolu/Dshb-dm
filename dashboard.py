@@ -1564,6 +1564,12 @@ if authentication_status:
         # Separar la fila Total para fijarla abajo
         total_row = tabla_reset[tabla_reset["Mes"] == "Total"]
         data_sin_total = tabla_reset[tabla_reset["Mes"] != "Total"].copy()
+        data_sin_total = data_sin_total.fillna(0)
+        for col in data_sin_total.columns:
+            if col != "Mes":
+                data_sin_total[col] = pd.to_numeric(data_sin_total[col], errors='coerce').fillna(0)
+      
+        print(data_sin_total.columns.tolist())
 
         # Asegurar que columnas numéricas sean floats
         ultima_col = tabla_reset.columns[-1]
@@ -1594,7 +1600,7 @@ if authentication_status:
         # Formatter para mostrar números con comas y 2 decimales
         value_formatter = JsCode("""
         function(params) {
-            if (params.value === undefined || params.value === null) return '';
+            if (params.value === undefined || params.value === null) return '0.00';
             return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         """)
@@ -1668,7 +1674,6 @@ if authentication_status:
             valueFormatter=value_formatter  # <-- acá el formatter
         )
 
-
         # Configurar columnas numéricas con valueGetter simple y valueFormatter
         for col in data_sin_total.columns:
             if col not in ["Mes", ultima_col]:
@@ -1679,9 +1684,18 @@ if authentication_status:
                     width=120,
                     cellStyle=gradient_code,
                     sortable=True,
-                    valueGetter=f"data.{col}",
+                    valueGetter=JsCode(f"function(params) {{ return params.data['{col}']; }}"),
                     valueFormatter=value_formatter
                 )
+
+        gb.configure_column(
+            col,
+            width=120,
+            cellStyle=gradient_code,
+            sortable=True,
+            valueGetter=JsCode(f"function(params) {{ return params.data['{col}']; }}"),
+            valueFormatter=value_formatter
+        )
 
         # JS para pintar fila total fija abajo
         get_row_style = JsCode("""
