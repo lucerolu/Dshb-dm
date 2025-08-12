@@ -1644,7 +1644,7 @@ if authentication_status:
 
         # Construir opciones de grid para AgGrid
         gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-        gb.configure_default_column(resizable=False, filter=False)
+        gb.configure_default_column(resizable=True, filter=False)
 
         # Columna Mes fija en azul y con comparator para orden cronológico
         gb.configure_column(
