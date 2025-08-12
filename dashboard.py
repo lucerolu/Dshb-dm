@@ -1586,11 +1586,26 @@ if authentication_status:
             "Mes",
             pinned="left",
             width=180,
-            cellStyle=pinnedCellStyle
+            cellStyle={
+                'textAlign': 'right',
+                'backgroundColor': '#0B083D',
+                'color': 'white',
+                'fontWeight': 'bold'
+            }
         )
 
-        # Nombre de la última columna (Total vertical)
+        # Columna Total vertical siempre azul
         ultima_col = tabla_reset.columns[-1]
+        gb.configure_column(
+            ultima_col,
+            width=120,
+            cellStyle={
+                'textAlign': 'left',
+                'backgroundColor': '#0B083D',
+                'color': 'white',
+                'fontWeight': 'bold'
+            }
+        )
 
         # Configurar resto de columnas
         for col in data_sin_total.columns:
