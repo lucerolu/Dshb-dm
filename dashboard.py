@@ -2432,117 +2432,108 @@ if authentication_status:
             df_reset = df_pivot.reset_index()
 
             # Separar fila Total
-            total_row = df_reset[df_reset["codigo"] == "Total"]
+            total_row = df_reset[df_reset["codigo"] == "Total"].copy()
             data_sin_total = df_reset[df_reset["codigo"] != "Total"].copy()
 
-            # Columnas numéricas
-            numeric_cols = [c for c in df_reset.columns if c not in ["sucursal", "codigo"]]
-            numeric_cols_sin_total = [c for c in numeric_cols if c != "Total"]
+            # Columnas numéricas (todas las fechas + Total vertical, excluyendo sucursal y codigo)
+            ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
+            numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # Calcular min y max excluyendo fila y columna Total
-            min_val = data_sin_total[numeric_cols_sin_total].min().min()
-            max_val = data_sin_total[numeric_cols_sin_total].max().max()
-
-            # JS gradient para celdas (excluye fila y columna Total)
-            cell_style_gradient = JsCode(f"""
-            function(params) {{
-                if (params.data['codigo'] !== 'Total' && params.colDef.field !== 'Total') {{
-                    let val = params.value;
-                    if (!isNaN(val) && {max_val} > {min_val}) {{
-                        let ratio = (val - {min_val}) / ({max_val} - {min_val});
-                        let r, g, b;
-                        if (ratio <= 0.5) {{
-                            let t = ratio/0.5;
-                            r = Math.round(117 + t*(232-117));
-                            g = Math.round(222 + t*(229-222));
-                            b = Math.round(84 + t*(70-84));
-                        }} else {{
-                            let t = (ratio-0.5)/0.5;
-                            r = Math.round(232 + t*(232-232));
-                            g = Math.round(229 + t*(96-229));
-                            b = Math.round(70 + t*(70-70));
-                        }}
-                        return {{'backgroundColor': `rgb(${{r}},${{g}},${{b}})`, 'textAlign': 'right'}};
-                    }}
-                }}
-                return {{'textAlign': 'right'}};
-            }}
-            """)
-
-            # Construir AgGrid
-            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-            gb.configure_default_column(resizable=True)
-
-            # Columnas fijas y azul
-            for col_name, width in [("codigo", 120), ("sucursal", 150)]:
-                gb.configure_column(
-                    col_name,
-                    pinned="left",
-                    width=width,
-                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
-                )
-
-            # Columnas numéricas con degradado
+            # Min y max solo de filas que no son total
+            min_max_dict = {}
             for col in numeric_cols_sin_total:
+                valores = pd.to_numeric(data_sin_total[col], errors='coerce').fillna(0)
+                min_max_dict[col] = (valores.min(), valores.max())
+
+
+            # --- JS para degradado (fila total nunca entra porque no está en data_sin_total) ---
+            cell_style_gradient_template = """
+            function(params) {
+                const totalCol = '%s';
+                if (params.colDef.field !== 'Mes' && params.colDef.field !== totalCol) {
+                    let val = params.value;
+                    let min = %f;
+                    let max = %f;
+                    if (!isNaN(val) && max > min) {
+                        let ratio = (val - min) / (max - min);
+                        let r, g, b;
+                        if (ratio <= 0.5) {
+                            let t = ratio / 0.5;
+                            r = Math.round(117 + t * (232 - 117));
+                            g = Math.round(222 + t * (229 - 222));
+                            b = Math.round(84  + t * (70  - 84));
+                        } else {
+                            let t = (ratio - 0.5) / 0.5;
+                            r = 232;
+                            g = Math.round(229 + t * (96 - 229));
+                            b = 70;
+                        }
+                        return { backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'left' };
+                    }
+                }
+                return { textAlign: 'left' };
+            }
+            """
+
+            # --- Configurar Grid ---
+            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+            gb.configure_default_column(resizable=True, filter=False)
+
+            # Columna Mes fija azul
+            gb.configure_column(
+                "Mes",
+                pinned="left",
+                width=180,
+                cellStyle={'textAlign': 'right', 'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'},
+                comparator=month_comparator
+            )
+
+            # Columnas con degradado
+            for col in numeric_cols_sin_total:
+                min_val, max_val = min_max_dict[col]
+                gradient_code = JsCode(cell_style_gradient_template % (ultima_col, min_val, max_val))
                 gb.configure_column(
                     col,
-                    width=100,
-                    cellStyle=cell_style_gradient,
-                    valueFormatter=JsCode("""
-                        function(params) { 
-                            if (params.value == null) return '0.00';
-                            return params.value.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
-                        }
-                    """)
-                )
-
-            # Columna Total horizontal (ya azul)
-            if "Total" in numeric_cols:
-                gb.configure_column(
-                    "Total",
                     width=120,
-                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
-                    valueFormatter=JsCode("""
-                        function(params) { 
-                            if (params.value == null) return '0.00';
-                            return params.value.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
-                        }
-                    """)
+                    cellStyle=gradient_code,
+                    valueFormatter=value_formatter
                 )
 
-            # Fila Total fija abajo y pintada de azul
+            # Columna Total vertical azul
+            gb.configure_column(
+                ultima_col,
+                width=120,
+                cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'},
+                valueFormatter=value_formatter
+            )
+
+            # --- Fila total azul y fijada abajo ---
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = JsCode("""
             function(params) {
-                if(params.node.rowPinned) {
-                    return {
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textAlign: 'right'
-                    };
+                if (params.node.rowPinned) {
+                    return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold' };
                 }
                 return null;
             }
             """)
             grid_options['domLayout'] = 'autoHeight'
 
-            # CSS header azul
-            custom_css = {
-                ".ag-header-cell-label": {"background-color": "#0B083D !important", "color": "white !important", "font-weight": "bold !important"},
-                ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
-            }
-
+            # --- Render AgGrid ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
                 height=400,
                 allow_unsafe_jscode=True,
-                custom_css=custom_css,
+                custom_css={
+                    ".ag-header-cell-label": {"background-color": "#0B083D !important", "color": "white !important", "font-weight": "bold !important"},
+                    ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
+                },
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine"
             )
+
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
