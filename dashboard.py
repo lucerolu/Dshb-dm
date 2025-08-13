@@ -2461,36 +2461,38 @@ if authentication_status:
             function(params) {
                 const totalCol = '%s';
 
-                // Evitar degradado en la fila total
-                if (params.data && params.data.codigo === 'Total') {
+                // Ignorar fila total y filas fijadas
+                if ((params.data && params.data.codigo === 'Total') || params.node.rowPinned) {
                     return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold', textAlign: 'right' };
                 }
 
-                if (params.colDef.field !== totalCol) {
-                    let val = params.value;
-                    let min = %f;
-                    let max = %f;
-                    if (!isNaN(val) && max > min) {
-                        let ratio = (val - min) / (max - min);
-                        let r, g, b;
-                        if (ratio <= 0.5) {
-                            let t = ratio / 0.5;
-                            r = Math.round(117 + t * (232 - 117));
-                            g = Math.round(222 + t * (229 - 222));
-                            b = Math.round(84  + t * (70  - 84));
-                        } else {
-                            let t = (ratio - 0.5) / 0.5;
-                            r = 232;
-                            g = Math.round(229 + t * (96 - 229));
-                            b = 70;
-                        }
-                        return { backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'right' };
+                // Ignorar columna Total
+                if (params.colDef.field === totalCol) {
+                    return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold', textAlign: 'right' };
+                }
+
+                let val = params.value;
+                let min = %f;
+                let max = %f;
+                if (!isNaN(val) && max > min) {
+                    let ratio = (val - min) / (max - min);
+                    let r, g, b;
+                    if (ratio <= 0.5) {
+                        let t = ratio / 0.5;
+                        r = Math.round(117 + t * (232 - 117));
+                        g = Math.round(222 + t * (229 - 222));
+                        b = Math.round(84  + t * (70  - 84));
+                    } else {
+                        let t = (ratio - 0.5) / 0.5;
+                        r = 232;
+                        g = Math.round(229 + t * (96 - 229));
+                        b = 70;
                     }
+                    return { backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'right' };
                 }
                 return { textAlign: 'right' };
             }
             """
-
 
             # --- Configuración del Grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
@@ -2550,8 +2552,6 @@ if authentication_status:
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine"
             )
-
-
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
