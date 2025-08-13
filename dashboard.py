@@ -1952,9 +1952,9 @@ if authentication_status:
                     line=dict(color=colores_sucursales.get(sucursal)),
                     customdata=customdata,
                     hovertemplate=(
-                        "Sucursal: %{customdata[1]}<br>" +
-                        "Mes: %{customdata[0]}<br>" +
-                        "Monto: $%{y:,.2f}<extra></extra>"
+                        "<b>Sucursal:</b> %{customdata[1]}<br>" +
+                        "<b>Mes:</b> %{customdata[0]}<br>" +
+                        "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
                     )
                 ))
 
@@ -2029,7 +2029,7 @@ if authentication_status:
             st.plotly_chart(fig, use_container_width=True)
 
         
-        #=================== GRAFICA DE BARRAS DE MONTO POR MES Y CUENTA ========================
+        #=================== GRAFICA DE BARRAS APILADAS DE MONTO POR MES Y CUENTA ========================
 
         # Validar selección
         if not sucursales_seleccionadas:
@@ -2089,7 +2089,7 @@ if authentication_status:
                     text=df_grupo["texto_monto"] if mostrar_texto else None,
                     textposition="inside" if mostrar_texto else "none",
                     insidetextanchor="start",
-                    hovertemplate="<b>%{customdata[0]}</b><br>Monto: $%{x:,.2f}<br>Porcentaje: %{customdata[1]:.1f}%<extra></extra>",
+                    hovertemplate="<b>%{customdata[0]}</b><br><b>Monto:</b> $%{x:,.2f}<br><b>Porcentaje:</b> %{customdata[1]:.1f}%<extra></extra>",
                     customdata=df_grupo[["cuenta_sucursal", "porcentaje"]]
                 ))
 
