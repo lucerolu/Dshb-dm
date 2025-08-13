@@ -2407,7 +2407,6 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
-            # --- Conversión de fecha y preparación ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
 
@@ -2437,20 +2436,20 @@ if authentication_status:
             # Asegurar que 'codigo' sea string
             df_reset["codigo"] = df_reset["codigo"].astype(str)
 
-            # Detectar fila total sin depender de mayúsculas/espacios
+            # Detectar fila total
             mascara_total = df_reset["codigo"].str.strip().str.lower() == "total"
             total_row = df_reset[mascara_total].copy()
             data_sin_total = df_reset[~mascara_total].copy()
 
-            # --- Columnas numéricas excluyendo sucursal, codigo y columna Total ---
+            # Columnas numéricas (excluyendo sucursal, codigo y columna Total)
             ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # --- Calcular min y max generales (sin Total fila y columna) ---
+            # Calcular min y max generales para degradado (sin fila ni columna Total)
             all_values = data_sin_total[numeric_cols_sin_total].values.flatten()
             min_val, max_val = all_values.min(), all_values.max()
 
-            # --- Formateador de valores ---
+            # Formateador de valores
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -2458,12 +2457,12 @@ if authentication_status:
             }
             """)
 
-            # --- Plantilla degradado general ---
+            # Plantilla degradado general (excluye fila total y columna Total)
             cell_style_gradient = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
 
-                // Solo aplicar degradado a filas "normales"
+                // Aplicar degradado solo a filas normales
                 if (!params.node.rowPinned) {{
 
                     // Ignorar columna Total
@@ -2500,13 +2499,11 @@ if authentication_status:
             }}
             """)
 
-
-
-            # --- Configuración AgGrid ---
+            # Configuración AgGrid
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
-            # Columnas fijas
+            # Columnas fijas azules
             for col_name in ["codigo", "sucursal"]:
                 gb.configure_column(
                     col_name,
@@ -2545,7 +2542,7 @@ if authentication_status:
             """)
             grid_options['domLayout'] = 'autoHeight'
 
-            # --- Render ---
+            # Render AgGrid
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2558,6 +2555,7 @@ if authentication_status:
                     ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
                 }
             )
+
 
 
             #--------------------- BOTON DE DESCARGA -----------
