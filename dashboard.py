@@ -2410,7 +2410,6 @@ if authentication_status:
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
 
-            # Pivot con totales
             df_pivot = df_estado_cuenta.pivot_table(
                 index=["sucursal", "codigo_6digitos"],
                 columns="fecha_exigibilidad_str",
@@ -2422,7 +2421,8 @@ if authentication_status:
             )
 
             # Ordenar columnas por fecha
-            cols_ordenadas = sorted([c for c in df_pivot.columns if c != "Total"], key=lambda x: datetime.strptime(x, "%d/%m/%Y"))
+            cols_ordenadas = sorted([col for col in df_pivot.columns if col != "Total"],
+                                    key=lambda x: datetime.strptime(x, "%d/%m/%Y"))
             if "Total" in df_pivot.columns:
                 cols_ordenadas.append("Total")
             df_pivot = df_pivot[cols_ordenadas]
@@ -2439,111 +2439,104 @@ if authentication_status:
             numeric_cols = [c for c in df_reset.columns if c not in ["sucursal", "codigo"]]
             numeric_cols_sin_total = [c for c in numeric_cols if c != "Total"]
 
-            # Calcular min/max por columna (solo datos, sin fila Total ni columna Total)
-            min_max_dict = {c: (data_sin_total[c].min(), data_sin_total[c].max()) for c in numeric_cols_sin_total}
+            # Min y max para degradado (excluyendo fila y columna Total)
+            min_val = data_sin_total[numeric_cols_sin_total].min().min()
+            max_val = data_sin_total[numeric_cols_sin_total].max().max()
 
-            # JS degradado (excluye fila Total y columna Total)
-            cell_style_gradient_template = """
-            function(params) {
-                if(params.data['codigo'] !== 'Total' && params.colDef.field !== 'Total') {
+            # JS gradient para celdas (excluye fila Total y columna Total)
+            cell_style_gradient = JsCode(f"""
+            function(params) {{
+                if (params.data['codigo'] !== 'Total' && params.colDef.field !== 'Total') {{
                     let val = params.value;
-                    let min = %f;
-                    let max = %f;
-                    if(!isNaN(val) && max > min) {
-                        let ratio = (val - min) / (max - min);
-                        let r,g,b;
-                        if(ratio <= 0.5){
+                    if (!isNaN(val) && {max_val} > {min_val}) {{
+                        let ratio = (val - {min_val}) / ({max_val} - {min_val});
+                        let r, g, b;
+                        if (ratio <= 0.5) {{
                             let t = ratio/0.5;
                             r = Math.round(117 + t*(232-117));
                             g = Math.round(222 + t*(229-222));
                             b = Math.round(84 + t*(70-84));
-                        } else {
+                        }} else {{
                             let t = (ratio-0.5)/0.5;
                             r = Math.round(232 + t*(232-232));
                             g = Math.round(229 + t*(96-229));
                             b = Math.round(70 + t*(70-70));
-                        }
-                        return {backgroundColor: `rgb(${r},${g},${b})`, textAlign:'right'};
-                    }
-                }
-                return {textAlign:'right'};
-            }
-            """
-
-            # JS para pintar fila Total
-            get_row_style = JsCode("""
-            function(params) {
-                if(params.node.rowPinned) {
-                    return {backgroundColor:'#0B083D', color:'white', fontWeight:'bold', textAlign:'right'};
-                }
-                return null;
-            }
+                        }}
+                        return {{'backgroundColor': `rgb(${{r}},${{g}},${{b}})`, 'textAlign': 'right'}};
+                    }}
+                }}
+                return {{'textAlign': 'right'}};
+            }}
             """)
 
-            # JS formatter para números
-            value_formatter = JsCode("""
-            function(params) {
-                if(params.value === undefined || params.value === null) return '0.00';
-                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            }
-            """)
-
-            # Construir grid
+            # Construir AgGrid
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-            gb.configure_default_column(resizable=True, filter=False)
+            gb.configure_default_column(resizable=True)
 
-            # Columnas fijas en azul
-            for col_name, width in [("codigo",120), ("sucursal",150)]:
+            # Columnas fijas y azul
+            for col_name, width in [("codigo", 120), ("sucursal", 150)]:
                 gb.configure_column(
                     col_name,
                     pinned="left",
                     width=width,
-                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold','textAlign':'right'}
+                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
                 )
 
             # Columnas numéricas con degradado
             for col in numeric_cols_sin_total:
-                min_val, max_val = min_max_dict[col]
                 gb.configure_column(
                     col,
                     width=100,
-                    cellStyle=JsCode(cell_style_gradient_template % (min_val, max_val)),
-                    valueFormatter=value_formatter
+                    cellStyle=cell_style_gradient,
+                    valueFormatter=JsCode("""
+                        function(params) { 
+                            if (params.value == null) return '0.00';
+                            return params.value.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+                        }
+                    """)
                 )
 
-            # Columna Total horizontal
+            # Columna Total horizontal (ya azul)
             if "Total" in numeric_cols:
                 gb.configure_column(
                     "Total",
                     width=120,
-                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold','textAlign':'right'},
-                    valueFormatter=value_formatter
+                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
+                    valueFormatter=JsCode("""
+                        function(params) { 
+                            if (params.value == null) return '0.00';
+                            return params.value.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+                        }
+                    """)
                 )
 
-            # Grid options
+            # Fila Total fija abajo y pintada de azul
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-            grid_options['getRowStyle'] = get_row_style
+            grid_options['getRowStyle'] = JsCode("""
+            function(params) {
+                if(params.node.rowPinned) {
+                    return {
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold'
+                    };
+                }
+                return null;
+            }
+            """)
             grid_options['domLayout'] = 'autoHeight'
-            grid_options['suppressHorizontalScroll'] = False
 
-            # CSS header azul
+            # CSS para header azul
             custom_css = {
-                ".ag-header-cell-label": {
-                    "background-color": "#0B083D !important",
-                    "color": "white !important",
-                    "font-weight": "bold !important",
-                    "justify-content": "center !important"
-                },
-                ".ag-header-cell-text": {"color": "white !important","font-weight": "bold !important"}
+                ".ag-header-cell-label": {"background-color": "#0B083D !important", "color": "white !important", "font-weight": "bold !important"},
+                ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
             }
 
-            # Mostrar tabla
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
                 height=400,
-                fit_columns_on_grid_load=False,
                 allow_unsafe_jscode=True,
                 custom_css=custom_css,
                 enable_enterprise_modules=False,
