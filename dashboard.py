@@ -2439,11 +2439,11 @@ if authentication_status:
             numeric_cols = [c for c in df_reset.columns if c not in ["sucursal", "codigo"]]
             numeric_cols_sin_total = [c for c in numeric_cols if c != "Total"]
 
-            # Min y max para degradado (excluyendo fila y columna Total)
+            # Calcular min y max excluyendo fila y columna Total
             min_val = data_sin_total[numeric_cols_sin_total].min().min()
             max_val = data_sin_total[numeric_cols_sin_total].max().max()
 
-            # JS gradient para celdas (excluye fila Total y columna Total)
+            # JS gradient para celdas (excluye fila y columna Total)
             cell_style_gradient = JsCode(f"""
             function(params) {{
                 if (params.data['codigo'] !== 'Total' && params.colDef.field !== 'Total') {{
@@ -2519,7 +2519,8 @@ if authentication_status:
                     return {
                         backgroundColor: '#0B083D',
                         color: 'white',
-                        fontWeight: 'bold'
+                        fontWeight: 'bold',
+                        textAlign: 'right'
                     };
                 }
                 return null;
@@ -2527,7 +2528,7 @@ if authentication_status:
             """)
             grid_options['domLayout'] = 'autoHeight'
 
-            # CSS para header azul
+            # CSS header azul
             custom_css = {
                 ".ag-header-cell-label": {"background-color": "#0B083D !important", "color": "white !important", "font-weight": "bold !important"},
                 ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
