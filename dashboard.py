@@ -1812,9 +1812,9 @@ if authentication_status:
                 line=dict(color=colores_sucursales.get(sucursal)),
                 customdata=customdata,
                 hovertemplate=(
-                    "Sucursal: %{customdata[1]}<br>" +
-                    "Mes: %{customdata[0]}<br>" +
-                    "Monto: $%{y:,.2f}<extra></extra>"
+                    "<b>Sucursal:</b> %{customdata[1]}<br>" +
+                    "<b>Mes:</b> %{customdata[0]}<br>" +
+                    "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
                 )
             ))
 
@@ -1869,6 +1869,8 @@ if authentication_status:
                 lambda row: f"${row['monto']:,.2f}<br>({row['porcentaje']:.1f}%)", axis=1
             )
 
+            df_mes["custom_data"] = list(zip(df_mes["sucursal"], df_mes["monto"], df_mes["porcentaje"]))
+
             fig_mes = px.bar(
                 df_mes,
                 x="sucursal",
@@ -1877,16 +1879,22 @@ if authentication_status:
                 labels={"monto": "Total Comprado", "sucursal": "Sucursal"},
                 color="sucursal",
                 color_discrete_map=colores_sucursales,
-                text="texto"
+                text="texto",
+                custom_data=["sucursal", "monto", "porcentaje"]
             )
+
             fig_mes.update_traces(
                 textposition='inside',
                 texttemplate='%{text}',
-                hovertemplate=None
+                hovertemplate=(
+                    "<b>Sucursal:</b> %{customdata[0]}<br>"
+                    "<b>Monto:</b> $%{customdata[1]:,.2f}<br>"
+                    "<b>Porcentaje:</b> %{customdata[2]:.1f}%<extra></extra>"
+                )
             )
+
             fig_mes.update_layout(showlegend=False)
             st.plotly_chart(fig_mes, use_container_width=True, key=f"bar_{i}_{mes}")
-
 
     # ==========================================================================================================
     # ================================ VISTA POR SUCURSAL ====================================
