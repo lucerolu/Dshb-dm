@@ -797,9 +797,11 @@ if authentication_status:
         fig_mes_div.update_traces(
             texttemplate="$%{y:,.0f}",
             textposition="inside",
-            hovertemplate="<b>Mes:</b> %{x}<br>"
-                        "<b>División:</b> %{trace.name}<br>"
-                        "<b>Total Comprado:</b> $%{y:,.2f}<extra></extra>"
+            hovertemplate=(
+                "<b>Mes:</b> %{x}<br>"
+                "<b>División:</b> %{trace.name}<br>"
+                "<b>Total Comprado:</b> $%{y:,.2f}<extra></extra>"
+            )
         )
 
         fig_mes_div.update_layout(
@@ -846,9 +848,11 @@ if authentication_status:
         fig_suc_div.update_traces(
             texttemplate="$%{y:,.0f}",
             textposition="inside",
-            hovertemplate="<b>Sucursal:</b> %{x}<br>"
-                        "<b>División:</b> %{trace.name}<br>"
-                        "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+            hovertemplate=(
+                "<b>Sucursal:</b> %{x}<br>"
+                "<b>División:</b> %{trace.name}<br>"
+                "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+            )
         )
 
         fig_suc_div.update_layout(
