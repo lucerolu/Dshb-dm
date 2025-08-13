@@ -2406,11 +2406,11 @@ if authentication_status:
             col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
-            #------------------------------------------ TABLA -----------------------------------------------------------------------
-           # Preparar tabla pivot
+            #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
 
+            # Pivot con Totales
             df_pivot = df_estado_cuenta.pivot_table(
                 index=["sucursal", "codigo_6digitos"],
                 columns="fecha_exigibilidad_str",
@@ -2421,11 +2421,9 @@ if authentication_status:
                 margins_name="Total"
             )
 
-            # Ordenar columnas por fecha real
-            cols_ordenadas = sorted(
-                [col for col in df_pivot.columns if col != "Total"],
-                key=lambda x: datetime.strptime(x, "%d/%m/%Y")
-            )
+            # Ordenar columnas por fecha
+            cols_ordenadas = sorted([col for col in df_pivot.columns if col != "Total"],
+                                    key=lambda x: datetime.strptime(x, "%d/%m/%Y"))
             if "Total" in df_pivot.columns:
                 cols_ordenadas.append("Total")
             df_pivot = df_pivot[cols_ordenadas]
@@ -2434,51 +2432,58 @@ if authentication_status:
             df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot.reset_index()
 
-            # Separar Totales
+            # Separar fila Total
             total_row = df_reset[df_reset["codigo"] == "Total"]
             data_sin_total = df_reset[df_reset["codigo"] != "Total"].copy()
 
-            # Columnas numéricas (sin "sucursal" y "codigo")
+            # Columnas numéricas
             numeric_cols = [c for c in df_reset.columns if c not in ["sucursal", "codigo"]]
-
-            # Excluir columna Total del degradado
             numeric_cols_sin_total = [c for c in numeric_cols if c != "Total"]
 
-            # Calcular min y max del degradado solo con datos sin Totales
-            min_val = data_sin_total[numeric_cols_sin_total].min().min()
-            max_val = data_sin_total[numeric_cols_sin_total].max().max()
+            # Calcular min/max por columna excluyendo fila Total
+            min_max_dict = {c: (data_sin_total[c].min(), data_sin_total[c].max()) for c in numeric_cols_sin_total}
 
-            # JS gradient para celdas (excluyendo fila Total y columnas Total)
-            cell_style_gradient = JsCode(f"""
-            function(params) {{
-                if (params.data['codigo'] !== 'Total' && params.colDef.field !== 'Total') {{
+            # Template JS degradado
+            cell_style_gradient_template = """
+            function(params) {
+                if (params.colDef.field !== 'Total' && params.data['codigo'] !== 'Total') {
                     let val = params.value;
-                    if (!isNaN(val) && {max_val} > {min_val}) {{
-                        let ratio = (val - {min_val}) / ({max_val} - {min_val});
-                        let r, g, b;
-                        if (ratio <= 0.5) {{
+                    let min = %f;
+                    let max = %f;
+                    if (!isNaN(val) && max > min) {
+                        let ratio = (val - min) / (max - min);
+                        let r,g,b;
+                        if (ratio <= 0.5) {
                             let t = ratio / 0.5;
                             r = Math.round(117 + t*(232-117));
                             g = Math.round(222 + t*(229-222));
                             b = Math.round(84 + t*(70-84));
-                        }} else {{
-                            let t = (ratio - 0.5) / 0.5;
+                        } else {
+                            let t = (ratio-0.5)/0.5;
                             r = Math.round(232 + t*(232-232));
                             g = Math.round(229 + t*(96-229));
                             b = Math.round(70 + t*(70-70));
-                        }}
-                        return {{'backgroundColor': `rgb(${{r}},${{g}},${{b}})`, 'textAlign': 'right'}};
-                    }}
-                }}
-                return {{'textAlign': 'right'}};
-            }}
+                        }
+                        return {backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'right'};
+                    }
+                }
+                return {textAlign: 'right'};
+            }
+            """
+
+            # Formatter para mostrar números
+            value_formatter = JsCode("""
+            function(params) {
+                if (params.value === undefined || params.value === null) return '0.00';
+                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
             """)
 
-            # Construir opciones de AgGrid
+            # Construir AgGrid
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-            gb.configure_default_column(resizable=True)
+            gb.configure_default_column(resizable=True, filter=False)
 
-            # Columnas fijas y azul
+            # Columnas fijas azul
             for col_name, width in [("codigo", 120), ("sucursal", 150)]:
                 gb.configure_column(
                     col_name,
@@ -2489,68 +2494,60 @@ if authentication_status:
 
             # Columnas numéricas con degradado
             for col in numeric_cols_sin_total:
+                min_val, max_val = min_max_dict[col]
+                gradient_code = JsCode(cell_style_gradient_template % (min_val, max_val))
                 gb.configure_column(
                     col,
-                    width=100,
-                    cellStyle=cell_style_gradient,
-                    valueFormatter=JsCode("""
-                        function(params) { 
-                            if (params.value == null) return '0.00';
-                            return params.value.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
-                        }
-                    """)
-                )
-
-            # Columna Total horizontal
-            if "Total" in numeric_cols:
-                gb.configure_column(
-                    "Total",
                     width=120,
-                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
-                    valueFormatter=JsCode("""
-                        function(params) { 
-                            if (params.value == null) return '0.00';
-                            return params.value.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
-                        }
-                    """)
+                    cellStyle=gradient_code,
+                    sortable=True,
+                    valueGetter=JsCode(f"function(params) {{ return params.data['{col}']; }}"),
+                    valueFormatter=value_formatter
                 )
 
-            # Total fila fija abajo
-            grid_options = gb.build()
-            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+            # Columna Total vertical
+            if "Total" in numeric_cols:
+                ultima_col = "Total"
+                gb.configure_column(
+                    ultima_col,
+                    width=120,
+                    cellStyle={
+                        'textAlign': 'right',
+                        'backgroundColor': '#0B083D',
+                        'color': 'white',
+                        'fontWeight': 'bold'
+                    },
+                    sortable=False,
+                    valueFormatter=value_formatter
+                )
 
-            # JS para pintar fila Total de azul y mantener anclada
+            # Fila Total anclada al fondo y azul
             get_row_style = JsCode("""
             function(params) {
                 if(params.node.rowPinned) {
-                    return {
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textAlign: 'right'
-                    };
+                    return {backgroundColor:'#0B083D', color:'white', fontWeight:'bold', textAlign:'right'};
                 }
                 return null;
             }
             """)
+
+            grid_options = gb.build()
+            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = get_row_style
-            grid_options['domLayout'] = 'autoHeight'
-            grid_options['suppressHorizontalScroll'] = False  # Ajusta al tamaño de ventana
+            grid_options['domLayout'] = 'normal'  # Mantiene scroll horizontal y ajusta ancho
+            grid_options['suppressHorizontalScroll'] = False
 
             # CSS header azul
             custom_css = {
-                ".ag-header-cell-label": {
-                    "background-color": "#0B083D !important", 
-                    "color": "white !important", 
-                    "font-weight": "bold !important"
-                },
-                ".ag-header-cell-text": {"color": "white !important","font-weight": "bold !important"}
+                ".ag-header-cell-label": {"background-color": "#0B083D !important","color":"white !important","font-weight":"bold !important"},
+                ".ag-header-cell-text": {"color":"white !important","font-weight":"bold !important"}
             }
 
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
                 height=400,
+                fit_columns_on_grid_load=False,
                 allow_unsafe_jscode=True,
                 custom_css=custom_css,
                 enable_enterprise_modules=False,
