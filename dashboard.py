@@ -2100,9 +2100,29 @@ if authentication_status:
             df_mes_cta["porcentaje"] = df_mes_cta["monto"] / df_mes_cta["total_mes"] * 100
             df_mes_cta["texto_monto"] = df_mes_cta.apply(lambda row: f"${row['monto']:,.0f} ({row['porcentaje']:.1f}%)", axis=1)
 
+            df_filtrado["abreviatura"] = df_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
+
+            # Crear columna con cuenta-sucursal-abreviatura
+            df_filtrado["cuenta_sucursal_abrev"] = (
+                df_filtrado["codigo_normalizado"].astype(str) + " (" +
+                df_filtrado["abreviatura"] + ") - " +
+                df_filtrado["sucursal"]
+            )
+
+            # Agrupar por mes y cuenta_sucursal_abrev
+            df_mes_cta = df_filtrado.groupby(
+                ["mes_nombre", "cuenta_sucursal_abrev", "sucursal", "division"], as_index=False
+            )["monto"].sum()
+
+            # Calcular porcentaje y texto
+            df_mes_cta["total_mes"] = df_mes_cta.groupby("mes_nombre")["monto"].transform("sum")
+            df_mes_cta["porcentaje"] = df_mes_cta["monto"] / df_mes_cta["total_mes"] * 100
+            df_mes_cta["texto_monto"] = df_mes_cta.apply(
+                lambda row: f"${row['monto']:,.0f} ({row['porcentaje']:.1f}%)", axis=1
+            )
+
             fig = go.Figure()
 
-            # Crear trazas para cada grupo (sucursal o división)
             for valor in df_mes_cta[color_columna].unique():
                 df_grupo = df_mes_cta[df_mes_cta[color_columna] == valor]
                 fig.add_trace(go.Bar(
@@ -2114,8 +2134,12 @@ if authentication_status:
                     text=df_grupo["texto_monto"] if mostrar_texto else None,
                     textposition="inside" if mostrar_texto else "none",
                     insidetextanchor="start",
-                    hovertemplate="<b>%{customdata[0]}</b><br><b>Monto:</b> $%{x:,.2f}<br><b>Porcentaje:</b> %{customdata[1]:.1f}%<extra></extra>",
-                    customdata=df_grupo[["cuenta_sucursal", "porcentaje"]]
+                    hovertemplate=(
+                        "<b>%{customdata[0]}</b><br>"  # ← ahora cuenta-sucursal-abreviatura
+                        "<b>Monto:</b> $%{x:,.2f}<br>"
+                        "<b>Porcentaje:</b> %{customdata[1]:.1f}%<extra></extra>"
+                    ),
+                    customdata=df_grupo[["cuenta_sucursal_abrev", "porcentaje"]]
                 ))
 
             # Layout
