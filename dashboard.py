@@ -2442,8 +2442,9 @@ if authentication_status:
             numeric_cols = [c for c in df_reset.columns if c not in ["sucursal", "codigo"]]
 
             # Calcular min y max para degradado (excluyendo Total)
-            min_val = data_sin_total[numeric_cols].min().min()
-            max_val = data_sin_total[numeric_cols].max().max()
+            numeric_cols_sin_total = [c for c in numeric_cols if c != "Total"]
+            min_val = data_sin_total[numeric_cols_sin_total].min().min()
+            max_val = data_sin_total[numeric_cols_sin_total].max().max()
 
             # JS gradient para celdas
             cell_style_gradient = JsCode(f"""
@@ -2473,26 +2474,21 @@ if authentication_status:
             }}
             """)
 
-            # Opciones de AgGrid
+            # Construir opciones de AgGrid
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True)
 
             # Columnas fijas y azul
-            gb.configure_column(
-                "codigo",
-                pinned="left",
-                width=120,
-                cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
-            )
-            gb.configure_column(
-                "sucursal",
-                pinned="left",
-                width=150,
-                cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
-            )
+            for col_name, width in [("codigo", 120), ("sucursal", 150)]:
+                gb.configure_column(
+                    col_name,
+                    pinned="left",
+                    width=width,
+                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
+                )
 
             # Columnas numéricas con degradado
-            for col in numeric_cols:
+            for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
                     width=100,
@@ -2505,15 +2501,49 @@ if authentication_status:
                     """)
                 )
 
+            # Columna Total horizontal
+            if "Total" in numeric_cols:
+                gb.configure_column(
+                    "Total",
+                    width=120,
+                    cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
+                    valueFormatter=JsCode("""
+                        function(params) { 
+                            if (params.value == null) return '0.00';
+                            return params.value.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+                        }
+                    """)
+                )
+
             # Total fila fija abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+
+            # JS para pintar fila total
+            get_row_style = JsCode("""
+            function(params) {
+                if(params.node.rowPinned) {
+                    return {
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold'
+                    };
+                }
+                return null;
+            }
+            """)
+            grid_options['getRowStyle'] = get_row_style
             grid_options['domLayout'] = 'autoHeight'
+            grid_options['suppressHorizontalScroll'] = False  # Ajusta al tamaño de ventana
 
             # CSS header azul
             custom_css = {
-                ".ag-header-cell-label": {"background-color": "#0B083D !important", "color": "white !important", "font-weight": "bold !important"},
-                ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
+                ".ag-header-cell-label": {
+                    "background-color": "#0B083D !important", 
+                    "color": "white !important", 
+                    "font-weight": "bold !important"
+                },
+                ".ag-header-cell-text": {"color": "white !important","font-weight": "bold !important"}
             }
 
             AgGrid(
