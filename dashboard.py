@@ -2407,6 +2407,7 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
+            # --- Pivot y preparación ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
 
@@ -2421,48 +2422,43 @@ if authentication_status:
             )
 
             # Ordenar columnas por fecha
-            cols_ordenadas = sorted(
-                [col for col in df_pivot.columns if col != "Total"],
-                key=lambda x: datetime.strptime(x, "%d/%m/%Y")
-            )
+            cols_ordenadas = sorted([c for c in df_pivot.columns if c != "Total"], key=lambda x: datetime.strptime(x, "%d/%m/%Y"))
             if "Total" in df_pivot.columns:
                 cols_ordenadas.append("Total")
             df_pivot = df_pivot[cols_ordenadas]
 
-            # Reset index
             df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot.reset_index()
 
             # Asegurar que 'codigo' sea string
             df_reset["codigo"] = df_reset["codigo"].astype(str)
 
-            # Detectar fila Total sin depender de mayúsculas/espacios
-            mascara_total = df_reset["codigo"].str.strip().str.lower() == "total"
-            total_row = df_reset[mascara_total].copy()
-            data_sin_total = df_reset[~mascara_total].copy()
+            # Separar fila Total
+            mask_total = df_reset["codigo"].str.strip().str.lower() == "total"
+            total_row = df_reset[mask_total].copy()
+            data_sin_total = df_reset[~mask_total].copy()
 
-            # Columnas numéricas excluyendo sucursal, codigo y columna Total
+            # Columnas numéricas excluyendo Total vertical
             ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # Calcular min y max generales (sin Total fila y columna)
+            # --- Min y max global sin Total ---
             all_values = data_sin_total[numeric_cols_sin_total].values.flatten()
             min_val, max_val = all_values.min(), all_values.max()
 
-            # Formateador de valores
+            # Formatter de números
             value_formatter = JsCode("""
-            function(params) { 
-                if (params.value == null) return '0.00';
+            function(params) {
+                if (params.value === undefined || params.value === null) return '0.00';
                 return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
             """)
 
-            # Plantilla degradado general
+            # JS degradado general
             cell_style_gradient = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
-
-                // Ignorar fila Total o cualquier fila fijada
+                // Ignorar fila Total y cualquier fila fijada
                 if (params.node.rowPinned || (params.data && typeof params.data.codigo === 'string' &&
                     params.data.codigo.trim().toLowerCase() === 'total')) {{
                     return {{
@@ -2484,35 +2480,35 @@ if authentication_status:
                 }}
 
                 let val = params.value;
-                let min = {min_val};
-                let max = {max_val};
-
-                if (!isNaN(val) && max > min) {{
-                    let ratio = (val - min) / (max - min);
-                    let r, g, b;
-                    if (ratio <= 0.5) {{
-                        let t = ratio / 0.5;
-                        r = Math.round(117 + t * (232 - 117));
-                        g = Math.round(222 + t * (229 - 222));
-                        b = Math.round(84  + t * (70 - 84));
-                    }} else {{
-                        let t = (ratio - 0.5) / 0.5;
-                        r = 232;
-                        g = Math.round(229 + t * (96 - 229));
-                        b = 70;
+                if (!isNaN(val) && val !== null) {{
+                    let min = {min_val};
+                    let max = {max_val};
+                    if (max > min) {{
+                        let ratio = (val - min) / (max - min);
+                        let r, g, b;
+                        if (ratio <= 0.5) {{
+                            let t = ratio / 0.5;
+                            r = Math.round(117 + t * (232 - 117));
+                            g = Math.round(222 + t * (229 - 222));
+                            b = Math.round(84  + t * (70 - 84));
+                        }} else {{
+                            let t = (ratio - 0.5) / 0.5;
+                            r = 232;
+                            g = Math.round(229 + t * (96 - 229));
+                            b = 70;
+                        }}
+                        return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
                     }}
-                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
                 }}
-
                 return {{ textAlign: 'right' }};
             }}
             """)
 
-            # Configuración AgGrid
+            # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
-            # Columnas fijas
+            # Columnas fijas izquierda
             for col_name in ["codigo", "sucursal"]:
                 gb.configure_column(
                     col_name,
@@ -2538,20 +2534,24 @@ if authentication_status:
                 valueFormatter=value_formatter
             )
 
-            # Fila Total fija abajo
+            # Fila Total fijada abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = JsCode("""
             function(params) {
                 if(params.node.rowPinned) {
-                    return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold' };
+                    return {
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold'
+                    };
                 }
                 return null;
             }
             """)
             grid_options['domLayout'] = 'autoHeight'
 
-            # Render AgGrid
+            # Render
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2559,10 +2559,6 @@ if authentication_status:
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
-                custom_css={
-                    ".ag-header-cell-label": {"background-color": "#0B083D !important", "color": "white !important", "font-weight": "bold !important"},
-                    ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
-                }
             )
 
             #--------------------- BOTON DE DESCARGA -----------
