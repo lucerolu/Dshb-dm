@@ -2460,6 +2460,12 @@ if authentication_status:
             cell_style_gradient_template = """
             function(params) {
                 const totalCol = '%s';
+
+                // Evitar degradado en la fila total
+                if (params.data && params.data.codigo === 'Total') {
+                    return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold', textAlign: 'right' };
+                }
+
                 if (params.colDef.field !== totalCol) {
                     let val = params.value;
                     let min = %f;
@@ -2484,6 +2490,7 @@ if authentication_status:
                 return { textAlign: 'right' };
             }
             """
+
 
             # --- Configuración del Grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
