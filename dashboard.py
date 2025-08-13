@@ -2407,9 +2407,10 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #------------------------------------------ TABLA -----------------------------------------------------------------------
+           # Preparar tabla pivot
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
-            
+
             df_pivot = df_estado_cuenta.pivot_table(
                 index=["sucursal", "codigo_6digitos"],
                 columns="fecha_exigibilidad_str",
@@ -2419,41 +2420,112 @@ if authentication_status:
                 margins=True,
                 margins_name="Total"
             )
-            # Ordenar columnas por fecha real (aunque están en formato string)
+
+            # Ordenar columnas por fecha real
             cols_ordenadas = sorted(
                 [col for col in df_pivot.columns if col != "Total"],
                 key=lambda x: datetime.strptime(x, "%d/%m/%Y")
             )
-
-            # Añadir la columna 'Total' al final
             if "Total" in df_pivot.columns:
                 cols_ordenadas.append("Total")
-
-            # Reordenar columnas del pivot
             df_pivot = df_pivot[cols_ordenadas]
-            df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
-            df_pivot_reset = df_pivot.reset_index()
-            numeric_cols = df_pivot_reset.select_dtypes(include="number").columns.tolist()
-            # Asegura que todas las columnas excepto el índice sean numéricas
-            #cols_to_format = df_pivot.columns
-            #df_pivot[cols_to_format] = df_pivot[cols_to_format].apply(pd.to_numeric, errors='coerce')
-            df_pivot_reset[numeric_cols] = df_pivot_reset[numeric_cols].applymap(lambda x: f"{x:,.2f}")
 
-            # Mostrar con formato correcto
-            st.data_editor(
-                df_pivot_reset,
-                use_container_width=True,
-                hide_index=True,
-                disabled=True,  # ❌ Desactiva edición y ordenamiento
-                column_config={
-                    "sucursal": st.column_config.Column(label="Sucursal", width="small", pinned="left"),
-                    "codigo": st.column_config.Column(label="Código", width="small", pinned="left"),
-                },
-                column_order=["sucursal", "codigo"] + cols_ordenadas  # Asegura orden correcto
+            # Reset index
+            df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
+            df_reset = df_pivot.reset_index()
+
+            # Separar Totales
+            total_row = df_reset[df_reset["codigo"] == "Total"]
+            data_sin_total = df_reset[df_reset["codigo"] != "Total"].copy()
+
+            # Columna numéricas
+            numeric_cols = [c for c in df_reset.columns if c not in ["sucursal", "codigo"]]
+
+            # Calcular min y max para degradado (excluyendo Total)
+            min_val = data_sin_total[numeric_cols].min().min()
+            max_val = data_sin_total[numeric_cols].max().max()
+
+            # JS gradient para celdas
+            cell_style_gradient = JsCode(f"""
+            function(params) {{
+                const totalRow = 'Total';
+                const totalCols = ['Total'];
+                if (params.data['codigo'] !== totalRow && !totalCols.includes(params.colDef.field)) {{
+                    let val = params.value;
+                    if (!isNaN(val) && {max_val} > {min_val}) {{
+                        let ratio = (val - {min_val}) / ({max_val} - {min_val});
+                        let r, g, b;
+                        if (ratio <= 0.5) {{
+                            let t = ratio/0.5;
+                            r = Math.round(117 + t*(232-117));
+                            g = Math.round(222 + t*(229-222));
+                            b = Math.round(84 + t*(70-84));
+                        }} else {{
+                            let t = (ratio-0.5)/0.5;
+                            r = Math.round(232 + t*(232-232));
+                            g = Math.round(229 + t*(96-229));
+                            b = Math.round(70 + t*(70-70));
+                        }}
+                        return {{backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'right'}};
+                    }}
+                }}
+                return {{textAlign: 'right'}};
+            }}
+            """)
+
+            # Opciones de AgGrid
+            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+            gb.configure_default_column(resizable=True)
+
+            # Columnas fijas y azul
+            gb.configure_column(
+                "codigo",
+                pinned="left",
+                width=120,
+                cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
+            )
+            gb.configure_column(
+                "sucursal",
+                pinned="left",
+                width=150,
+                cellStyle={'backgroundColor':'#0B083D','color':'white','fontWeight':'bold'},
             )
 
+            # Columnas numéricas con degradado
+            for col in numeric_cols:
+                gb.configure_column(
+                    col,
+                    width=100,
+                    cellStyle=cell_style_gradient,
+                    valueFormatter=JsCode("""
+                        function(params) { 
+                            if (params.value == null) return '0.00';
+                            return params.value.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+                        }
+                    """)
+                )
 
-            #--------------------- BOTON DE DESCARGA --------------------------------------
+            # Total fila fija abajo
+            grid_options = gb.build()
+            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+            grid_options['domLayout'] = 'autoHeight'
+
+            # CSS header azul
+            custom_css = {
+                ".ag-header-cell-label": {"background-color": "#0B083D !important", "color": "white !important", "font-weight": "bold !important"},
+                ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
+            }
+
+            AgGrid(
+                data_sin_total,
+                gridOptions=grid_options,
+                height=400,
+                allow_unsafe_jscode=True,
+                custom_css=custom_css,
+                enable_enterprise_modules=False,
+                theme="ag-theme-alpine"
+            )
+            #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
                 output = io.BytesIO()
