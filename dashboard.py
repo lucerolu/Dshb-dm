@@ -1166,7 +1166,7 @@ if authentication_status:
         df_cta = df_cta.sort_values("monto", ascending=False)
 
         # Aplicar color por división
-        df_cta["color_div"] = df_cta["division"].map(colores_divisiones).fillna("#777777")  # gris por si falta
+        df_cta["color_div"] = df_cta["division"].map(colores_divisiones).fillna("#777777")
 
         fig = px.bar(
             df_cta,
@@ -1176,14 +1176,26 @@ if authentication_status:
             color_discrete_map=colores_divisiones,
             orientation="h",
             labels={"monto": "Monto", "cuenta_sucursal": "Cuenta - Sucursal", "division": "División"},
-            title="Monto Total por Cuenta en 2025",
-            text_auto=',.2f'  # añade el monto automáticamente con formato abreviado (puedes usar ',.0f' si prefieres exacto)
+            title="Monto Total por Cuenta en 2025"
         )
-        # Ajustes visuales
+
+        # Custom data para el hover
+        fig.update_traces(
+            customdata=df_cta[["cuenta_sucursal", "division", "monto"]],
+            hovertemplate=(
+                "<b>Cuenta - Sucursal:</b> %{customdata[0]}<br>"
+                "<b>División:</b> %{customdata[1]}<br>"
+                "<b>Monto:</b> $%{customdata[2]:,.2f}<extra></extra>"
+            ),
+            text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
+            textposition="outside",
+            cliponaxis=False
+        )
+
         fig.update_layout(
             xaxis_title="Monto (MXN)",
             yaxis_title="Cuenta - Sucursal",
-            margin=dict(r=70),  # margen derecho suficiente
+            margin=dict(r=70),
             template="plotly_dark",
             yaxis={'categoryorder': 'total ascending'},
             height=800,
@@ -1194,12 +1206,6 @@ if authentication_status:
                 xanchor="center",
                 x=0.5
             )
-        )
-        # Formatear etiquetas de valor
-        fig.update_traces(
-            text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
-            textposition="outside", 
-            cliponaxis=False  # <-- evita que se recorte el texto
         )
 
         st.plotly_chart(fig, use_container_width=True)
