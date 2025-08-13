@@ -790,6 +790,7 @@ if authentication_status:
             y="monto",
             color="division",
             text="monto",
+            custom_data=["division"],
             color_discrete_map=colores_divisiones,
             labels={"mes_nombre": "Mes", "monto": "Total Comprado", "division": "División"}
         )
@@ -844,6 +845,7 @@ if authentication_status:
             y="monto",
             color="division",
             text="monto",
+            custom_data=["division"],
             color_discrete_map=colores_divisiones,
             labels={
                 "sucursal": "Sucursal",
