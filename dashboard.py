@@ -2066,6 +2066,27 @@ if authentication_status:
             # Crear etiqueta cuenta_sucursal
             df_filtrado["cuenta_sucursal"] = df_filtrado["codigo_normalizado"] + " - " + df_filtrado["sucursal"]
 
+            df_filtrado["abreviatura"] = df_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
+
+            # Crear columna con cuenta-sucursal-abreviatura
+            df_filtrado["cuenta_sucursal_abrev"] = (
+                df_filtrado["codigo_normalizado"].astype(str) + " (" +
+                df_filtrado["abreviatura"] + ") - " +
+                df_filtrado["sucursal"]
+            )
+
+            # Agrupar por mes y cuenta_sucursal_abrev
+            df_mes_cta = df_filtrado.groupby(
+                ["mes_nombre", "cuenta_sucursal_abrev", "sucursal", "division"], as_index=False
+            )["monto"].sum()
+
+            # Calcular porcentaje y texto
+            df_mes_cta["total_mes"] = df_mes_cta.groupby("mes_nombre")["monto"].transform("sum")
+            df_mes_cta["porcentaje"] = df_mes_cta["monto"] / df_mes_cta["total_mes"] * 100
+            df_mes_cta["texto_monto"] = df_mes_cta.apply(
+                lambda row: f"${row['monto']:,.0f} ({row['porcentaje']:.1f}%)", axis=1
+            )
+
             # Agrupar por mes y cuenta_sucursal, sumando monto
             df_mes_cta = df_filtrado.groupby(["mes_nombre", "cuenta_sucursal", "sucursal", "division"])["monto"].sum().reset_index()
 
@@ -2099,27 +2120,6 @@ if authentication_status:
             df_mes_cta["total_mes"] = df_mes_cta.groupby("mes_nombre")["monto"].transform("sum")
             df_mes_cta["porcentaje"] = df_mes_cta["monto"] / df_mes_cta["total_mes"] * 100
             df_mes_cta["texto_monto"] = df_mes_cta.apply(lambda row: f"${row['monto']:,.0f} ({row['porcentaje']:.1f}%)", axis=1)
-
-            df_filtrado["abreviatura"] = df_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
-
-            # Crear columna con cuenta-sucursal-abreviatura
-            df_filtrado["cuenta_sucursal_abrev"] = (
-                df_filtrado["codigo_normalizado"].astype(str) + " (" +
-                df_filtrado["abreviatura"] + ") - " +
-                df_filtrado["sucursal"]
-            )
-
-            # Agrupar por mes y cuenta_sucursal_abrev
-            df_mes_cta = df_filtrado.groupby(
-                ["mes_nombre", "cuenta_sucursal_abrev", "sucursal", "division"], as_index=False
-            )["monto"].sum()
-
-            # Calcular porcentaje y texto
-            df_mes_cta["total_mes"] = df_mes_cta.groupby("mes_nombre")["monto"].transform("sum")
-            df_mes_cta["porcentaje"] = df_mes_cta["monto"] / df_mes_cta["total_mes"] * 100
-            df_mes_cta["texto_monto"] = df_mes_cta.apply(
-                lambda row: f"${row['monto']:,.0f} ({row['porcentaje']:.1f}%)", axis=1
-            )
 
             fig = go.Figure()
 
