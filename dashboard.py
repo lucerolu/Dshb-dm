@@ -517,27 +517,35 @@ if authentication_status:
 
         #------------------------- GRÁFICO DE PASTEL ---------------------------------------------------------
         df_agrupado = df_divisiones.groupby("division")["monto"].sum().reset_index()
-        df_agrupado["texto"] = df_agrupado.apply(
-            lambda row: f"{row['division']}<br>${row['monto']:,.2f}", axis=1
-        )
+        df_agrupado["porcentaje"] = df_agrupado["monto"] / df_agrupado["monto"].sum() * 100
 
         fig_pie = px.pie(
             df_agrupado,
             values="monto",
             names="division",
             color="division",
+            custom_data=["division", "monto", "porcentaje"],  # Para usar en hovertemplate
             color_discrete_map=colores_divisiones,
-        hole=0.4
+            hole=0.4
         )
-        fig_pie.update_traces(textinfo="percent+label", textposition="inside")
+
+        fig_pie.update_traces(
+            textinfo="percent+label",
+            textposition="inside",
+            hovertemplate=(
+                "<b>División:</b> %{customdata[0]}<br>"
+                "<b>Monto:</b> $%{customdata[1]:,.2f}<br>"
+                "<b>Porcentaje:</b> %{customdata[2]:.1f}%<extra></extra>"
+            )
+        )
 
         fig_pie.update_layout(
             title=dict(text="Distribución del total anual comprado por División", x=0.5, xanchor="center", y=1.0),
             height=500,
             legend=dict(
-                orientation="h",  # horizontal
+                orientation="h",
                 yanchor="top",
-                y=-0.2,           # un poco debajo del gráfico
+                y=-0.2,
                 xanchor="center",
                 x=0.5
             )
@@ -545,8 +553,6 @@ if authentication_status:
 
         st.plotly_chart(fig_pie, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
-
-
 
         # ------------------------- TARJETAS: TOTAL COMPRADO POR DIVISIÓN ------------------------------
         col1, col2, col3 = st.columns(3)
@@ -577,14 +583,26 @@ if authentication_status:
             y="monto",
             color="division",
             text="texto_barra",
+            custom_data=["division", "porcentaje"],  # ← para usar en hovertemplate
             color_discrete_map=colores_divisiones,
             labels={"monto": "Monto Comprado", "division": "División"}
         )
-        fig_bar.update_traces(textposition="inside", texttemplate="%{text}")
+
+        fig_bar.update_traces(
+            textposition="inside",
+            texttemplate="%{text}",
+            hovertemplate=(
+                "<b>División:</b> %{customdata[0]}<br>"
+                "<b>Monto:</b> $%{y:,.2f}<br>"
+                "<b>Porcentaje:</b> %{customdata[1]:.1f}%<extra></extra>"
+            )
+        )
+
         fig_bar.update_layout(
             title=dict(text="Monto total anual por División", x=0.5, xanchor="center", y=1.0),
             showlegend=False
         )
+
         st.plotly_chart(fig_bar, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
 
