@@ -2463,49 +2463,43 @@ if authentication_status:
             function(params) {{
                 const totalCol = '{ultima_col}';
 
-                // Ignorar fila total o cualquier fila fijada
-                if (params.node.rowPinned || (params.data && typeof params.data.codigo === 'string' &&
-                    params.data.codigo.trim().toLowerCase() === 'total')) {{
-                    return {{
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textAlign: 'right'
-                    }};
-                }}
+                // Solo aplicar degradado a filas "normales"
+                if (!params.node.rowPinned) {{
 
-                // Ignorar columna Total
-                if (params.colDef.field === totalCol) {{
-                    return {{
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textAlign: 'right'
-                    }};
-                }}
-
-                let val = params.value;
-                let min = {min_val};
-                let max = {max_val};
-                if (!isNaN(val) && max > min) {{
-                    let ratio = (val - min) / (max - min);
-                    let r, g, b;
-                    if (ratio <= 0.5) {{
-                        let t = ratio / 0.5;
-                        r = Math.round(117 + t * (232 - 117));
-                        g = Math.round(222 + t * (229 - 222));
-                        b = Math.round(84 + t * (70 - 84));
-                    }} else {{
-                        let t = (ratio - 0.5) / 0.5;
-                        r = 232;
-                        g = Math.round(229 + t * (96 - 229));
-                        b = 70;
+                    // Ignorar columna Total
+                    if (params.colDef.field === totalCol) {{
+                        return {{
+                            backgroundColor: '#0B083D',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            textAlign: 'right'
+                        }};
                     }}
-                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
+
+                    let val = params.value;
+                    let min = {min_val};
+                    let max = {max_val};
+                    if (!isNaN(val) && max > min) {{
+                        let ratio = (val - min) / (max - min);
+                        let r, g, b;
+                        if (ratio <= 0.5) {{
+                            let t = ratio / 0.5;
+                            r = Math.round(117 + t * (232 - 117));
+                            g = Math.round(222 + t * (229 - 222));
+                            b = Math.round(84 + t * (70 - 84));
+                        }} else {{
+                            let t = (ratio - 0.5) / 0.5;
+                            r = 232;
+                            g = Math.round(229 + t * (96 - 229));
+                            b = 70;
+                        }}
+                        return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
+                    }}
                 }}
                 return {{ textAlign: 'right' }};
             }}
             """)
+
 
 
             # --- Configuración AgGrid ---
