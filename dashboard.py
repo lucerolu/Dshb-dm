@@ -1980,20 +1980,36 @@ if authentication_status:
         )
 
         #------------------------------ GRÁFICA DE BARRAS: COMPRAS ACUMULADAS POR CUENTA --------------------------------------------------------------------------------------
-        df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)]
+        # 1️⃣ Agregar abreviatura de la división
+        df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)].copy()
+
+        # Función para obtener abreviatura
+        def obtener_abreviatura(codigo):
+            codigo_str = str(codigo).strip()
+            for division, info in divisiones.items():
+                if codigo_str in info["codigos"]:
+                    return info["abreviatura"]
+            return ""
+
+        df_filtrado["abreviatura"] = df_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
 
         # Agrupar por cuenta y sucursal
-        df_cta = df_filtrado.groupby(["codigo_normalizado", "sucursal"], as_index=False)["monto"].sum()
+        df_cta = df_filtrado.groupby(["codigo_normalizado", "sucursal", "abreviatura"], as_index=False)["monto"].sum()
 
-        # Crear etiqueta tipo "1234 - Monterrey"
-        df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
+        # Crear etiqueta con abreviatura incluida
+        df_cta["cuenta_sucursal"] = (
+            df_cta["codigo_normalizado"].astype(str) + " (" +
+            df_cta["abreviatura"] + ") - " +
+            df_cta["sucursal"]
+        )
 
-        # Ordenar por monto ascendente (para que en horizontal vayan de abajo hacia arriba)
+        # Ordenar
         df_cta = df_cta.sort_values("monto", ascending=True)
 
-        # Abreviar los nombres de sucursales a 3 letras solo para la leyenda
+        # Abreviar sucursal para leyenda
         df_cta["sucursal_abrev"] = df_cta["sucursal"].apply(lambda x: x[:3].capitalize())
 
+        # 2️⃣ Crear gráfico con hovertemplate personalizado
         if not df_cta.empty:
             st.markdown("### Compras acumuladas por cuenta (anual)")
 
@@ -2002,20 +2018,27 @@ if authentication_status:
                 x="monto",
                 y="cuenta_sucursal",
                 orientation="h",
-                color="sucursal_abrev",  # 👈 usamos el campo abreviado
+                color="sucursal_abrev",
                 color_discrete_map={k[:3].capitalize(): v for k, v in colores_sucursales.items()},
                 labels={
                     "monto": "Monto (MXN)",
                     "cuenta_sucursal": "Cuenta - Sucursal",
                     "sucursal_abrev": "Sucursal"
                 },
-                text=df_cta["monto"].apply(lambda x: f"${x:,.2f}")
+                text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
+                custom_data=["sucursal", "abreviatura", "monto"]
             )
+
             altura_grafica = max(300, min(50 * len(df_cta), 1000))
 
             fig.update_traces(
                 textposition="outside",
-                cliponaxis=False
+                cliponaxis=False,
+                hovertemplate=(
+                    "<b>Sucursal:</b> %{customdata[0]}<br>"
+                    "<b>División:</b> %{customdata[1]}<br>"
+                    "<b>Monto:</b> $%{customdata[2]:,.2f}<extra></extra>"
+                )
             )
 
             fig.update_layout(
@@ -2023,10 +2046,12 @@ if authentication_status:
                 yaxis_title="Cuenta - Sucursal",
                 yaxis={"categoryorder": "total ascending"},
                 height=altura_grafica,
-                margin=dict(r=70, b=30),  # 👈 margen inferior más reducido
-                showlegend=False  # 👈 quita la leyenda de colores
+                margin=dict(r=70, b=30),
+                showlegend=False
             )
+
             st.plotly_chart(fig, use_container_width=True)
+
 
         
         #=================== GRAFICA DE BARRAS APILADAS DE MONTO POR MES Y CUENTA ========================
