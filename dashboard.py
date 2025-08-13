@@ -2439,19 +2439,16 @@ if authentication_status:
 
             # Detectar fila total sin depender de mayúsculas/espacios
             mascara_total = df_reset["codigo"].str.strip().str.lower() == "total"
-
             total_row = df_reset[mascara_total].copy()
             data_sin_total = df_reset[~mascara_total].copy()
 
-            # --- Columnas numéricas excluyendo Total vertical ---
+            # --- Columnas numéricas excluyendo sucursal, codigo y columna Total ---
             ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # --- Min y max solo de data_sin_total ---
-            min_max_dict = {}
-            for col in numeric_cols_sin_total:
-                valores = pd.to_numeric(data_sin_total[col], errors='coerce').fillna(0)
-                min_max_dict[col] = (valores.min(), valores.max())
+            # --- Calcular min y max generales (sin Total fila y columna) ---
+            all_values = data_sin_total[numeric_cols_sin_total].values.flatten()
+            min_val, max_val = all_values.min(), all_values.max()
 
             # --- Formateador de valores ---
             value_formatter = JsCode("""
@@ -2461,90 +2458,82 @@ if authentication_status:
             }
             """)
 
-            # --- Plantilla para degradado ---
-            cell_style_gradient_template = """
-            function(params) {
-                const totalCol = '%s';
+            # --- Plantilla degradado general ---
+            cell_style_gradient = JsCode(f"""
+            function(params) {{
+                const totalCol = '{ultima_col}';
 
-                // Ignorar fila total (case-insensitive) y filas fijadas
-                if (
-                    params.data &&
-                    typeof params.data.codigo === 'string' &&
-                    params.data.codigo.trim().toLowerCase() === 'total'
-                ) {
-                    return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold', textAlign: 'right' };
-                }
-                if (params.node && params.node.rowPinned) {
-                    return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold', textAlign: 'right' };
-                }
-
-                // Ignorar columna Total
-                if (params.colDef.field === totalCol) {
-                    return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold', textAlign: 'right' };
-                }
+                // Ignorar fila total y columna Total
+                if ((params.data && typeof params.data.codigo === 'string' &&
+                    params.data.codigo.trim().toLowerCase() === 'total') || 
+                    params.colDef.field === totalCol) {{
+                    return {{
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'right'
+                    }};
+                }}
 
                 let val = params.value;
-                let min = %f;
-                let max = %f;
-                if (!isNaN(val) && max > min) {
+                let min = {min_val};
+                let max = {max_val};
+                if (!isNaN(val) && max > min) {{
                     let ratio = (val - min) / (max - min);
                     let r, g, b;
-                    if (ratio <= 0.5) {
+                    if (ratio <= 0.5) {{
                         let t = ratio / 0.5;
                         r = Math.round(117 + t * (232 - 117));
                         g = Math.round(222 + t * (229 - 222));
-                        b = Math.round(84  + t * (70  - 84));
-                    } else {
+                        b = Math.round(84 + t * (70 - 84));
+                    }} else {{
                         let t = (ratio - 0.5) / 0.5;
                         r = 232;
                         g = Math.round(229 + t * (96 - 229));
                         b = 70;
-                    }
-                    return { backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'right' };
-                }
-                return { textAlign: 'right' };
-            }
-            """
+                    }}
+                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
+                }}
+                return {{ textAlign: 'right' }};
+            }}
+            """)
 
-
-            # --- Configuración del Grid ---
+            # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
-            # Columnas fijas azules
-            gb.configure_column(
-                "codigo",
-                pinned="left",
-                width=120,
-                cellStyle={'textAlign': 'right', 'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'}
-            )
-            gb.configure_column(
-                "sucursal",
-                pinned="left",
-                width=150,
-                cellStyle={'textAlign': 'right', 'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'}
-            )
+            # Columnas fijas
+            for col_name in ["codigo", "sucursal"]:
+                gb.configure_column(
+                    col_name,
+                    pinned="left",
+                    width=150,
+                    cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'}
+                )
 
             # Columnas con degradado
             for col in numeric_cols_sin_total:
-                min_val, max_val = min_max_dict[col]
-                gradient_code = JsCode(cell_style_gradient_template % (ultima_col, min_val, max_val))
-                gb.configure_column(col, width=100, cellStyle=gradient_code, valueFormatter=value_formatter)
+                gb.configure_column(
+                    col,
+                    width=120,
+                    cellStyle=cell_style_gradient,
+                    valueFormatter=value_formatter
+                )
 
             # Columna Total vertical azul
             gb.configure_column(
                 ultima_col,
-                width=100,
-                cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'},
+                width=120,
+                cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'},
                 valueFormatter=value_formatter
             )
 
-            # --- Fila total azul ---
+            # Fila Total fija abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = JsCode("""
             function(params) {
-                if (params.node.rowPinned) {
+                if(params.node.rowPinned) {
                     return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold' };
                 }
                 return null;
@@ -2558,13 +2547,14 @@ if authentication_status:
                 gridOptions=grid_options,
                 height=400,
                 allow_unsafe_jscode=True,
+                enable_enterprise_modules=False,
+                theme="ag-theme-alpine",
                 custom_css={
                     ".ag-header-cell-label": {"background-color": "#0B083D !important", "color": "white !important", "font-weight": "bold !important"},
                     ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
-                },
-                enable_enterprise_modules=False,
-                theme="ag-theme-alpine"
+                }
             )
+
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
