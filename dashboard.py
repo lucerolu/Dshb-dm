@@ -790,32 +790,26 @@ if authentication_status:
             y="monto",
             color="division",
             text="monto",
-            custom_data=["division"],
             color_discrete_map=colores_divisiones,
             labels={"mes_nombre": "Mes", "monto": "Total Comprado", "division": "División"}
         )
+
         fig_mes_div.update_traces(
-            texttemplate="$%{text:,.0f}",
+            texttemplate="$%{y:,.0f}",
             textposition="inside",
-            hovertemplate="<b>Mes:</b> %{x}<br>" +
-                        "<b>División:</b> %{customdata[0]}<br>" +
-                        "<b>Total Comprado:</b> $%{y:,.2f}<extra></extra>",
-            customdata=df_mes_div[["division"]]  # Para acceder a division en el hovertemplate
+            hovertemplate="<b>Mes:</b> %{x}<br>"
+                        "<b>División:</b> %{trace.name}<br>"
+                        "<b>Total Comprado:</b> $%{y:,.2f}<extra></extra>"
         )
 
         fig_mes_div.update_layout(
             title=dict(text="Evolución mensual de compras por División", x=0.5, xanchor="center", y=1.0),
-            barmode="stack",
+            barmode="stack",  # usa 'group' si quieres barras agrupadas en lugar de apiladas
             xaxis=dict(tickangle=-45),
-            margin=dict(t=60, b=100),  # Aumenta margen superior e inferior
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=-0.6,
-                xanchor="center",
-                x=0.5
-            )
+            margin=dict(t=60, b=100),
+            legend=dict(orientation="h", yanchor="bottom", y=-0.6, xanchor="center", x=0.5)
         )
+
         st.plotly_chart(
             fig_mes_div, 
             use_container_width=True,
@@ -845,36 +839,24 @@ if authentication_status:
             y="monto",
             color="division",
             text="monto",
-            custom_data=["division"],
             color_discrete_map=colores_divisiones,
-            labels={
-                "sucursal": "Sucursal",
-                "monto": "Total Comprado",
-                "division": "División"},
+            labels={"sucursal": "Sucursal", "monto": "Total Comprado", "division": "División"}
         )
 
-        # Texto dentro de las barras
         fig_suc_div.update_traces(
-            texttemplate="$%{text:,.0f}",
+            texttemplate="$%{y:,.0f}",
             textposition="inside",
-            hovertemplate="<b>%{x}</b><br>" +  # Nombre de la sucursal
-                        "<b>División:</b> %{customdata[0]}<br>" +  # Nombre de la división
-                        "<b>Monto:</b> $%{y:,.2f}<extra></extra>",
-            customdata=df_suc_div[["division"]].values
+            hovertemplate="<b>Sucursal:</b> %{x}<br>"
+                        "<b>División:</b> %{trace.name}<br>"
+                        "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
         )
 
         fig_suc_div.update_layout(
             title=dict(text="Compra anual por Sucursal y División", x=0.5, xanchor="center", y=1.0),
-            barmode="stack",
+            barmode="stack",  # usa 'group' si prefieres agrupadas
             xaxis_tickangle=-45,
             margin=dict(t=60, b=100),
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=-0.6,
-                xanchor="center",
-                x=0.5
-            )
+            legend=dict(orientation="h", yanchor="bottom", y=-0.6, xanchor="center", x=0.5)
         )
 
         st.plotly_chart(fig_suc_div, use_container_width=True)
