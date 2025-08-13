@@ -2463,10 +2463,19 @@ if authentication_status:
             function(params) {{
                 const totalCol = '{ultima_col}';
 
-                // Ignorar fila total y columna Total
-                if ((params.data && typeof params.data.codigo === 'string' &&
-                    params.data.codigo.trim().toLowerCase() === 'total') || 
-                    params.colDef.field === totalCol) {{
+                // Ignorar fila total o cualquier fila fijada
+                if (params.node.rowPinned || (params.data && typeof params.data.codigo === 'string' &&
+                    params.data.codigo.trim().toLowerCase() === 'total')) {{
+                    return {{
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'right'
+                    }};
+                }}
+
+                // Ignorar columna Total
+                if (params.colDef.field === totalCol) {{
                     return {{
                         backgroundColor: '#0B083D',
                         color: 'white',
@@ -2497,6 +2506,7 @@ if authentication_status:
                 return {{ textAlign: 'right' }};
             }}
             """)
+
 
             # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
