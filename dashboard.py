@@ -2081,9 +2081,6 @@ if authentication_status:
                 ["mes_nombre", "cuenta_sucursal_abrev", "sucursal", "division"], as_index=False
             )["monto"].sum()
 
-            # Agrupar por mes y cuenta_sucursal, sumando monto
-            df_mes_cta = df_filtrado.groupby(["mes_nombre", "cuenta_sucursal", "sucursal", "division"])["monto"].sum().reset_index()
-
             # Ordenar meses según orden_meses
             df_mes_cta["mes_nombre"] = pd.Categorical(df_mes_cta["mes_nombre"], categories=orden_meses, ordered=True)
             df_mes_cta = df_mes_cta.sort_values("mes_nombre")
