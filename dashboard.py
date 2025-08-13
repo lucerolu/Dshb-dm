@@ -2407,6 +2407,7 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
+            # --- Conversión de fecha y preparación ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
 
@@ -2421,8 +2422,10 @@ if authentication_status:
             )
 
             # Ordenar columnas por fecha
-            cols_ordenadas = sorted([col for col in df_pivot.columns if col != "Total"],
-                                    key=lambda x: datetime.strptime(x, "%d/%m/%Y"))
+            cols_ordenadas = sorted(
+                [col for col in df_pivot.columns if col != "Total"],
+                key=lambda x: datetime.strptime(x, "%d/%m/%Y")
+            )
             if "Total" in df_pivot.columns:
                 cols_ordenadas.append("Total")
             df_pivot = df_pivot[cols_ordenadas]
@@ -2431,26 +2434,33 @@ if authentication_status:
             df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot.reset_index()
 
-            # Separar fila Total
+            # --- Separar fila Total ---
             total_row = df_reset[df_reset["codigo"] == "Total"].copy()
             data_sin_total = df_reset[df_reset["codigo"] != "Total"].copy()
 
-            # Columnas numéricas (todas las fechas + Total vertical, excluyendo sucursal y codigo)
+            # --- Columnas numéricas excluyendo Total vertical ---
             ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # Min y max solo de filas que no son total
+            # --- Min y max solo de data_sin_total ---
             min_max_dict = {}
             for col in numeric_cols_sin_total:
                 valores = pd.to_numeric(data_sin_total[col], errors='coerce').fillna(0)
                 min_max_dict[col] = (valores.min(), valores.max())
 
+            # --- Formateador de valores ---
+            value_formatter = JsCode("""
+            function(params) { 
+                if (params.value == null) return '0.00';
+                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            """)
 
-            # --- JS para degradado (fila total nunca entra porque no está en data_sin_total) ---
+            # --- Plantilla para degradado ---
             cell_style_gradient_template = """
             function(params) {
                 const totalCol = '%s';
-                if (params.colDef.field !== 'Mes' && params.colDef.field !== totalCol) {
+                if (params.colDef.field !== totalCol) {
                     let val = params.value;
                     let min = %f;
                     let max = %f;
@@ -2468,46 +2478,46 @@ if authentication_status:
                             g = Math.round(229 + t * (96 - 229));
                             b = 70;
                         }
-                        return { backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'left' };
+                        return { backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'right' };
                     }
                 }
-                return { textAlign: 'left' };
+                return { textAlign: 'right' };
             }
             """
 
-            # --- Configurar Grid ---
+            # --- Configuración del Grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
-            # Columna Mes fija azul
+            # Columnas fijas azules
             gb.configure_column(
-                "Mes",
+                "codigo",
                 pinned="left",
-                width=180,
-                cellStyle={'textAlign': 'right', 'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'},
-                comparator=month_comparator
+                width=120,
+                cellStyle={'textAlign': 'right', 'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'}
+            )
+            gb.configure_column(
+                "sucursal",
+                pinned="left",
+                width=150,
+                cellStyle={'textAlign': 'right', 'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'}
             )
 
             # Columnas con degradado
             for col in numeric_cols_sin_total:
                 min_val, max_val = min_max_dict[col]
                 gradient_code = JsCode(cell_style_gradient_template % (ultima_col, min_val, max_val))
-                gb.configure_column(
-                    col,
-                    width=120,
-                    cellStyle=gradient_code,
-                    valueFormatter=value_formatter
-                )
+                gb.configure_column(col, width=100, cellStyle=gradient_code, valueFormatter=value_formatter)
 
             # Columna Total vertical azul
             gb.configure_column(
                 ultima_col,
-                width=120,
+                width=100,
                 cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold'},
                 valueFormatter=value_formatter
             )
 
-            # --- Fila total azul y fijada abajo ---
+            # --- Fila total azul ---
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = JsCode("""
@@ -2520,7 +2530,7 @@ if authentication_status:
             """)
             grid_options['domLayout'] = 'autoHeight'
 
-            # --- Render AgGrid ---
+            # --- Render ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2532,7 +2542,8 @@ if authentication_status:
                 },
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine"
-            )
+)
+
 
 
             #--------------------- BOTON DE DESCARGA -----------
