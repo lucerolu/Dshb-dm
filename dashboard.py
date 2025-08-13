@@ -2204,6 +2204,19 @@ if authentication_status:
                 color_discrete_sequence=[colores_sucursales.get(sucursal, "#636EFA")],
                 title=f"Compras mensuales de {sucursal} en 2025"
             )
+
+            # Agregamos hovertemplate
+            fig_barras.update_traces(
+                textposition='inside',
+                texttemplate='%{text}',
+                hovertemplate=(
+                    "<b>Sucursal:</b> " + sucursal + "<br>"
+                    "<b>Porcentaje:</b> %{customdata[0]:.1f}%<br>"
+                    "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+                ),
+                customdata=df_suc[["porcentaje"]] if "porcentaje" in df_suc.columns else df_suc.assign(porcentaje=100)[["porcentaje"]]
+            )
+
             fig_barras.update_traces(textposition='inside', texttemplate='%{text}')
             fig_barras.update_layout(showlegend=False, xaxis_title="Mes", yaxis_title="Total Comprado")
             st.plotly_chart(fig_barras, use_container_width=True)
@@ -2230,6 +2243,18 @@ if authentication_status:
                     color_discrete_map=colores_sucursales,
                     title=f"Compras en {mes}"
                 )
+
+                fig_mes.update_traces(
+                    textposition='inside',
+                    texttemplate='%{text}',
+                    hovertemplate=(
+                        "<b>Sucursal:</b> %{x}<br>"
+                        "<b>Porcentaje:</b> %{customdata[0]:.1f}%<br>"
+                        "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+                    ),
+                    customdata=df_mes[["porcentaje"]]
+                )
+
                 fig_mes.update_traces(textposition='inside', texttemplate='%{text}')
                 fig_mes.update_layout(showlegend=False)
                 st.plotly_chart(fig_mes, use_container_width=True, key=f"mes_{mes}")
