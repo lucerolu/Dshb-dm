@@ -2436,16 +2436,16 @@ if authentication_status:
             # Asegurar que 'codigo' sea string
             df_reset["codigo"] = df_reset["codigo"].astype(str)
 
-            # Detectar fila total
+            # Detectar fila Total sin depender de mayúsculas/espacios
             mascara_total = df_reset["codigo"].str.strip().str.lower() == "total"
             total_row = df_reset[mascara_total].copy()
             data_sin_total = df_reset[~mascara_total].copy()
 
-            # Columnas numéricas (excluyendo sucursal, codigo y columna Total)
+            # Columnas numéricas excluyendo sucursal, codigo y columna Total
             ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # Calcular min y max generales para degradado (sin fila ni columna Total)
+            # Calcular min y max generales (sin Total fila y columna)
             all_values = data_sin_total[numeric_cols_sin_total].values.flatten()
             min_val, max_val = all_values.min(), all_values.max()
 
@@ -2457,44 +2457,53 @@ if authentication_status:
             }
             """)
 
-            # Plantilla degradado general (excluye fila total y columna Total)
+            # Plantilla degradado general
             cell_style_gradient = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
 
-                // Aplicar degradado solo a filas normales
-                if (!params.node.rowPinned) {{
-
-                    // Ignorar columna Total
-                    if (params.colDef.field === totalCol) {{
-                        return {{
-                            backgroundColor: '#0B083D',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            textAlign: 'right'
-                        }};
-                    }}
-
-                    let val = params.value;
-                    let min = {min_val};
-                    let max = {max_val};
-                    if (!isNaN(val) && max > min) {{
-                        let ratio = (val - min) / (max - min);
-                        let r, g, b;
-                        if (ratio <= 0.5) {{
-                            let t = ratio / 0.5;
-                            r = Math.round(117 + t * (232 - 117));
-                            g = Math.round(222 + t * (229 - 222));
-                            b = Math.round(84 + t * (70 - 84));
-                        }} else {{
-                            let t = (ratio - 0.5) / 0.5;
-                            r = 232;
-                            g = Math.round(229 + t * (96 - 229));
-                            b = 70;
-                        }}
-                        return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
-                    }}
+                // Ignorar fila Total o cualquier fila fijada
+                if (params.node.rowPinned || (params.data && typeof params.data.codigo === 'string' &&
+                    params.data.codigo.trim().toLowerCase() === 'total')) {{
+                    return {{
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'right'
+                    }};
                 }}
+
+                // Ignorar columna Total
+                if (params.colDef.field === totalCol) {{
+                    return {{
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'right'
+                    }};
+                }}
+
+                let val = params.value;
+                let min = {min_val};
+                let max = {max_val};
+
+                if (!isNaN(val) && max > min) {{
+                    let ratio = (val - min) / (max - min);
+                    let r, g, b;
+                    if (ratio <= 0.5) {{
+                        let t = ratio / 0.5;
+                        r = Math.round(117 + t * (232 - 117));
+                        g = Math.round(222 + t * (229 - 222));
+                        b = Math.round(84  + t * (70 - 84));
+                    }} else {{
+                        let t = (ratio - 0.5) / 0.5;
+                        r = 232;
+                        g = Math.round(229 + t * (96 - 229));
+                        b = 70;
+                    }}
+                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
+                }}
+
                 return {{ textAlign: 'right' }};
             }}
             """)
@@ -2503,7 +2512,7 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
-            # Columnas fijas azules
+            # Columnas fijas
             for col_name in ["codigo", "sucursal"]:
                 gb.configure_column(
                     col_name,
@@ -2555,8 +2564,6 @@ if authentication_status:
                     ".ag-header-cell-text": {"color": "white !important", "font-weight": "bold !important"}
                 }
             )
-
-
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
