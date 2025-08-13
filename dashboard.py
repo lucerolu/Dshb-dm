@@ -1395,20 +1395,30 @@ if authentication_status:
             st.warning("No hay datos para mostrar con las cuentas seleccionadas.")
             st.dataframe(df_grafico.head(10))  # Para depuración
         else:
-            # Crear gráfico de líneas
+            # Crear gráfico de líneas con customdata
             fig = px.line(
                 df_filtrado,
                 x="mes_anio",
                 y="monto",
                 color="cuenta_sucursal",
                 markers=True,
-                title="Compras mensuales por cuenta"
+                title="Compras mensuales por cuenta",
+                custom_data=["mes_anio", "cuenta_sucursal", "monto"]
+            )
+
+            # Formato de hovertemplate
+            fig.update_traces(
+                hovertemplate=(
+                    "<b>Mes:</b> %{customdata[0]}<br>"
+                    "<b>Cuenta - Sucursal:</b> %{customdata[1]}<br>"
+                    "<b>Monto:</b> $%{customdata[2]:,.2f}<extra></extra>"
+                )
             )
 
             fig.update_layout(
                 xaxis_title="Mes",
                 yaxis_title="Monto (MXN)",
-                yaxis_tickformat=",",  # Formato con comas
+                yaxis_tickformat=",",  # Formato con comas en el eje
                 legend_title="Cuenta - Sucursal"
             )
 
