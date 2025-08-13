@@ -2211,7 +2211,6 @@ if authentication_status:
                 texttemplate='%{text}',
                 hovertemplate=(
                     "<b>Sucursal:</b> " + sucursal + "<br>"
-                    "<b>Porcentaje:</b> %{customdata[0]:.1f}%<br>"
                     "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
                 ),
                 customdata=df_suc[["porcentaje"]] if "porcentaje" in df_suc.columns else df_suc.assign(porcentaje=100)[["porcentaje"]]
