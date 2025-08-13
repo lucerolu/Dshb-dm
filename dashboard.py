@@ -790,8 +790,9 @@ if authentication_status:
             y="monto",
             color="division",
             text="monto",
+            custom_data=["division"],         
             color_discrete_map=colores_divisiones,
-            labels={"mes_nombre": "Mes", "monto": "Total Comprado", "division": "División"}
+            labels={"mes_nombre":"Mes","monto":"Total Comprado","division":"División"}
         )
 
         fig_mes_div.update_traces(
@@ -799,7 +800,7 @@ if authentication_status:
             textposition="inside",
             hovertemplate=(
                 "<b>Mes:</b> %{x}<br>"
-                "<b>División:</b> %{trace.name}<br>"
+                "<b>División:</b> %{customdata[0]}<br>"
                 "<b>Total Comprado:</b> $%{y:,.2f}<extra></extra>"
             )
         )
@@ -841,6 +842,7 @@ if authentication_status:
             y="monto",
             color="division",
             text="monto",
+            custom_data=["division"],  # ← aquí mandamos la división como dato adicional
             color_discrete_map=colores_divisiones,
             labels={"sucursal": "Sucursal", "monto": "Total Comprado", "division": "División"}
         )
@@ -850,7 +852,7 @@ if authentication_status:
             textposition="inside",
             hovertemplate=(
                 "<b>Sucursal:</b> %{x}<br>"
-                "<b>División:</b> %{trace.name}<br>"
+                "<b>División:</b> %{customdata[0]}<br>"  # ← usamos el custom_data
                 "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
             )
         )
