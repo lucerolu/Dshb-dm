@@ -2458,9 +2458,9 @@ if authentication_status:
             cell_style_gradient = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
-                // Ignorar fila Total y cualquier fila fijada
-                if (params.node.rowPinned || (params.data && typeof params.data.codigo === 'string' &&
-                    params.data.codigo.trim().toLowerCase() === 'total')) {{
+
+                // Ignorar cualquier fila fijada (fila Total)
+                if (params.node.rowPinned) {{
                     return {{
                         backgroundColor: '#0B083D',
                         color: 'white',
@@ -2479,6 +2479,7 @@ if authentication_status:
                     }};
                 }}
 
+                // Degradado solo para celdas normales
                 let val = params.value;
                 if (!isNaN(val) && val !== null) {{
                     let min = {min_val};
@@ -2500,9 +2501,11 @@ if authentication_status:
                         return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
                     }}
                 }}
+
                 return {{ textAlign: 'right' }};
             }}
             """)
+
 
             # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
