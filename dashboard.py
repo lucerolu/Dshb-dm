@@ -517,14 +517,12 @@ if authentication_status:
 
         #------------------------- GRÁFICO DE PASTEL ---------------------------------------------------------
         df_agrupado = df_divisiones.groupby("division")["monto"].sum().reset_index()
-        df_agrupado["porcentaje"] = df_agrupado["monto"] / df_agrupado["monto"].sum() * 100
 
         fig_pie = px.pie(
             df_agrupado,
             values="monto",
             names="division",
             color="division",
-            custom_data=["division", "monto", "porcentaje"],  # Para usar en hovertemplate
             color_discrete_map=colores_divisiones,
             hole=0.4
         )
@@ -533,22 +531,16 @@ if authentication_status:
             textinfo="percent+label",
             textposition="inside",
             hovertemplate=(
-                "<b>División:</b> %{customdata[0]}<br>"
-                "<b>Monto:</b> $%{customdata[1]:,.2f}<br>"
-                "<b>Porcentaje:</b> %{customdata[2]:.1f}%<extra></extra>"
+                "<b>División:</b> %{label}<br>"
+                "<b>Monto:</b> $%{value:,.2f}<br>"
+                "<b>Porcentaje:</b> %{percent}<extra></extra>"
             )
         )
 
         fig_pie.update_layout(
             title=dict(text="Distribución del total anual comprado por División", x=0.5, xanchor="center", y=1.0),
             height=500,
-            legend=dict(
-                orientation="h",
-                yanchor="top",
-                y=-0.2,
-                xanchor="center",
-                x=0.5
-            )
+            legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5)
         )
 
         st.plotly_chart(fig_pie, use_container_width=True)
