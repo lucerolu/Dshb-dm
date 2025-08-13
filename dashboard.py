@@ -2466,10 +2466,10 @@ if authentication_status:
                             g = Math.round(229 + t*(96-229));
                             b = Math.round(70 + t*(70-70));
                         }}
-                        return {{backgroundColor: `rgb(${r},${g},${b})`, textAlign: 'right'}};
+                        return {{'backgroundColor': `rgb(${r},${g},${b})`, 'textAlign': 'right'}};
                     }}
                 }}
-                return {{textAlign: 'right'}};
+                return {{'textAlign': 'right'}};
             }}
             """)
 
