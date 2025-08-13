@@ -2438,31 +2438,31 @@ if authentication_status:
             total_row = df_reset[df_reset["codigo"] == "Total"]
             data_sin_total = df_reset[df_reset["codigo"] != "Total"].copy()
 
-            # Columna numéricas
+            # Columnas numéricas (sin "sucursal" y "codigo")
             numeric_cols = [c for c in df_reset.columns if c not in ["sucursal", "codigo"]]
 
-            # Calcular min y max para degradado (excluyendo Total)
+            # Excluir columna Total del degradado
             numeric_cols_sin_total = [c for c in numeric_cols if c != "Total"]
+
+            # Calcular min y max del degradado solo con datos sin Totales
             min_val = data_sin_total[numeric_cols_sin_total].min().min()
             max_val = data_sin_total[numeric_cols_sin_total].max().max()
 
-            # JS gradient para celdas
+            # JS gradient para celdas (excluyendo fila Total y columnas Total)
             cell_style_gradient = JsCode(f"""
             function(params) {{
-                const totalRow = 'Total';
-                const totalCols = ['Total'];
-                if (params.data['codigo'] !== totalRow && !totalCols.includes(params.colDef.field)) {{
+                if (params.data['codigo'] !== 'Total' && params.colDef.field !== 'Total') {{
                     let val = params.value;
                     if (!isNaN(val) && {max_val} > {min_val}) {{
                         let ratio = (val - {min_val}) / ({max_val} - {min_val});
                         let r, g, b;
                         if (ratio <= 0.5) {{
-                            let t = ratio/0.5;
+                            let t = ratio / 0.5;
                             r = Math.round(117 + t*(232-117));
                             g = Math.round(222 + t*(229-222));
                             b = Math.round(84 + t*(70-84));
                         }} else {{
-                            let t = (ratio-0.5)/0.5;
+                            let t = (ratio - 0.5) / 0.5;
                             r = Math.round(232 + t*(232-232));
                             g = Math.round(229 + t*(96-229));
                             b = Math.round(70 + t*(70-70));
@@ -2519,14 +2519,15 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # JS para pintar fila total
+            # JS para pintar fila Total de azul y mantener anclada
             get_row_style = JsCode("""
             function(params) {
                 if(params.node.rowPinned) {
                     return {
                         backgroundColor: '#0B083D',
                         color: 'white',
-                        fontWeight: 'bold'
+                        fontWeight: 'bold',
+                        textAlign: 'right'
                     };
                 }
                 return null;
