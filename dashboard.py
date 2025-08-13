@@ -2434,9 +2434,14 @@ if authentication_status:
             df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot.reset_index()
 
-            # --- Separar fila Total ---
-            total_row = df_reset[df_reset["codigo"] == "Total"].copy()
-            data_sin_total = df_reset[df_reset["codigo"] != "Total"].copy()
+            # Asegurar que 'codigo' sea string
+            df_reset["codigo"] = df_reset["codigo"].astype(str)
+
+            # Detectar fila total sin depender de mayúsculas/espacios
+            mascara_total = df_reset["codigo"].str.strip().str.lower() == "total"
+
+            total_row = df_reset[mascara_total].copy()
+            data_sin_total = df_reset[~mascara_total].copy()
 
             # --- Columnas numéricas excluyendo Total vertical ---
             ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
@@ -2461,8 +2466,15 @@ if authentication_status:
             function(params) {
                 const totalCol = '%s';
 
-                // Ignorar fila total y filas fijadas
-                if ((params.data && params.data.codigo === 'Total') || params.node.rowPinned) {
+                // Ignorar fila total (case-insensitive) y filas fijadas
+                if (
+                    params.data &&
+                    typeof params.data.codigo === 'string' &&
+                    params.data.codigo.trim().toLowerCase() === 'total'
+                ) {
+                    return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold', textAlign: 'right' };
+                }
+                if (params.node && params.node.rowPinned) {
                     return { backgroundColor: '#0B083D', color: 'white', fontWeight: 'bold', textAlign: 'right' };
                 }
 
@@ -2493,6 +2505,7 @@ if authentication_status:
                 return { textAlign: 'right' };
             }
             """
+
 
             # --- Configuración del Grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
