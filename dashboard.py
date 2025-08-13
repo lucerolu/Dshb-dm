@@ -2549,7 +2549,7 @@ if authentication_status:
                 },
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine"
-)
+            )
 
 
 
