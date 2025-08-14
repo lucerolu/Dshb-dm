@@ -2568,22 +2568,40 @@ if authentication_status:
                 params.columnApi.getColumns().forEach(function(column) {
                     allColumnIds.push(column.getId());
                 });
-                
-                // Ajustar ancho según contenido
+                // Ajusta cada columna a su contenido
                 params.columnApi.autoSizeColumns(allColumnIds, false);
-                
-                // Expandir para que no quede hueco a la derecha
-                params.api.sizeColumnsToFit();
+
+                // Centrar si sobra espacio
+                let gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
+                if (gridDiv) {
+                    let totalWidth = params.columnApi.getAllDisplayedColumns()
+                        .map(col => col.getActualWidth())
+                        .reduce((a, b) => a + b, 0);
+                    if (totalWidth < gridDiv.clientWidth) {
+                        gridDiv.style.justifyContent = 'center';
+                    } else {
+                        gridDiv.style.justifyContent = 'flex-start';
+                    }
+                }
             }
             """)
+            # Usar autoHeight para respetar el ancho real
+            grid_options['domLayout'] = 'autoHeight'
 
-            grid_options['domLayout'] = 'normal'
+            # CSS para permitir centrado del contenido
+            st.markdown("""
+            <style>
+            .ag-root-wrapper {
+                display: flex;
+            }
+            </style>
+            """, unsafe_allow_html=True)
 
-            # --- Render de la tabla ---
+            # Render de la tabla
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,
+                height=None,  # autoHeight se encarga
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
