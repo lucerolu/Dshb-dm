@@ -2536,10 +2536,7 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # --- Usar autoHeight para que el ancho se ajuste al contenido ---
-            grid_options['domLayout'] = 'autoHeight'
-
-            # Ajustar columnas al contenido al renderizar
+            # Ajustar columnas al contenido
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
@@ -2547,7 +2544,7 @@ if authentication_status:
             }
             """)
 
-            # --- CSS para centrar tabla y habilitar scroll horizontal si se hace más pequeña ---
+            # Scroll horizontal y centrado
             st.markdown("""
             <div style="overflow-x: auto; display: flex; justify-content: center;">
             """, unsafe_allow_html=True)
@@ -2555,14 +2552,13 @@ if authentication_status:
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=None,  # autoHeight se encarga de la altura
+                height=818,  # altura fija para 28 filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
 
             st.markdown("</div>", unsafe_allow_html=True)
-
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
