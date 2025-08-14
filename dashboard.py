@@ -2524,14 +2524,16 @@ if authentication_status:
                 gb.configure_column(
                     col_name,
                     pinned="left",
+                    minWidth=150,
                     width=150,
-                    cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign': 'right'}
+                    cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'}
                 )
 
-            # Columnas con degradado
+            # Columnas numéricas con degradado
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
+                    minWidth=120,
                     width=120,
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
@@ -2540,8 +2542,9 @@ if authentication_status:
             # Columna Total vertical azul
             gb.configure_column(
                 ultima_col,
+                minWidth=120,
                 width=120,
-                cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign': 'right'},
+                cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'},
                 valueFormatter=value_formatter
             )
 
@@ -2561,43 +2564,37 @@ if authentication_status:
             }
             """)
 
-            # Ajustar ancho al inicio para llenar el contenedor
+            # Layout normal para scroll
+            grid_options['domLayout'] = 'normal'
+
+            # Ajustar ancho si sobra espacio
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
-                let allColumnIds = [];
-                params.columnApi.getColumns().forEach(function(column) {
-                    allColumnIds.push(column.getId());
-                });
-                // Ajusta cada columna a su contenido
-                params.columnApi.autoSizeColumns(allColumnIds, false);
+                const gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
+                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
+                
+                // Calcular ancho total de columnas
+                const totalColsWidth = allColumnIds.map(id => params.columnApi.getColumn(id).getActualWidth())
+                                                .reduce((a,b) => a+b, 0);
 
-                // Centrar si sobra espacio
-                let gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
-                if (gridDiv) {
-                    let totalWidth = params.columnApi.getAllDisplayedColumns()
-                        .map(col => col.getActualWidth())
-                        .reduce((a, b) => a + b, 0);
-                    if (totalWidth < gridDiv.clientWidth) {
-                        gridDiv.style.justifyContent = 'center';
-                    } else {
-                        gridDiv.style.justifyContent = 'flex-start';
-                    }
-                }
+                if (gridDiv.clientWidth > totalColsWidth) {
+                    // Si el contenedor es más ancho que las columnas, estirarlas proporcionalmente
+                    params.api.sizeColumnsToFit();
+                } 
+                // Si el contenedor es más chico, scroll horizontal aparecerá automáticamente
             }
             """)
-            # Usar autoHeight para respetar el ancho real
-            grid_options['domLayout'] = 'autoHeight'
 
-            # --- Render de la tabla final ---
+            # Render de la tabla
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
+                height=818,  # altura fija para 28 filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
-                key="myGrid",
-                # NO height, el autoHeight se encarga
             )
+
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
