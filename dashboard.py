@@ -2534,25 +2534,18 @@ if authentication_status:
 
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-
-            # Layout normal para scroll
             grid_options['domLayout'] = 'normal'
 
-            # Ajuste dinámico al ancho del contenedor
-            grid_options['onGridSizeChanged'] = JsCode("""
+            # --- Ajuste automático al contenido (no estira columnas si sobra espacio) ---
+            grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
-                const gridWidth = params.clientWidth;
-                const allColumnIds = params.columnApi.getAllColumns().map(c => c.getColId());
-                
-                // Ajusta las columnas al ancho del contenedor
-                params.api.sizeColumnsToFit();
-                
-                // Mantener scroll si el contenedor es más pequeño que la suma de minWidth
+                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
+                params.columnApi.autoSizeColumns(allColumnIds, false);
             }
             """)
 
             # --- Render con scroll horizontal si es necesario ---
-            st.markdown('<div style="overflow-x: auto; max-width: 100%;">', unsafe_allow_html=True)
+            st.markdown('<div style="overflow-x: auto; width: fit-content;">', unsafe_allow_html=True)
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
