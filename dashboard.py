@@ -2408,7 +2408,7 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
-            # --- Transformaciones previas ---
+            # --- Preparar datos ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
 
@@ -2446,9 +2446,7 @@ if authentication_status:
 
             # Columnas numéricas excluyendo índices y columna Total
             ultima_col = data_sin_total.columns[-1]
-            numeric_cols_sin_total = [
-                c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]
-            ]
+            numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
             # --- Formateador de valores ---
             value_formatter = JsCode("""
@@ -2505,15 +2503,20 @@ if authentication_status:
                 }}
                 """)
 
+            # Calcular min y max para degradado
+            min_val = data_sin_total[numeric_cols_sin_total].min().min()
+            max_val = data_sin_total[numeric_cols_sin_total].max().max()
+            gradient_code = make_gradient_code(min_val, max_val)
+
             # --- Configuración inicial del grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-            gb.configure_default_column(resizable=True, filter=False)
+            gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Ejemplo de columnas ancladas
+            # Columnas ancladas
             gb.configure_column("sucursal", pinned="left")
             gb.configure_column("codigo", pinned="left")
 
-            # Columna Total (última) con estilo especial
+            # Columna Total con estilo fijo
             gb.configure_column(
                 ultima_col,
                 cellStyle={
@@ -2525,11 +2528,20 @@ if authentication_status:
                 sortable=False
             )
 
-            # Script para ajustar al cambiar tamaño del contenedor
+            # Aplicar degradado a columnas numéricas
+            for col in numeric_cols_sin_total:
+                gb.configure_column(col, cellStyle=gradient_code)
+
+            # --- Script para autoajustar si cabe en el contenedor ---
             on_grid_ready = JsCode("""
             function(params) {
                 function resizeGrid() {
-                    params.api.sizeColumnsToFit();
+                    const totalWidth = params.columnApi.getAllColumns()
+                        .map(c => c.getActualWidth())
+                        .reduce((a, b) => a + b, 0);
+                    if (totalWidth < params.api.gridOptionsWrapper.eGridDiv.clientWidth) {
+                        params.api.sizeColumnsToFit();
+                    }
                 }
                 window.addEventListener('resize', resizeGrid);
                 resizeGrid();
@@ -2539,7 +2551,7 @@ if authentication_status:
             grid_options = gb.build()
             grid_options["onGridReady"] = on_grid_ready
 
-            # CSS opcional
+            # --- CSS opcional ---
             custom_css = {
                 ".ag-header-cell-text": {
                     "font-size": "12px",
@@ -2548,7 +2560,7 @@ if authentication_status:
                 }
             }
 
-            # --- Renderizado del AgGrid ---
+            # --- Renderizado final ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2556,9 +2568,10 @@ if authentication_status:
                 height=800,
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=True,  # Ajuste inicial
-                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,  # Ajuste por contenido
-                enable_enterprise_modules=False
+                fit_columns_on_grid_load=True,
+                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                enable_enterprise_modules=False,
+                pinned_bottom_row_data=total_row.to_dict('records')  # Fila total abajo
             )
 
             #--------------------- BOTON DE DESCARGA -----------
