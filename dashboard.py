@@ -2519,7 +2519,7 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    minWidth=120,
+                    minWidth=120,  # ancho mínimo
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
@@ -2532,62 +2532,35 @@ if authentication_status:
                 valueFormatter=value_formatter
             )
 
-            # Fila Total fijada abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-            grid_options['getRowStyle'] = JsCode("""
-            function(params) {
-                if(params.node.rowPinned) {
-                    return {
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold'
-                    };
-                }
-                return null;
-            }
-            """)
 
-            # --- Autoajuste + estiramiento proporcional ---
-            grid_options['onFirstDataRendered'] = JsCode("""
-            function(params) {
-                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
-                // Ajustar al contenido mínimo
-                params.columnApi.autoSizeColumns(allColumnIds, false);
-
-                // Estirar columnas si sobra espacio
-                const gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
-                const totalColsWidth = allColumnIds
-                    .map(id => params.columnApi.getColumn(id).getActualWidth())
-                    .reduce((a,b) => a+b, 0);
-
-                if (gridDiv.clientWidth > totalColsWidth) {
-                    params.api.sizeColumnsToFit();
-                }
-            }
-            """)
-
-            # Layout normal para scroll horizontal
+            # Layout normal para scroll
             grid_options['domLayout'] = 'normal'
 
-            # --- Render con contenedor ajustable al tamaño de la tabla ---
-            st.markdown('''
-            <div style="
-                display: inline-block;  /* ancho del contenedor = ancho de la tabla */
-                overflow-x: auto;       /* scroll horizontal si ventana < tabla */
-                max-width: 100%;
-            ">
-            ''', unsafe_allow_html=True)
+            # Ajuste dinámico al ancho del contenedor
+            grid_options['onGridSizeChanged'] = JsCode("""
+            function(params) {
+                const gridWidth = params.clientWidth;
+                const allColumnIds = params.columnApi.getAllColumns().map(c => c.getColId());
+                
+                // Ajusta las columnas al ancho del contenedor
+                params.api.sizeColumnsToFit();
+                
+                // Mantener scroll si el contenedor es más pequeño que la suma de minWidth
+            }
+            """)
 
+            # --- Render con scroll horizontal si es necesario ---
+            st.markdown('<div style="overflow-x: auto; max-width: 100%;">', unsafe_allow_html=True)
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,  # ajusta según tus filas
+                height=818,
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
-
             st.markdown('</div>', unsafe_allow_html=True)
 
             #--------------------- BOTON DE DESCARGA -----------
