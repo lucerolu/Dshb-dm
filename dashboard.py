@@ -2561,25 +2561,48 @@ if authentication_status:
             }
             """)
 
-            # Ajustar ancho al inicio
+            # Ajustar ancho al inicio y centrar tabla
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
-                params.api.sizeColumnsToFit();
+                let allColumnIds = [];
+                params.columnApi.getColumns().forEach(function(column) {
+                    allColumnIds.push(column.getId());
+                });
+                // Ajustar ancho de columnas según contenido
+                params.columnApi.autoSizeColumns(allColumnIds, false);
+
+                // Si sobra espacio, centrar la tabla
+                let gridDiv = document.querySelector('#myGrid');
+                if (gridDiv) {
+                    gridDiv.style.margin = '0 auto';
+                }
             }
             """)
 
-            # Layout normal y altura fija
             grid_options['domLayout'] = 'normal'
 
-            # Render
+            # --- CSS para centrar la tabla ---
+            st.markdown("""
+            <style>
+            #myGrid {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            # --- Render de la tabla ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=815,  # <-- aquí fijas el alto, ponlo a lo que necesites para 28 filas
+                height=818,
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
+                key="myGrid"  # este id se usa en el CSS
             )
+
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
