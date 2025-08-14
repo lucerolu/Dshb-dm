@@ -2588,24 +2588,15 @@ if authentication_status:
             # Usar autoHeight para respetar el ancho real
             grid_options['domLayout'] = 'autoHeight'
 
-            # CSS para permitir centrado del contenido
-            st.markdown("""
-            <style>
-            .ag-root-wrapper {
-                display: flex;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-
-            # Render de la tabla
+            # --- Render de la tabla final ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=None,  # autoHeight se encarga
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
-                key="myGrid"
+                key="myGrid",
+                # NO height, el autoHeight se encarga
             )
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
