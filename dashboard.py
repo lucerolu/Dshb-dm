@@ -2442,7 +2442,6 @@ if authentication_status:
             total_row = df_reset[mascara_total].copy()
             data_sin_total = df_reset[~mascara_total].copy()
 
-
             # --- Columnas numéricas excluyendo índices y columna Total ---
             ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
             numeric_cols_sin_total = [
@@ -2452,6 +2451,14 @@ if authentication_status:
             # --- Calcular min y max global sin Total fila/columna ---
             all_values = data_sin_total[numeric_cols_sin_total].values.flatten()
             min_val, max_val = all_values.min(), all_values.max()
+
+            # --- Formateador de valores ---
+            value_formatter = JsCode("""
+            function(params) { 
+                if (params.value == null) return '0.00';
+                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            """)
 
             # --- Plantilla degradado general ---
             cell_style_gradient = JsCode(f"""
@@ -2486,6 +2493,8 @@ if authentication_status:
 
                 // Aplicar degradado solo a datos reales
                 let val = params.value;
+                let min = {min_val};
+                let max = {max_val};
                 if (!isNaN(val) && max > min) {{
                     let ratio = (val - min) / (max - min);
                     let r, g, b;
@@ -2505,8 +2514,6 @@ if authentication_status:
                 return {{ textAlign: 'right' }};
             }}
             """)
-
-
 
             # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
@@ -2564,6 +2571,7 @@ if authentication_status:
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
+
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
