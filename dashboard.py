@@ -2433,34 +2433,39 @@ if authentication_status:
             # Asegurar que 'codigo' sea string
             df_reset["codigo"] = df_reset["codigo"].astype(str)
 
-            # Separar fila Total
-            mask_total = df_reset["codigo"].str.strip().str.lower() == "total"
-            total_row = df_reset[mask_total].copy()
-            data_sin_total = df_reset[~mask_total].copy()
+            # --- Detectar fila Total (en 'codigo' o 'sucursal') ---
+            mascara_total = (
+                df_reset["codigo"].str.strip().str.lower() == "total"
+            ) | (
+                df_reset["sucursal"].str.strip().str.lower() == "total"
+            )
+            total_row = df_reset[mascara_total].copy()
+            data_sin_total = df_reset[~mascara_total].copy()
 
-            # Columnas numéricas excluyendo Total vertical
+
+            # --- Columnas numéricas excluyendo índices y columna Total ---
             ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
-            numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
+            numeric_cols_sin_total = [
+                c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]
+            ]
 
-            # --- Min y max global sin Total ---
+            # --- Calcular min y max global sin Total fila/columna ---
             all_values = data_sin_total[numeric_cols_sin_total].values.flatten()
             min_val, max_val = all_values.min(), all_values.max()
 
-            # Formatter de números
-            value_formatter = JsCode("""
-            function(params) {
-                if (params.value === undefined || params.value === null) return '0.00';
-                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            }
-            """)
-
-            # JS degradado general
+            # --- Plantilla degradado general ---
             cell_style_gradient = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
 
-                // Ignorar cualquier fila fijada (fila Total)
-                if (params.node.rowPinned) {{
+                // Ignorar fila Total (código o sucursal) y filas fijadas
+                if (
+                    params.node.rowPinned || 
+                    (params.data && (
+                        (typeof params.data.codigo === 'string' && params.data.codigo.trim().toLowerCase() === 'total') ||
+                        (typeof params.data.sucursal === 'string' && params.data.sucursal.trim().toLowerCase() === 'total')
+                    ))
+                ) {{
                     return {{
                         backgroundColor: '#0B083D',
                         color: 'white',
@@ -2479,32 +2484,28 @@ if authentication_status:
                     }};
                 }}
 
-                // Degradado solo para celdas normales
+                // Aplicar degradado solo a datos reales
                 let val = params.value;
-                if (!isNaN(val) && val !== null) {{
-                    let min = {min_val};
-                    let max = {max_val};
-                    if (max > min) {{
-                        let ratio = (val - min) / (max - min);
-                        let r, g, b;
-                        if (ratio <= 0.5) {{
-                            let t = ratio / 0.5;
-                            r = Math.round(117 + t * (232 - 117));
-                            g = Math.round(222 + t * (229 - 222));
-                            b = Math.round(84  + t * (70 - 84));
-                        }} else {{
-                            let t = (ratio - 0.5) / 0.5;
-                            r = 232;
-                            g = Math.round(229 + t * (96 - 229));
-                            b = 70;
-                        }}
-                        return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
+                if (!isNaN(val) && max > min) {{
+                    let ratio = (val - min) / (max - min);
+                    let r, g, b;
+                    if (ratio <= 0.5) {{
+                        let t = ratio / 0.5;
+                        r = Math.round(117 + t * (232 - 117));
+                        g = Math.round(222 + t * (229 - 222));
+                        b = Math.round(84 + t * (70 - 84));
+                    }} else {{
+                        let t = (ratio - 0.5) / 0.5;
+                        r = 232;
+                        g = Math.round(229 + t * (96 - 229));
+                        b = 70;
                     }}
+                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
                 }}
-
                 return {{ textAlign: 'right' }};
             }}
             """)
+
 
 
             # --- Configuración AgGrid ---
