@@ -2498,9 +2498,9 @@ if authentication_status:
                         let t = (ratio-0.5)/0.5;
                         r = 232; g = Math.round(229 + t*(96-229)); b = 70;
                     }}
-                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'right' }};
+                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'left' }};
                 }}
-                return {{ textAlign:'right' }};
+                return {{ textAlign:'left' }};
             }}
             """)
 
@@ -2508,36 +2508,31 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columnas ancladas
-            gb.configure_column("sucursal", pinned="left")
-            gb.configure_column("codigo", pinned="left")
-
-            # Columnas ancladas con ancho fijo
+            # Columnas ancladas con ancho fijo y texto a la derecha
             gb.configure_column(
                 "sucursal",
                 pinned="left",
-                width=130,  # ancho fijo en px
+                width=130,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'left'
+                    'textAlign': 'right'
                 }
             )
             gb.configure_column(
                 "codigo",
                 pinned="left",
-                width=90,  # ancho fijo en px
+                width=90,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'left'
+                    'textAlign': 'right'
                 }
             )
 
-
-            # Columnas numéricas con degradado y minWidth
+            # Columnas numéricas con degradado, minWidth y formato .2f
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
@@ -2546,7 +2541,7 @@ if authentication_status:
                     minWidth=80
                 )
 
-            # Columna Total vertical con minWidth
+            # Columna Total vertical con minWidth, azul y texto a la derecha
             gb.configure_column(
                 ultima_col,
                 cellStyle={
@@ -2559,6 +2554,7 @@ if authentication_status:
                 valueFormatter=value_formatter,
                 minWidth=100
             )
+
 
 
             # --- Script para autoajustar columnas ---
