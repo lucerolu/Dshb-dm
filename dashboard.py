@@ -2421,7 +2421,7 @@ if authentication_status:
                 margins_name="Total"
             )
 
-            # Ordenar columnas por fecha
+            # Ordenar columnas
             cols_ordenadas = sorted([c for c in df_pivot.columns if c != "Total"], key=lambda x: datetime.strptime(x, "%d/%m/%Y"))
             if "Total" in df_pivot.columns:
                 cols_ordenadas.append("Total")
@@ -2519,7 +2519,7 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    minWidth=120,  # ancho mínimo
+                    minWidth=120,
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
@@ -2535,19 +2535,27 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # Layout autoHeight: altura según contenido
-            grid_options['domLayout'] = 'autoHeight'
+            # Layout normal y ajuste automático de columnas
+            grid_options['domLayout'] = 'normal'
 
-            # --- Ajuste dinámico de columnas al contenido al render inicial ---
-            grid_options['onFirstDataRendered'] = JsCode("""
+            # Ajusta las columnas al ancho del contenedor manteniendo minWidth
+            grid_options['onGridSizeChanged'] = JsCode("""
             function(params) {
-                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
-                params.columnApi.autoSizeColumns(allColumnIds, false);
+                const allColumns = params.columnApi.getAllDisplayedColumns();
+                let totalMinWidth = 0;
+                allColumns.forEach(col => totalMinWidth += col.getMinWidth() || 100);
+                const gridWidth = params.api.gridPanel.getWidth();
+
+                if(gridWidth > totalMinWidth){
+                    params.api.sizeColumnsToFit(); // estira columnas si sobra espacio
+                } else {
+                    const allColumnIds = allColumns.map(c => c.getColId());
+                    params.columnApi.autoSizeColumns(allColumnIds); // mantén minWidth y scroll
+                }
             }
             """)
 
-            # --- Render con contenedor ajustado al contenido de la tabla ---
-            st.markdown('<div style="overflow-x: auto; display: inline-block;">', unsafe_allow_html=True)
+            # --- Render AgGrid sin contenedor externo ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2555,9 +2563,8 @@ if authentication_status:
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
-                fit_columns_on_grid_load=False
             )
-            st.markdown('</div>', unsafe_allow_html=True)
+
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
