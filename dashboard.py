@@ -2509,16 +2509,16 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
-            # Columna fija a la izquierda
+            # Fijar columnas 'sucursal' y 'codigo' a la izquierda
             gb.configure_column(
-                "fecha_exigibilidad_str",
+                "sucursal",
                 pinned="left",
-                cellStyle={
-                    'textAlign': 'right',
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold'
-                }
+                cellStyle={'fontWeight': 'bold'}
+            )
+            gb.configure_column(
+                "codigo",
+                pinned="left",
+                cellStyle={'fontWeight': 'bold'}
             )
 
             # Columnas numéricas con degradado
@@ -2563,6 +2563,7 @@ if authentication_status:
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = get_row_style
             grid_options['domLayout'] = 'autoHeight'
+            grid_options['suppressHorizontalScroll'] = False  # permitir scroll si se necesita
 
             # CSS personalizado
             custom_css = {
@@ -2577,7 +2578,7 @@ if authentication_status:
                 }
             }
 
-            # Mostrar tabla ajustada al contenido
+            # Mostrar tabla ajustada al contenido y que se estire para ocupar todo el ancho
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2585,7 +2586,7 @@ if authentication_status:
                 allow_unsafe_jscode=True,
                 custom_css=custom_css,
                 theme=AgGridTheme.ALPINE,
-                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW,
                 enable_enterprise_modules=False
             )
 
