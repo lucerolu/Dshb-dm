@@ -2516,7 +2516,7 @@ if authentication_status:
             gb.configure_column(
                 "sucursal",
                 pinned="left",
-                width=1200,  # ancho fijo en px
+                width=130,  # ancho fijo en px
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -2527,7 +2527,7 @@ if authentication_status:
             gb.configure_column(
                 "codigo",
                 pinned="left",
-                width=90,  # ancho fijo en px
+                width=100,  # ancho fijo en px
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
