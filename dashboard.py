@@ -2560,13 +2560,22 @@ if authentication_status:
                 return null;
             }
             """)
-            grid_options['domLayout'] = 'autoHeight'
+
+            # Ajustar ancho al inicio
+            grid_options['onFirstDataRendered'] = JsCode("""
+            function(params) {
+                params.api.sizeColumnsToFit();
+            }
+            """)
+
+            # Layout normal y altura fija
+            grid_options['domLayout'] = 'normal'
 
             # Render
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=400,
+                height=600,  # <-- aquí fijas el alto, ponlo a lo que necesites para 28 filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
