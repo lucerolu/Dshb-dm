@@ -2389,6 +2389,26 @@ if authentication_status:
             st.warning("No hay datos de estado de cuenta.")
         else:
             st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
+            #------------------------------------- TARJETAS DE CREDITO DISPONIBLE --------------------------------------------------
+            # Límite de crédito
+            CREDITO_MAX = 180_000_000
+            # Obtener los datos
+            df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
+
+            if not df_estado_cuenta.empty:
+                total_estado_cuenta = df_estado_cuenta["total"].sum()
+
+                credito_disponible = CREDITO_MAX - total_estado_cuenta
+                porcentaje_disponible = (credito_disponible / CREDITO_MAX) * 100
+                porcentaje_usado = (total_estado_cuenta / CREDITO_MAX) * 100
+
+                # Crear las tarjetas
+                col1, col2, col3 = st.columns(3)
+                col1.metric("💰 Crédito disponible", f"${credito_disponible:,.2f}")
+                col2.metric("📊 % Crédito disponible", f"{porcentaje_disponible:.2f}%")
+                col3.metric("📈 % Crédito usado", f"{porcentaje_usado:.2f}%")
+            else:
+                st.info("No hay datos disponibles para mostrar el crédito.")
             #----------------------------------------- TARJETAS -------------------------------------------------------------------
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             hoy = pd.to_datetime(datetime.today().date())
