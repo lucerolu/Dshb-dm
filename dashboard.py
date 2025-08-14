@@ -2527,7 +2527,7 @@ if authentication_status:
             gb.configure_column(
                 "codigo",
                 pinned="left",
-                width=100,  # ancho fijo en px
+                width=90,  # ancho fijo en px
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
