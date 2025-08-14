@@ -2546,32 +2546,24 @@ if authentication_status:
             )
 
             # Fila Total fijada abajo
-            grid_options = gb.build()
-            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-            grid_options['getRowStyle'] = JsCode("""
+            grid_options = gb.build()  # <- AQUÍ lo creas
+
+            # Ajuste para que no se corte
+            grid_options['domLayout'] = 'normal'
+            grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
-                if(params.node.rowPinned) {
-                    return {
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold'
-                    };
-                }
-                return null;
+                params.api.sizeColumnsToFit();
             }
             """)
-            grid_options['domLayout'] = 'autoHeight'
 
-            # Render
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=400,
+                height=500,
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
-
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
