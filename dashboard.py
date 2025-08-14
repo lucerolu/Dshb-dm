@@ -2534,18 +2534,34 @@ if authentication_status:
 
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+
+            # Layout normal
             grid_options['domLayout'] = 'normal'
 
-            # --- Ajuste automático al contenido (no estira columnas si sobra espacio) ---
-            grid_options['onFirstDataRendered'] = JsCode("""
+            # --- Ajuste dinámico: estira columnas si sobra espacio, mantiene minWidth si no ---
+            grid_options['onGridSizeChanged'] = JsCode("""
             function(params) {
+                const gridWidth = params.api.gridPanel.getWidth();
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
-                params.columnApi.autoSizeColumns(allColumnIds, True);
+
+                // Suma de minWidth de todas las columnas
+                let totalMinWidth = 0;
+                params.columnApi.getAllDisplayedColumns().forEach(col => {
+                    totalMinWidth += col.getMinWidth() || 100;
+                });
+
+                if(gridWidth > totalMinWidth){
+                    // Contenedor más ancho: estira columnas proporcionalmente
+                    params.api.sizeColumnsToFit();
+                } else {
+                    // Contenedor más pequeño: mantener scroll horizontal con minWidth
+                    params.columnApi.autoSizeColumns(allColumnIds, false);
+                }
             }
             """)
 
             # --- Render con scroll horizontal si es necesario ---
-            st.markdown('<div style="overflow-x: auto; width: fit-content;">', unsafe_allow_html=True)
+            st.markdown('<div style="overflow-x: auto; max-width: 100%;">', unsafe_allow_html=True)
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2555,6 +2571,7 @@ if authentication_status:
                 theme="ag-theme-alpine",
             )
             st.markdown('</div>', unsafe_allow_html=True)
+
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
