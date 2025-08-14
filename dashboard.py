@@ -2511,7 +2511,7 @@ if authentication_status:
                 gb.configure_column(
                     col_name,
                     pinned="left",
-                    #minWidth=150,
+                    minWidth=150,
                     cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'}
                 )
 
@@ -2519,7 +2519,7 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    #minWidth=120,
+                    minWidth=120,
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
@@ -2527,7 +2527,7 @@ if authentication_status:
             # Columna Total vertical azul
             gb.configure_column(
                 ultima_col,
-                #minWidth=120,
+                minWidth=120,
                 cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'},
                 valueFormatter=value_formatter
             )
@@ -2535,36 +2535,44 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # --- Layout autoHeight: altura se ajusta al contenido ---
-            grid_options['domLayout'] = 'autoHeight'
+            # Layout normal (no autoHeight)
+            grid_options['domLayout'] = 'normal'
 
-            # --- Ajuste dinámico de columnas ---
+            # --- Ajuste dinámico: estira columnas si sobra espacio, mantiene minWidth si no ---
             grid_options['onGridSizeChanged'] = JsCode("""
             function(params) {
-                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
-                const totalMinWidth = params.columnApi.getAllDisplayedColumns()
-                    .reduce((sum, col) => sum + (col.getMinWidth() || 100), 0);
                 const gridWidth = params.api.gridPanel.getWidth();
+                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
+
+                // Suma de minWidth de todas las columnas
+                let totalMinWidth = 0;
+                params.columnApi.getAllDisplayedColumns().forEach(col => {
+                    totalMinWidth += col.getMinWidth() || 100;
+                });
 
                 if(gridWidth > totalMinWidth){
-                    // Estira columnas para llenar contenedor
+                    // Contenedor más ancho: estira columnas proporcionalmente
                     params.api.sizeColumnsToFit();
                 } else {
-                    // Mantener scroll horizontal
+                    // Contenedor más pequeño: mantener scroll horizontal con minWidth
                     params.columnApi.autoSizeColumns(allColumnIds, false);
                 }
             }
             """)
 
-            # --- Render AgGrid directamente (sin div externo) ---
+            # --- Render con contenedor ajustado al contenido ---
+            st.markdown('<div style="display: inline-block; white-space: nowrap;">', unsafe_allow_html=True)
+
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
+                height=818,
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
-                theme="ag-theme-alpine"
+                theme="ag-theme-alpine",
             )
 
+            st.markdown('</div>', unsafe_allow_html=True)
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
