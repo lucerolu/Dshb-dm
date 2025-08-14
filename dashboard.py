@@ -2505,94 +2505,59 @@ if authentication_status:
                 }}
                 """)
 
-            # --- Construcción de opciones del grid ---
+            # --- Configuración inicial del grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
-            # Fijar columnas 'sucursal' y 'codigo' a la izquierda
-            gb.configure_column(
-                "sucursal",
-                pinned="left",
-                cellStyle={'fontWeight': 'bold'}
-            )
-            gb.configure_column(
-                "codigo",
-                pinned="left",
-                cellStyle={'fontWeight': 'bold'}
-            )
+            # Ejemplo de columnas ancladas
+            gb.configure_column("sucursal", pinned="left")
+            gb.configure_column("codigo", pinned="left")
 
-            # Columnas numéricas con degradado
-            for col in numeric_cols_sin_total:
-                min_val = data_sin_total[col].min()
-                max_val = data_sin_total[col].max()
-                gb.configure_column(
-                    col,
-                    cellStyle=make_gradient_code(min_val, max_val),
-                    sortable=True,
-                    valueFormatter=value_formatter
-                )
-
-            # Columna Total
+            # Columna Total (última) con estilo especial
             gb.configure_column(
                 ultima_col,
                 cellStyle={
-                    'textAlign': 'left',
                     'backgroundColor': '#0B083D',
                     'color': 'white',
-                    'fontWeight': 'bold'
+                    'fontWeight': 'bold',
+                    'textAlign': 'right'
                 },
-                sortable=False,
-                valueFormatter=value_formatter
+                sortable=False
             )
 
-            # Fila Total fija
-            get_row_style = JsCode("""
+            # Script para ajustar al cambiar tamaño del contenedor
+            on_grid_ready = JsCode("""
             function(params) {
-                if(params.node.rowPinned) {
-                    return {
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold'
-                    };
+                function resizeGrid() {
+                    params.api.sizeColumnsToFit();
                 }
-                return null;
+                window.addEventListener('resize', resizeGrid);
+                resizeGrid();
             }
             """)
 
             grid_options = gb.build()
-            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-            grid_options['getRowStyle'] = get_row_style
-            grid_options['domLayout'] = 'normal'  # no autoHeight, permite ajuste horizontal
-            grid_options['suppressHorizontalScroll'] = False
-            grid_options['suppressSizeToFit'] = False
-            grid_options['onFirstDataRendered'] = JsCode("""
-            function(params) {
-                params.api.sizeColumnsToFit();
-            }
-            """)
+            grid_options["onGridReady"] = on_grid_ready
 
-            # CSS personalizado
+            # CSS opcional
             custom_css = {
                 ".ag-header-cell-text": {
                     "font-size": "12px",
                     "text-overflow": "revert",
                     "font-weight": "700"
-                },
-                ".ag-theme-streamlit": {
-                    "transform": "scale(0.98)",
-                    "transform-origin": "0 0"
                 }
             }
 
-            # Mostrar tabla ajustada al contenido y que se estire para ocupar todo el ancho
+            # --- Renderizado del AgGrid ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
+                custom_css=custom_css,
                 height=800,
                 allow_unsafe_jscode=True,
-                custom_css=custom_css,
                 theme=AgGridTheme.ALPINE,
-                columns_auto_size_mode=ColumnsAutoSizeMode.NO_AUTOSIZE,  # dejamos que JS ajuste
+                fit_columns_on_grid_load=True,  # Ajuste inicial
+                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,  # Ajuste por contenido
                 enable_enterprise_modules=False
             )
 
