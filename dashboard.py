@@ -2535,34 +2535,19 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # Layout normal
-            grid_options['domLayout'] = 'normal'
+            # Layout autoHeight: altura según contenido
+            grid_options['domLayout'] = 'autoHeight'
 
-            # --- Ajuste dinámico: estira columnas si sobra espacio, mantiene minWidth si no ---
-            grid_options['onGridSizeChanged'] = JsCode("""
+            # --- Ajuste dinámico de columnas al contenido al render inicial ---
+            grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
-                const gridWidth = params.api.gridPanel.getWidth();
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
-
-                // Suma de minWidth de todas las columnas
-                let totalMinWidth = 0;
-                params.columnApi.getAllDisplayedColumns().forEach(col => {
-                    totalMinWidth += col.getMinWidth() || 100;
-                });
-
-                if(gridWidth > totalMinWidth){
-                    // Contenedor más ancho: estira columnas proporcionalmente
-                    params.api.sizeColumnsToFit();
-                } else {
-                    // Contenedor más pequeño: mantener scroll horizontal con minWidth
-                    params.columnApi.autoSizeColumns(allColumnIds, false);
-                }
+                params.columnApi.autoSizeColumns(allColumnIds, false);
             }
             """)
 
-            # --- Render con AgGrid ajustando al contenido ---
+            # --- Render con contenedor ajustado al contenido de la tabla ---
             st.markdown('<div style="overflow-x: auto; display: inline-block;">', unsafe_allow_html=True)
-
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2570,18 +2555,9 @@ if authentication_status:
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
-                fit_columns_on_grid_load=False  # evitamos sizeColumnsToFit automático
+                fit_columns_on_grid_load=False
             )
-
             st.markdown('</div>', unsafe_allow_html=True)
-
-            # --- Autoajuste de columnas al contenido (solo al render inicial) ---
-            grid_options['onFirstDataRendered'] = JsCode("""
-            function(params) {
-                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
-                params.columnApi.autoSizeColumns(allColumnIds, false);
-            }
-            """)
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
