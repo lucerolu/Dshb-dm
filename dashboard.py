@@ -2429,11 +2429,9 @@ if authentication_status:
 
             df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot.reset_index()
-
-            # Asegurar que 'codigo' sea string
             df_reset["codigo"] = df_reset["codigo"].astype(str)
 
-            # --- Detectar fila Total (en 'codigo' o 'sucursal') ---
+            # Fila total
             mascara_total = (
                 df_reset["codigo"].str.strip().str.lower() == "total"
             ) | (
@@ -2442,17 +2440,15 @@ if authentication_status:
             total_row = df_reset[mascara_total].copy()
             data_sin_total = df_reset[~mascara_total].copy()
 
-            # --- Columnas numéricas excluyendo índices y columna Total ---
-            ultima_col = data_sin_total.columns[-1]  # debería ser 'Total'
-            numeric_cols_sin_total = [
-                c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]
-            ]
+            # Columnas numéricas excluyendo índices y columna Total
+            ultima_col = data_sin_total.columns[-1]  # 'Total'
+            numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # --- Calcular min y max global sin Total fila/columna ---
+            # Min y max global
             all_values = data_sin_total[numeric_cols_sin_total].values.flatten()
             min_val, max_val = all_values.min(), all_values.max()
 
-            # --- Formateador de valores ---
+            # Formateador
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -2460,14 +2456,11 @@ if authentication_status:
             }
             """)
 
-            # --- Plantilla degradado general ---
+            # Degradado
             cell_style_gradient = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
-
-                // Ignorar fila Total (código o sucursal) y filas fijadas
-                if (
-                    params.node.rowPinned || 
+                if (params.node.rowPinned || 
                     (params.data && (
                         (typeof params.data.codigo === 'string' && params.data.codigo.trim().toLowerCase() === 'total') ||
                         (typeof params.data.sucursal === 'string' && params.data.sucursal.trim().toLowerCase() === 'total')
@@ -2480,8 +2473,6 @@ if authentication_status:
                         textAlign: 'right'
                     }};
                 }}
-
-                // Ignorar columna Total
                 if (params.colDef.field === totalCol) {{
                     return {{
                         backgroundColor: '#0B083D',
@@ -2490,28 +2481,24 @@ if authentication_status:
                         textAlign: 'right'
                     }};
                 }}
-
-                // Aplicar degradado solo a datos reales
                 let val = params.value;
                 let min = {min_val};
                 let max = {max_val};
                 if (!isNaN(val) && max > min) {{
                     let ratio = (val - min) / (max - min);
-                    let r, g, b;
-                    if (ratio <= 0.5) {{
-                        let t = ratio / 0.5;
-                        r = Math.round(117 + t * (232 - 117));
-                        g = Math.round(222 + t * (229 - 222));
-                        b = Math.round(84 + t * (70 - 84));
+                    let r,g,b;
+                    if(ratio <= 0.5) {{
+                        let t = ratio/0.5;
+                        r = Math.round(117 + t*(232-117));
+                        g = Math.round(222 + t*(229-222));
+                        b = Math.round(84 + t*(70-84));
                     }} else {{
-                        let t = (ratio - 0.5) / 0.5;
-                        r = 232;
-                        g = Math.round(229 + t * (96 - 229));
-                        b = 70;
+                        let t = (ratio-0.5)/0.5;
+                        r = 232; g = Math.round(229 + t*(96-229)); b = 70;
                     }}
-                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign: 'right' }};
+                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'right' }};
                 }}
-                return {{ textAlign: 'right' }};
+                return {{ textAlign:'right' }};
             }}
             """)
 
@@ -2525,7 +2512,6 @@ if authentication_status:
                     col_name,
                     pinned="left",
                     minWidth=150,
-                    width=150,
                     cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'}
                 )
 
@@ -2534,31 +2520,24 @@ if authentication_status:
                 gb.configure_column(
                     col,
                     minWidth=120,
-                    width=120,
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
 
-            # Columna Total vertical azul
+            # Columna Total
             gb.configure_column(
                 ultima_col,
                 minWidth=120,
-                width=120,
                 cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'},
                 valueFormatter=value_formatter
             )
 
-            # Fila Total fijada abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = JsCode("""
             function(params) {
                 if(params.node.rowPinned) {
-                    return {
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold'
-                    };
+                    return {backgroundColor:'#0B083D', color:'white', fontWeight:'bold'};
                 }
                 return null;
             }
@@ -2567,29 +2546,19 @@ if authentication_status:
             # Layout normal para scroll
             grid_options['domLayout'] = 'normal'
 
-            # Ajustar ancho si sobra espacio
+            # Autoajustar al contenido inicial y dejar scroll horizontal
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
-                const gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
-                
-                // Calcular ancho total de columnas
-                const totalColsWidth = allColumnIds.map(id => params.columnApi.getColumn(id).getActualWidth())
-                                                .reduce((a,b) => a+b, 0);
-
-                if (gridDiv.clientWidth > totalColsWidth) {
-                    // Si el contenedor es más ancho que las columnas, estirarlas proporcionalmente
-                    params.api.sizeColumnsToFit();
-                } 
-                // Si el contenedor es más chico, scroll horizontal aparecerá automáticamente
+                params.columnApi.autoSizeColumns(allColumnIds, false);
             }
             """)
 
-            # Render de la tabla
+            # --- Render ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,  # altura fija para 28 filas
+                height=818,  # altura para 28 filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
