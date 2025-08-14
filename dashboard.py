@@ -2519,7 +2519,7 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    minWidth=120,  # ancho mínimo
+                    minWidth=120,
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
@@ -2535,61 +2535,34 @@ if authentication_status:
             # Fila Total fijada abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-            grid_options['getRowStyle'] = JsCode("""
-            function(params) {
-                if(params.node.rowPinned) {
-                    return {
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold'
-                    };
-                }
-                return null;
-            }
-            """)
 
-            # Layout normal para scroll horizontal
-            grid_options['domLayout'] = 'normal'
+            # --- Usar autoHeight para que el ancho se ajuste al contenido ---
+            grid_options['domLayout'] = 'autoHeight'
 
-            # Ajuste híbrido columnas + centrado
+            # Ajustar columnas al contenido al renderizar
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
-                
-                // Ajustar columnas al contenido mínimo
                 params.columnApi.autoSizeColumns(allColumnIds, false);
-
-                //  Obtener ancho total de columnas
-                const totalColsWidth = allColumnIds
-                    .map(id => params.columnApi.getColumn(id).getActualWidth())
-                    .reduce((a,b) => a+b, 0);
-
-                const gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
-                const containerWidth = gridDiv.clientWidth;
-
-                // Si el contenedor es más ancho que columnas, estirarlas proporcionalmente
-                if(containerWidth > totalColsWidth){
-                    params.api.sizeColumnsToFit();
-                    //  Centrar horizontalmente la tabla
-                    gridDiv.style.display = 'flex';
-                    gridDiv.style.justifyContent = 'center';
-                } else {
-                    //  Si el contenedor es más pequeño, scroll horizontal
-                    gridDiv.style.display = 'block';
-                    gridDiv.style.justifyContent = 'flex-start';
-                }
             }
             """)
 
-            # --- Render de la tabla ---
+            # --- CSS para centrar tabla y habilitar scroll horizontal si se hace más pequeña ---
+            st.markdown("""
+            <div style="overflow-x: auto; display: flex; justify-content: center;">
+            """, unsafe_allow_html=True)
+
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,  # altura fija para 28 filas
+                height=None,  # autoHeight se encarga de la altura
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
