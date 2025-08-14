@@ -2512,7 +2512,29 @@ if authentication_status:
             gb.configure_column("sucursal", pinned="left")
             gb.configure_column("codigo", pinned="left")
 
-            # Columna Total con estilo especial
+            # --- Columnas ancladas estilo azul ---
+            gb.configure_column(
+                "sucursal",
+                pinned="left",
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign': 'left'
+                }
+            )
+            gb.configure_column(
+                "codigo",
+                pinned="left",
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign': 'left'
+                }
+            )
+
+            # --- Columna Total vertical con azul y formato ---
             gb.configure_column(
                 ultima_col,
                 cellStyle={
@@ -2522,13 +2544,17 @@ if authentication_status:
                     'textAlign': 'right'
                 },
                 sortable=False,
-                valueFormatter=value_formatter
+                valueFormatter=value_formatter  # Esto muestra en formato .2f sin afectar orden
             )
 
-            # Aplicar degradado a columnas numéricas
+            # --- Aplicar degradado a columnas numéricas ---
             for col in numeric_cols_sin_total:
-                gb.configure_column(col, cellStyle=gradient_code)
-
+                gb.configure_column(
+                    col,
+                    cellStyle=gradient_code,
+                    valueFormatter=value_formatter
+                )
+                
             # --- Script para autoajustar columnas ---
             on_grid_ready = JsCode("""
             function(params) {
