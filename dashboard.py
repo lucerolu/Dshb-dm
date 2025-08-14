@@ -2409,6 +2409,7 @@ if authentication_status:
                 col3.metric("📈 % Crédito usado", f"{porcentaje_usado:.2f}%")
             else:
                 st.info("No hay datos disponibles para mostrar el crédito.")
+            st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
             #----------------------------------------- TARJETAS -------------------------------------------------------------------
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             hoy = pd.to_datetime(datetime.today().date())
