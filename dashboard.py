@@ -2512,11 +2512,11 @@ if authentication_status:
             gb.configure_column("sucursal", pinned="left")
             gb.configure_column("codigo", pinned="left")
 
-            # Columnas ancladas con minWidth
+            # Columnas ancladas con ancho fijo
             gb.configure_column(
                 "sucursal",
                 pinned="left",
-                minWidth=120,  # ancho mínimo en px
+                width=150,  # ancho fijo en px
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -2527,7 +2527,7 @@ if authentication_status:
             gb.configure_column(
                 "codigo",
                 pinned="left",
-                minWidth=100,  # ancho mínimo en px
+                width=120,  # ancho fijo en px
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -2535,6 +2535,7 @@ if authentication_status:
                     'textAlign': 'left'
                 }
             )
+
 
             # Columnas numéricas con degradado y minWidth
             for col in numeric_cols_sin_total:
