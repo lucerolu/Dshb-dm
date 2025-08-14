@@ -2562,8 +2562,14 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = get_row_style
-            grid_options['domLayout'] = 'autoHeight'
-            grid_options['suppressHorizontalScroll'] = False  # permitir scroll si se necesita
+            grid_options['domLayout'] = 'normal'  # no autoHeight, permite ajuste horizontal
+            grid_options['suppressHorizontalScroll'] = False
+            grid_options['suppressSizeToFit'] = False
+            grid_options['onFirstDataRendered'] = JsCode("""
+            function(params) {
+                params.api.sizeColumnsToFit();
+            }
+            """)
 
             # CSS personalizado
             custom_css = {
@@ -2586,7 +2592,7 @@ if authentication_status:
                 allow_unsafe_jscode=True,
                 custom_css=custom_css,
                 theme=AgGridTheme.ALPINE,
-                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW,
+                columns_auto_size_mode=ColumnsAutoSizeMode.NO_AUTOSIZE,  # dejamos que JS ajuste
                 enable_enterprise_modules=False
             )
 
