@@ -2560,7 +2560,7 @@ if authentication_status:
             }
             """)
 
-            # --- Render con contenedor ajustado al contenido de la tabla ---
+            # --- Render con AgGrid ajustando al contenido ---
             st.markdown('<div style="overflow-x: auto; display: inline-block;">', unsafe_allow_html=True)
 
             AgGrid(
@@ -2570,10 +2570,18 @@ if authentication_status:
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
+                fit_columns_on_grid_load=False  # evitamos sizeColumnsToFit automático
             )
 
             st.markdown('</div>', unsafe_allow_html=True)
 
+            # --- Autoajuste de columnas al contenido (solo al render inicial) ---
+            grid_options['onFirstDataRendered'] = JsCode("""
+            function(params) {
+                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
+                params.columnApi.autoSizeColumns(allColumnIds, false);
+            }
+            """)
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
