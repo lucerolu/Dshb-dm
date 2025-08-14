@@ -2532,47 +2532,35 @@ if authentication_status:
                 valueFormatter=value_formatter
             )
 
+            # Fila Total fijada abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # Layout normal (no autoHeight)
-            grid_options['domLayout'] = 'normal'
-
-            # --- Ajuste dinámico: estira columnas si sobra espacio, mantiene minWidth si no ---
-            grid_options['onGridSizeChanged'] = JsCode("""
+            # --- Ajustes claves ---
+            grid_options['domLayout'] = 'autoHeight'  # hace que la tabla se ajuste al contenido y elimina espacio blanco
+            grid_options['getRowStyle'] = JsCode("""
             function(params) {
-                const gridWidth = params.api.gridPanel.getWidth();
-                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
-
-                // Suma de minWidth de todas las columnas
-                let totalMinWidth = 0;
-                params.columnApi.getAllDisplayedColumns().forEach(col => {
-                    totalMinWidth += col.getMinWidth() || 100;
-                });
-
-                if(gridWidth > totalMinWidth){
-                    // Contenedor más ancho: estira columnas proporcionalmente
-                    params.api.sizeColumnsToFit();
-                } else {
-                    // Contenedor más pequeño: mantener scroll horizontal con minWidth
-                    params.columnApi.autoSizeColumns(allColumnIds, false);
+                if(params.node.rowPinned) {
+                    return {
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold'
+                    };
                 }
+                return null;
             }
             """)
 
-            # --- Render con contenedor ajustado al contenido ---
-            st.markdown('<div style="display: inline-block; white-space: nowrap;">', unsafe_allow_html=True)
-
+            # --- Render final sin contenedor externo ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,
+                height=800,  # o el que necesites
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
 
-            st.markdown('</div>', unsafe_allow_html=True)
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
