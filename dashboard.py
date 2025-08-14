@@ -2519,7 +2519,7 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    minWidth=120,
+                    #minWidth=120,
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
