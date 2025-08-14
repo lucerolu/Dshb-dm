@@ -2525,7 +2525,7 @@ if authentication_status:
                     col_name,
                     pinned="left",
                     width=150,
-                    cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'}
+                    cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign': 'right'}
                 )
 
             # Columnas con degradado
@@ -2541,7 +2541,7 @@ if authentication_status:
             gb.configure_column(
                 ultima_col,
                 width=120,
-                cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'},
+                cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign': 'right'},
                 valueFormatter=value_formatter
             )
 
@@ -2561,36 +2561,23 @@ if authentication_status:
             }
             """)
 
-            # Ajustar ancho al inicio y centrar tabla
+            # Ajustar ancho al inicio para llenar el contenedor
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 let allColumnIds = [];
                 params.columnApi.getColumns().forEach(function(column) {
                     allColumnIds.push(column.getId());
                 });
-                // Ajustar ancho de columnas según contenido
+                
+                // Ajustar ancho según contenido
                 params.columnApi.autoSizeColumns(allColumnIds, false);
-
-                // Si sobra espacio, centrar la tabla
-                let gridDiv = document.querySelector('#myGrid');
-                if (gridDiv) {
-                    gridDiv.style.margin = '0 auto';
-                }
+                
+                // Expandir para que no quede hueco a la derecha
+                params.api.sizeColumnsToFit();
             }
             """)
 
             grid_options['domLayout'] = 'normal'
-
-            # --- CSS para centrar la tabla ---
-            st.markdown("""
-            <style>
-            #myGrid {
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-            }
-            </style>
-            """, unsafe_allow_html=True)
 
             # --- Render de la tabla ---
             AgGrid(
@@ -2600,9 +2587,8 @@ if authentication_status:
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
-                key="myGrid"  # este id se usa en el CSS
+                key="myGrid"
             )
-
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
