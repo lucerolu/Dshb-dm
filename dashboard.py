@@ -2421,7 +2421,7 @@ if authentication_status:
                 margins_name="Total"
             )
 
-            # Ordenar columnas
+            # Ordenar columnas por fecha
             cols_ordenadas = sorted([c for c in df_pivot.columns if c != "Total"], key=lambda x: datetime.strptime(x, "%d/%m/%Y"))
             if "Total" in df_pivot.columns:
                 cols_ordenadas.append("Total")
@@ -2519,7 +2519,7 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    minWidth=120,
+                    minWidth=120,  # ancho mínimo
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
@@ -2535,36 +2535,38 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # Layout normal y ajuste automático de columnas
+            # --- Layout y ajuste de ancho dinámico ---
             grid_options['domLayout'] = 'normal'
-
-            # Ajusta las columnas al ancho del contenedor manteniendo minWidth
             grid_options['onGridSizeChanged'] = JsCode("""
             function(params) {
-                const allColumns = params.columnApi.getAllDisplayedColumns();
-                let totalMinWidth = 0;
-                allColumns.forEach(col => totalMinWidth += col.getMinWidth() || 100);
                 const gridWidth = params.api.gridPanel.getWidth();
+                const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
+
+                // Suma de minWidth de todas las columnas
+                let totalMinWidth = 0;
+                params.columnApi.getAllDisplayedColumns().forEach(col => {
+                    totalMinWidth += col.getMinWidth() || 100;
+                });
 
                 if(gridWidth > totalMinWidth){
-                    params.api.sizeColumnsToFit(); // estira columnas si sobra espacio
+                    // Contenedor más ancho que el contenido: estira columnas
+                    params.api.sizeColumnsToFit();
                 } else {
-                    const allColumnIds = allColumns.map(c => c.getColId());
-                    params.columnApi.autoSizeColumns(allColumnIds); // mantén minWidth y scroll
+                    // Contenedor más pequeño que el contenido: mantener scroll horizontal
+                    params.columnApi.autoSizeColumns(allColumnIds, false);
                 }
             }
             """)
 
-            # --- Render AgGrid sin contenedor externo ---
+            # --- Renderizar AgGrid ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,
+                height=818,  # ajusta según tus filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
-
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
