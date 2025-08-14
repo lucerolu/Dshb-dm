@@ -2519,12 +2519,12 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    #minWidth=120,
+                    minWidth=120,  # ancho mínimo
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
 
-            # Columna Total
+            # Columna Total vertical azul
             gb.configure_column(
                 ultima_col,
                 minWidth=120,
@@ -2532,29 +2532,34 @@ if authentication_status:
                 valueFormatter=value_formatter
             )
 
+            # Fila Total fijada abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             grid_options['getRowStyle'] = JsCode("""
             function(params) {
                 if(params.node.rowPinned) {
-                    return {backgroundColor:'#0B083D', color:'white', fontWeight:'bold'};
+                    return {
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold'
+                    };
                 }
                 return null;
             }
             """)
 
-            # Layout normal para scroll
+            # Layout normal para scroll horizontal
             grid_options['domLayout'] = 'normal'
 
-            # Autoajustar al contenido inicial y dejar scroll horizontal
+            # Ajuste híbrido columnas: contenido mínimo + estirar si sobra espacio
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
                 
-                // Primero ajustamos columnas al contenido
+                // Ajustar columnas al contenido mínimo
                 params.columnApi.autoSizeColumns(allColumnIds, false);
 
-                // Luego obtenemos ancho total de columnas
+                // Obtener ancho total de columnas
                 const totalColsWidth = allColumnIds
                     .map(id => params.columnApi.getColumn(id).getActualWidth())
                     .reduce((a,b) => a+b, 0);
@@ -2562,23 +2567,22 @@ if authentication_status:
                 const gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
                 const containerWidth = gridDiv.clientWidth;
 
-                // Si el contenedor es más ancho que las columnas, estiramos proporcionalmente
+                // Si el contenedor es más ancho que columnas, estirarlas proporcionalmente
                 if(containerWidth > totalColsWidth){
                     params.api.sizeColumnsToFit();
                 }
             }
             """)
 
-            # --- Render ---
+            # --- Render de la tabla ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,  # altura para 28 filas
+                height=818,  # altura fija para 28 filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
-
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
