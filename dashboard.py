@@ -2570,18 +2570,25 @@ if authentication_status:
             # Layout normal para scroll horizontal
             grid_options['domLayout'] = 'normal'
 
-            # --- Render con contenedor externo para scroll ---
-            st.markdown('<div style="overflow-x: auto; max-width: 100%;">', unsafe_allow_html=True)
+            # --- Render con contenedor ajustable al tamaño de la tabla ---
+            st.markdown('''
+            <div style="
+                display: inline-block;  /* ancho del contenedor = ancho de la tabla */
+                overflow-x: auto;       /* scroll horizontal si ventana < tabla */
+                max-width: 100%;
+            ">
+            ''', unsafe_allow_html=True)
+
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,  # altura fija según tus filas
+                height=818,  # ajusta según tus filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
-            st.markdown('</div>', unsafe_allow_html=True)
 
+            st.markdown('</div>', unsafe_allow_html=True)
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
