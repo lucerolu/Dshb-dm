@@ -18,6 +18,7 @@ import io
 import requests
 import itertools
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+from st_aggrid import ColumnsAutoSizeMode, AgGridThem
 from babel.dates import format_datetime
 import streamlit_authenticator as stauth
 import yaml
@@ -2534,31 +2535,29 @@ if authentication_status:
 
             # Fila Total fijada abajo
             grid_options = gb.build()
-            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # --- Ajustes claves ---
-            grid_options['domLayout'] = 'autoHeight'  # hace que la tabla se ajuste al contenido y elimina espacio blanco
-            grid_options['getRowStyle'] = JsCode("""
-            function(params) {
-                if(params.node.rowPinned) {
-                    return {
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold'
-                    };
+            # CSS opcional para ajustar fuente y evitar overflow en encabezados
+            custom_css = {
+                ".ag-header-cell-text": {
+                    "font-size": "12px",
+                    "text-overflow": "revert",
+                    "font-weight": "700"
+                },
+                ".ag-theme-streamlit": {
+                    "transform": "scale(0.98)",       # ajuste visual opcional
+                    "transform-origin": "0 0"
                 }
-                return null;
             }
-            """)
 
-            # --- Render final sin contenedor externo ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=800,  # o el que necesites
+                height=800,
                 allow_unsafe_jscode=True,
-                enable_enterprise_modules=False,
-                theme="ag-theme-alpine",
+                custom_css=custom_css,
+                theme=AgGridTheme.ALPINE,  # o BALHAM / MATERIAL si quieres probar
+                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,  # <-- esto ajusta columnas
+                enable_enterprise_modules=False
             )
 
             #--------------------- BOTON DE DESCARGA -----------
