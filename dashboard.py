@@ -2519,7 +2519,7 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    minWidth=120,  # ancho mínimo
+                    minWidth=120,
                     cellStyle=cell_style_gradient,
                     valueFormatter=value_formatter
                 )
@@ -2535,37 +2535,34 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # --- Layout y ajuste de ancho dinámico ---
-            grid_options['domLayout'] = 'normal'
+            # --- Layout autoHeight: altura se ajusta al contenido ---
+            grid_options['domLayout'] = 'autoHeight'
+
+            # --- Ajuste dinámico de columnas ---
             grid_options['onGridSizeChanged'] = JsCode("""
             function(params) {
-                const gridWidth = params.api.gridPanel.getWidth();
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
-
-                // Suma de minWidth de todas las columnas
-                let totalMinWidth = 0;
-                params.columnApi.getAllDisplayedColumns().forEach(col => {
-                    totalMinWidth += col.getMinWidth() || 100;
-                });
+                const totalMinWidth = params.columnApi.getAllDisplayedColumns()
+                    .reduce((sum, col) => sum + (col.getMinWidth() || 100), 0);
+                const gridWidth = params.api.gridPanel.getWidth();
 
                 if(gridWidth > totalMinWidth){
-                    // Contenedor más ancho que el contenido: estira columnas
+                    // Estira columnas para llenar contenedor
                     params.api.sizeColumnsToFit();
                 } else {
-                    // Contenedor más pequeño que el contenido: mantener scroll horizontal
+                    // Mantener scroll horizontal
                     params.columnApi.autoSizeColumns(allColumnIds, false);
                 }
             }
             """)
 
-            # --- Renderizar AgGrid ---
+            # --- Render AgGrid directamente (sin div externo) ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,  # ajusta según tus filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
-                theme="ag-theme-alpine",
+                theme="ag-theme-alpine"
             )
 
             #--------------------- BOTON DE DESCARGA -----------
