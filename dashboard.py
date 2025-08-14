@@ -2448,7 +2448,7 @@ if authentication_status:
             ultima_col = data_sin_total.columns[-1]
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # --- Formateador de valores ---
+            # --- Formateador de valores con comas y 2 decimales ---
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -2456,57 +2456,53 @@ if authentication_status:
             }
             """)
 
-            # --- Degradado por celda ---
-            def make_gradient_code(min_val, max_val):
-                return JsCode(f"""
-                function(params) {{
-                    const totalCol = '{ultima_col}';
-                    if (params.node.rowPinned || 
-                        (params.data && (
-                            (typeof params.data.codigo === 'string' && params.data.codigo.trim().toLowerCase() === 'total') ||
-                            (typeof params.data.sucursal === 'string' && params.data.sucursal.trim().toLowerCase() === 'total')
-                        ))
-                    ) {{
-                        return {{
-                            backgroundColor: '#0B083D',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            textAlign: 'right'
-                        }};
-                    }}
-                    if (params.colDef.field === totalCol) {{
-                        return {{
-                            backgroundColor: '#0B083D',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            textAlign: 'right'
-                        }};
-                    }}
-                    let val = params.value;
-                    let min = {min_val};
-                    let max = {max_val};
-                    if (!isNaN(val) && max > min) {{
-                        let ratio = (val - min) / (max - min);
-                        let r,g,b;
-                        if(ratio <= 0.5) {{
-                            let t = ratio/0.5;
-                            r = Math.round(117 + t*(232-117));
-                            g = Math.round(222 + t*(229-222));
-                            b = Math.round(84 + t*(70-84));
-                        }} else {{
-                            let t = (ratio-0.5)/0.5;
-                            r = 232; g = Math.round(229 + t*(96-229)); b = 70;
-                        }}
-                        return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'right' }};
-                    }}
-                    return {{ textAlign:'right' }};
-                }}
-                """)
-
-            # Calcular min y max para degradado
+            # --- Degradado por celda (excluye la fila Total) ---
             min_val = data_sin_total[numeric_cols_sin_total].min().min()
             max_val = data_sin_total[numeric_cols_sin_total].max().max()
-            gradient_code = make_gradient_code(min_val, max_val)
+            gradient_code = JsCode(f"""
+            function(params) {{
+                const totalCol = '{ultima_col}';
+                if (params.node.rowPinned || 
+                    (params.data && (
+                        (typeof params.data.codigo === 'string' && params.data.codigo.trim().toLowerCase() === 'total') ||
+                        (typeof params.data.sucursal === 'string' && params.data.sucursal.trim().toLowerCase() === 'total')
+                    ))
+                ) {{
+                    return {{
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'right'
+                    }};
+                }}
+                if (params.colDef.field === totalCol) {{
+                    return {{
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'right'
+                    }};
+                }}
+                let val = params.value;
+                let min = {min_val};
+                let max = {max_val};
+                if (!isNaN(val) && max > min) {{
+                    let ratio = (val - min) / (max - min);
+                    let r,g,b;
+                    if(ratio <= 0.5) {{
+                        let t = ratio/0.5;
+                        r = Math.round(117 + t*(232-117));
+                        g = Math.round(222 + t*(229-222));
+                        b = Math.round(84 + t*(70-84));
+                    }} else {{
+                        let t = (ratio-0.5)/0.5;
+                        r = 232; g = Math.round(229 + t*(96-229)); b = 70;
+                    }}
+                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'right' }};
+                }}
+                return {{ textAlign:'right' }};
+            }}
+            """)
 
             # --- Configuración inicial del grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
@@ -2516,7 +2512,7 @@ if authentication_status:
             gb.configure_column("sucursal", pinned="left")
             gb.configure_column("codigo", pinned="left")
 
-            # Columna Total con estilo fijo
+            # Columna Total con estilo especial
             gb.configure_column(
                 ultima_col,
                 cellStyle={
@@ -2525,14 +2521,15 @@ if authentication_status:
                     'fontWeight': 'bold',
                     'textAlign': 'right'
                 },
-                sortable=False
+                sortable=False,
+                valueFormatter=value_formatter
             )
 
             # Aplicar degradado a columnas numéricas
             for col in numeric_cols_sin_total:
                 gb.configure_column(col, cellStyle=gradient_code)
 
-            # --- Script para autoajustar si cabe en el contenedor ---
+            # --- Script para autoajustar columnas ---
             on_grid_ready = JsCode("""
             function(params) {
                 function resizeGrid() {
@@ -2550,6 +2547,13 @@ if authentication_status:
 
             grid_options = gb.build()
             grid_options["onGridReady"] = on_grid_ready
+
+            # --- Fila Total fija al final ---
+            pinned_total_row = total_row.copy()
+            for col in pinned_total_row.columns:
+                if col in numeric_cols_sin_total + [ultima_col]:
+                    pinned_total_row[col] = pinned_total_row[col]  # valores ya están listos
+            grid_options['pinnedBottomRowData'] = pinned_total_row.to_dict('records')
 
             # --- CSS opcional ---
             custom_css = {
@@ -2570,10 +2574,8 @@ if authentication_status:
                 theme=AgGridTheme.ALPINE,
                 fit_columns_on_grid_load=True,
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-                enable_enterprise_modules=False,
-                pinned_bottom_row_data=total_row.to_dict('records')  # Fila total abajo
+                enable_enterprise_modules=False
             )
-
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
