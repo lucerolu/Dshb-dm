@@ -2575,7 +2575,7 @@ if authentication_status:
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=700,  # <-- aquí fijas el alto, ponlo a lo que necesites para 28 filas
+                height=800,  # <-- aquí fijas el alto, ponlo a lo que necesites para 28 filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
