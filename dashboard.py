@@ -2407,7 +2407,7 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
-            # --- Pivot y preparación ---
+            # --- Preparar datos ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
 
@@ -2431,7 +2431,7 @@ if authentication_status:
             df_reset = df_pivot.reset_index()
             df_reset["codigo"] = df_reset["codigo"].astype(str)
 
-            # Fila total
+            # --- Separar fila total ---
             mascara_total = (
                 df_reset["codigo"].str.strip().str.lower() == "total"
             ) | (
@@ -2444,11 +2444,11 @@ if authentication_status:
             ultima_col = data_sin_total.columns[-1]  # 'Total'
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # Min y max global
+            # Min y max global para degradado
             all_values = data_sin_total[numeric_cols_sin_total].values.flatten()
             min_val, max_val = all_values.min(), all_values.max()
 
-            # Formateador
+            # --- Formateador ---
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -2456,7 +2456,7 @@ if authentication_status:
             }
             """)
 
-            # Degradado
+            # --- Degradado ---
             cell_style_gradient = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
@@ -2502,7 +2502,7 @@ if authentication_status:
             }}
             """)
 
-            # --- Configuración de AgGrid ---
+            # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
@@ -2535,29 +2535,53 @@ if authentication_status:
             # Fila Total fijada abajo
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+            grid_options['getRowStyle'] = JsCode("""
+            function(params) {
+                if(params.node.rowPinned) {
+                    return {
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold'
+                    };
+                }
+                return null;
+            }
+            """)
 
-            # Autoajuste de columnas al contenido mínimo al renderizar
+            # --- Autoajuste + estiramiento proporcional ---
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
+                // Ajustar al contenido mínimo
                 params.columnApi.autoSizeColumns(allColumnIds, false);
+
+                // Estirar columnas si sobra espacio
+                const gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
+                const totalColsWidth = allColumnIds
+                    .map(id => params.columnApi.getColumn(id).getActualWidth())
+                    .reduce((a,b) => a+b, 0);
+
+                if (gridDiv.clientWidth > totalColsWidth) {
+                    params.api.sizeColumnsToFit();
+                }
             }
             """)
 
             # Layout normal para scroll horizontal
             grid_options['domLayout'] = 'normal'
 
-            # --- Render con scroll horizontal ---
+            # --- Render con contenedor externo para scroll ---
             st.markdown('<div style="overflow-x: auto; max-width: 100%;">', unsafe_allow_html=True)
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,  # ajusta según tus filas
+                height=818,  # altura fija según tus filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
             st.markdown('</div>', unsafe_allow_html=True)
+
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
