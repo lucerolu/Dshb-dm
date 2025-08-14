@@ -2502,7 +2502,7 @@ if authentication_status:
             }}
             """)
 
-            # --- Configuración AgGrid ---
+            # --- Configuración de AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False)
 
@@ -2536,7 +2536,7 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # Ajustar columnas al contenido
+            # Autoajuste de columnas al contenido mínimo al renderizar
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
@@ -2544,21 +2544,20 @@ if authentication_status:
             }
             """)
 
-            # Scroll horizontal y centrado
-            st.markdown("""
-            <div style="overflow-x: auto; display: flex; justify-content: center;">
-            """, unsafe_allow_html=True)
+            # Layout normal para scroll horizontal
+            grid_options['domLayout'] = 'normal'
 
+            # --- Render con scroll horizontal ---
+            st.markdown('<div style="overflow-x: auto; max-width: 100%;">', unsafe_allow_html=True)
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                height=818,  # altura fija para 28 filas
+                height=818,  # ajusta según tus filas
                 allow_unsafe_jscode=True,
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
-
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
