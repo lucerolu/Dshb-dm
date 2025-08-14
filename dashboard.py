@@ -2472,7 +2472,7 @@ if authentication_status:
                         backgroundColor: '#0B083D',
                         color: 'white',
                         fontWeight: 'bold',
-                        textAlign: 'right'
+                        textAlign: 'left'  // fila Total alineada a la izquierda
                     }};
                 }}
                 if (params.colDef.field === totalCol) {{
@@ -2480,7 +2480,7 @@ if authentication_status:
                         backgroundColor: '#0B083D',
                         color: 'white',
                         fontWeight: 'bold',
-                        textAlign: 'right'
+                        textAlign: 'left'  // columna Total alineada a la izquierda
                     }};
                 }}
                 let val = params.value;
@@ -2508,7 +2508,7 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columnas ancladas con ancho fijo y texto a la derecha
+            # Columnas ancladas con ancho fijo y contenido a la izquierda
             gb.configure_column(
                 "sucursal",
                 pinned="left",
@@ -2517,7 +2517,7 @@ if authentication_status:
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'right'
+                    'textAlign': 'left'  # alineación izquierda
                 }
             )
             gb.configure_column(
@@ -2528,34 +2528,41 @@ if authentication_status:
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'right'
+                    'textAlign': 'left'  # alineación izquierda
                 }
             )
 
-            # Columnas numéricas con degradado, minWidth y formato .2f
+            # Columnas numéricas con degradado, minWidth y encabezado alineado a la izquierda
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
                     cellStyle=gradient_code,
                     valueFormatter=value_formatter,
-                    minWidth=80
+                    minWidth=80,
+                    headerClass='header-left'  # alineación del header a la izquierda
                 )
 
-            # Columna Total vertical con minWidth, azul y texto a la derecha
+            # Columna Total vertical con minWidth y contenido a la izquierda
             gb.configure_column(
                 ultima_col,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'right'
+                    'textAlign': 'left'  # alineación izquierda
                 },
                 sortable=False,
                 valueFormatter=value_formatter,
-                minWidth=100
+                minWidth=100,
+                headerClass='header-left'
             )
 
-
+            # --- CSS para headers alineados a la izquierda ---
+            custom_css = {
+                ".header-left": {
+                    "text-align": "left"
+                }
+            }
 
             # --- Script para autoajustar columnas ---
             on_grid_ready = JsCode("""
