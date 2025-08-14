@@ -2511,7 +2511,7 @@ if authentication_status:
                 gb.configure_column(
                     col_name,
                     pinned="left",
-                    minWidth=150,
+                    #minWidth=150,
                     cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'}
                 )
 
@@ -2527,7 +2527,7 @@ if authentication_status:
             # Columna Total
             gb.configure_column(
                 ultima_col,
-                minWidth=120,
+                #minWidth=120,
                 cellStyle={'backgroundColor': '#0B083D', 'color': 'white', 'fontWeight': 'bold', 'textAlign':'right'},
                 valueFormatter=value_formatter
             )
