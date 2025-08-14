@@ -2512,10 +2512,11 @@ if authentication_status:
             gb.configure_column("sucursal", pinned="left")
             gb.configure_column("codigo", pinned="left")
 
-            # --- Columnas ancladas estilo azul ---
+            # Columnas ancladas con minWidth
             gb.configure_column(
                 "sucursal",
                 pinned="left",
+                minWidth=120,  # ancho mínimo en px
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -2526,6 +2527,7 @@ if authentication_status:
             gb.configure_column(
                 "codigo",
                 pinned="left",
+                minWidth=100,  # ancho mínimo en px
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -2534,7 +2536,16 @@ if authentication_status:
                 }
             )
 
-            # --- Columna Total vertical con azul y formato ---
+            # Columnas numéricas con degradado y minWidth
+            for col in numeric_cols_sin_total:
+                gb.configure_column(
+                    col,
+                    cellStyle=gradient_code,
+                    valueFormatter=value_formatter,
+                    minWidth=80
+                )
+
+            # Columna Total vertical con minWidth
             gb.configure_column(
                 ultima_col,
                 cellStyle={
@@ -2544,17 +2555,11 @@ if authentication_status:
                     'textAlign': 'right'
                 },
                 sortable=False,
-                valueFormatter=value_formatter  # Esto muestra en formato .2f sin afectar orden
+                valueFormatter=value_formatter,
+                minWidth=100
             )
 
-            # --- Aplicar degradado a columnas numéricas ---
-            for col in numeric_cols_sin_total:
-                gb.configure_column(
-                    col,
-                    cellStyle=gradient_code,
-                    valueFormatter=value_formatter
-                )
-                
+
             # --- Script para autoajustar columnas ---
             on_grid_ready = JsCode("""
             function(params) {
