@@ -2517,7 +2517,7 @@ if authentication_status:
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'left'  # alineación izquierda
+                    'textAlign': 'right'  # alineación izquierda
                 }
             )
             gb.configure_column(
@@ -2528,7 +2528,7 @@ if authentication_status:
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'left'  # alineación izquierda
+                    'textAlign': 'right'  # alineación izquierda
                 }
             )
 
