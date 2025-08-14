@@ -2560,8 +2560,9 @@ if authentication_status:
             }
             """)
 
-            # --- Render con scroll horizontal si es necesario ---
-            st.markdown('<div style="overflow-x: auto; max-width: 100%;">', unsafe_allow_html=True)
+            # --- Render con contenedor ajustado al contenido de la tabla ---
+            st.markdown('<div style="overflow-x: auto; display: inline-block;">', unsafe_allow_html=True)
+
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -2570,6 +2571,7 @@ if authentication_status:
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
+
             st.markdown('</div>', unsafe_allow_html=True)
 
 
