@@ -2540,7 +2540,7 @@ if authentication_status:
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getColId());
-                params.columnApi.autoSizeColumns(allColumnIds, false);
+                params.columnApi.autoSizeColumns(allColumnIds, True);
             }
             """)
 
