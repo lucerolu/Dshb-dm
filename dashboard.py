@@ -2551,7 +2551,7 @@ if authentication_status:
             # Layout normal para scroll horizontal
             grid_options['domLayout'] = 'normal'
 
-            # Ajuste híbrido columnas: contenido mínimo + estirar si sobra espacio
+            # Ajuste híbrido columnas + centrado
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
@@ -2559,7 +2559,7 @@ if authentication_status:
                 // Ajustar columnas al contenido mínimo
                 params.columnApi.autoSizeColumns(allColumnIds, false);
 
-                // Obtener ancho total de columnas
+                //  Obtener ancho total de columnas
                 const totalColsWidth = allColumnIds
                     .map(id => params.columnApi.getColumn(id).getActualWidth())
                     .reduce((a,b) => a+b, 0);
@@ -2570,6 +2570,13 @@ if authentication_status:
                 // Si el contenedor es más ancho que columnas, estirarlas proporcionalmente
                 if(containerWidth > totalColsWidth){
                     params.api.sizeColumnsToFit();
+                    //  Centrar horizontalmente la tabla
+                    gridDiv.style.display = 'flex';
+                    gridDiv.style.justifyContent = 'center';
+                } else {
+                    //  Si el contenedor es más pequeño, scroll horizontal
+                    gridDiv.style.display = 'block';
+                    gridDiv.style.justifyContent = 'flex-start';
                 }
             }
             """)
@@ -2583,6 +2590,7 @@ if authentication_status:
                 enable_enterprise_modules=False,
                 theme="ag-theme-alpine",
             )
+
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
