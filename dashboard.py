@@ -2550,7 +2550,22 @@ if authentication_status:
             grid_options['onFirstDataRendered'] = JsCode("""
             function(params) {
                 const allColumnIds = params.columnApi.getAllDisplayedColumns().map(c => c.getId());
+                
+                // Primero ajustamos columnas al contenido
                 params.columnApi.autoSizeColumns(allColumnIds, false);
+
+                // Luego obtenemos ancho total de columnas
+                const totalColsWidth = allColumnIds
+                    .map(id => params.columnApi.getColumn(id).getActualWidth())
+                    .reduce((a,b) => a+b, 0);
+
+                const gridDiv = params.api.gridOptionsWrapper.gridOptions.api.gridPanel.eGridDiv;
+                const containerWidth = gridDiv.clientWidth;
+
+                // Si el contenedor es más ancho que las columnas, estiramos proporcionalmente
+                if(containerWidth > totalColsWidth){
+                    params.api.sizeColumnsToFit();
+                }
             }
             """)
 
