@@ -1517,11 +1517,12 @@ if authentication_status:
             )
         )
         st.markdown("### Monto Total por Cuenta en 2025")
-        st.markdown("<div style='margin-top:-20px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title("Compra mensual por Cuenta (2025)")
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
         def obtener_abreviatura(codigo):
             for division, info in divisiones.items():
