@@ -506,6 +506,7 @@ if authentication_status:
             total_mes_actual = df[df["mes_period"] == mes_actual_period]["monto"].sum()
             mes_actual_esp = meses_es.get(ahora.strftime("%B"), "") + " " + str(ahora.year)
             st.metric(f"Total comprado en {mes_actual_esp}", f"${total_mes_actual:,.2f}")
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
         # ------------------------------------ GÁFICA DE LÍNEAS DEL TOTAL GENERAL  -----------------------------------------------------------------------------------------------------------------
         df_total_mes = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
