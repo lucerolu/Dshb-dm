@@ -1600,14 +1600,25 @@ if authentication_status:
             text-align: left;
         }
         /* Primera columna (cuenta) */
-        th:first-child, td:first-child {
+        th:first-child {
             background-color: #0B083D;
             color: white;
             text-align: right;
             font-weight: bold;
             position: sticky;
             left: 0;
-            z-index: 3;
+            top: 0;
+            z-index: 5; /* más alto que el header normal */
+        }
+
+        td:first-child {
+            background-color: #0B083D;
+            color: white;
+            text-align: right;
+            font-weight: bold;
+            position: sticky;
+            left: 0;
+            z-index: 4;
         }
         /* Totales: última fila */
         tr:last-child td {
