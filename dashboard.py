@@ -2190,6 +2190,9 @@ if authentication_status:
             height=500,
             margin=dict(t=60)
         )
+        
+        # --- Espacio responsivo ---
+        st.markdown("<div style='margin-top:1.5em; margin-bottom:1em'></div>", unsafe_allow_html=True)
         #st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("### Evolución de Compras por Mes y Sucursal (2025)")
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
