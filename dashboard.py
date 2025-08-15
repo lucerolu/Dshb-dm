@@ -852,6 +852,7 @@ if authentication_status:
         st.plotly_chart(fig_pie, use_container_width=True)
 
         # ------------------------- TARJETAS: TOTAL COMPRADO POR DIVISIÓN ------------------------------
+        st.markdown("<br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns(3)
         divs = df_agrupado.set_index("division")
 
