@@ -757,6 +757,7 @@ if authentication_status:
         # Mostrar tabla
         tabla_html = construir_tabla_comparativa(df_comp)
         st.markdown(tabla_html, unsafe_allow_html=True)
+        st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
 
         # --------------------------------------- GRÁFICA DE DIFERENCIAS MENSUALES --------------------------------------------------------------------------------------------
         st.markdown("### Variación de compras respecto al mes anterior")
@@ -2076,14 +2077,12 @@ if authentication_status:
         buffer = io.BytesIO()
         tabla_reset.to_excel(buffer, index=False)
         buffer.seek(0)
-
         st.download_button(
             label="📥 Descargar tabla en Excel",
             data=buffer,
             file_name="resumen_mensual.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
@@ -2343,11 +2342,11 @@ if authentication_status:
 
         
         #=================== GRAFICA DE BARRAS APILADAS DE MONTO POR MES Y CUENTA ========================
-
         # Validar selección
         if not sucursales_seleccionadas:
             st.warning("Selecciona al menos una sucursal para ver esta gráfica.")
         else:
+            st.markdown("### Compras por Sucursal, mes a mes")
             # Filtrar por sucursales seleccionadas
             df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)].copy()
 
@@ -2508,7 +2507,7 @@ if authentication_status:
             fig_barras.update_layout(showlegend=False, xaxis_title="Mes", yaxis_title="Total Comprado")
             st.plotly_chart(fig_barras, use_container_width=True)
         else:
-            st.markdown("### Compras por Sucursal, mes a mes")
+            #st.markdown("### Compras por Sucursal, mes a mes")
             for mes in orden_meses_desc:  # <- aquí el cambio para orden descendente
                 df_mes = df[df["mes_nombre"] == mes]
                 df_mes = df_mes[df_mes["sucursal"].isin(sucursales_seleccionadas)].copy()
