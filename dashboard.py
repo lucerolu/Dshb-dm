@@ -1864,7 +1864,7 @@ if authentication_status:
             ))
         fig.update_layout(
             barmode='stack',
-            title='Distribución porcentual de compras por sucursal (2025)',
+            #title='Distribución porcentual de compras por sucursal (2025)',
             xaxis=dict(title='Porcentaje', ticksuffix='%'),
             yaxis=dict(title='Mes'),
             legend=dict(orientation='h', yanchor='top', y=-0.25, xanchor='center', x=0.5),
@@ -1881,7 +1881,8 @@ if authentication_status:
             ],
             "displaylogo": False
         }
-
+        st.markdown("### Distribución porcentual de compras por sucursal (2025)")
+        st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         # Mostrar gráfica con zoom y opciones de barra
         st.plotly_chart(fig, use_container_width=True, config=config)
 
@@ -2132,14 +2133,15 @@ if authentication_status:
             ))
 
         fig_lineas.update_layout(
-            title="Evolución de Compras por Mes y Sucursal (2025)",
+            #title="Evolución de Compras por Mes y Sucursal (2025)",
             xaxis_title="Mes",
             yaxis_title="Total Comprado",
             xaxis=dict(tickangle=-45),
             height=500,
             margin=dict(t=60)
         )
-
+        st.markdown("### Evolución de Compras por Mes y Sucursal (2025)")
+        st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(
             fig_lineas,
             use_container_width=True,
