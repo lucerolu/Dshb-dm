@@ -2204,32 +2204,35 @@ if authentication_status:
         #------------------------- GRÁFICAS DE BARRAS: COMPRAS POR SUCURSAL, MES A MES  -----------------------------------------------------
         # Obtener mes actual
         mes_actual = datetime.today().month
+        mes_inicio = (mes_actual - 1) % 12  # mes anterior
 
-        # Reordenar los meses empezando por el anterior al mes actual
-        mes_inicio = (mes_actual - 1) % 12
-        orden_meses_reversa = orden_meses[mes_inicio::-1] + orden_meses[:mes_inicio][::-1]
+        # Reordenar meses: empezamos en el mes anterior y vamos hacia atrás
+        orden_rotado = orden_meses[mes_inicio:] + orden_meses[:mes_inicio]
+        orden_meses_reversa = list(reversed(orden_rotado))
+
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("### Compras por Sucursal, mes a mes")
 
         for i, mes in enumerate(orden_meses_reversa):
+            # Filtrar solo el mes actual del loop
             df_mes = df[df["mes_nombre"] == mes].copy()
-            
-            # Agrupar solo por sucursal, sumando los montos de todas las divisiones
+
+            if df_mes.empty:  # si no hay datos, saltar
+                continue
+
+            # Agrupar solo por sucursal
             df_mes = df_mes.groupby("sucursal", as_index=False).agg({"monto": "sum"})
-            
-            # Saltar si el mes no tiene compras
-            if df_mes["monto"].sum() == 0:
+
+            if df_mes["monto"].sum() == 0:  # evitar meses sin compras
                 continue
 
             total_mes = df_mes["monto"].sum()
             df_mes["porcentaje"] = df_mes["monto"] / total_mes * 100
-
             df_mes["texto"] = df_mes.apply(
                 lambda row: f"${row['monto']:,.2f}<br>({row['porcentaje']:.1f}%)", axis=1
             )
 
-            df_mes["custom_data"] = list(zip(df_mes["sucursal"], df_mes["monto"], df_mes["porcentaje"]))
-
+            # Bar plot
             fig_mes = px.bar(
                 df_mes,
                 x="sucursal",
@@ -2254,6 +2257,7 @@ if authentication_status:
 
             fig_mes.update_layout(showlegend=False)
             st.plotly_chart(fig_mes, use_container_width=True, key=f"bar_{i}_{mes}")
+
 
     # ==========================================================================================================
     # ================================ VISTA POR SUCURSAL ====================================
