@@ -413,12 +413,19 @@ if authentication_status:
                     "text-align": "left"
                 },
                 ".ag-center-cols-container .ag-row": {
-                    "height": "24px",       # altura total de la fila
-                    "line-height": "18px",  # altura del texto
+                    "height": "24px",
+                    "line-height": "18px",
+                    "padding-top": "2px",
+                    "padding-bottom": "2px"
+                },
+                ".ag-pinned-left-cols-container .ag-row": {
+                    "height": "24px",
+                    "line-height": "18px",
                     "padding-top": "2px",
                     "padding-bottom": "2px"
                 }
             }
+
 
             # --- Script para scroll horizontal en móviles y ajuste solo en pantallas grandes ---
             on_grid_ready = JsCode("""
