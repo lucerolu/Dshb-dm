@@ -2525,22 +2525,18 @@ if authentication_status:
             }}
             """)
 
+            # --- Reordenar columnas para que "codigo" sea la primera y "sucursal" la segunda ---
+            columnas = list(data_sin_total.columns)
+            if "codigo" in columnas and "sucursal" in columnas:
+                columnas.remove("codigo")
+                columnas.remove("sucursal")
+                data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
+
             # --- Configuración inicial del grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columnas ancladas con ancho fijo y contenido a la izquierda
-            gb.configure_column(
-                "sucursal",
-                pinned="left",
-                width=130,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign': 'right'  # alineación izquierda
-                }
-            )
+            # Columna "codigo" anclada y alineada a la derecha
             gb.configure_column(
                 "codigo",
                 pinned="left",
@@ -2549,34 +2545,47 @@ if authentication_status:
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'right'  # alineación izquierda
+                    'textAlign': 'right'
                 }
             )
 
-            # Columnas numéricas con degradado, minWidth y encabezado alineado a la izquierda
+            # Columna "sucursal" sin anclar pero con mismo estilo
+            gb.configure_column(
+                "sucursal",
+                width=130,
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign': 'right'
+                }
+            )
+
+            # Columnas numéricas con degradado y header alineado a la izquierda
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
                     cellStyle=gradient_code,
                     valueFormatter=value_formatter,
                     minWidth=80,
-                    headerClass='header-left'  # alineación del header a la izquierda
+                    headerClass='header-left'
                 )
 
-            # Columna Total vertical con minWidth y contenido a la izquierda
+            # Columna Total con estilo y alineada a la izquierda
             gb.configure_column(
                 ultima_col,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
                     'fontWeight': 'bold',
-                    'textAlign': 'left'  # alineación izquierda
+                    'textAlign': 'left'
                 },
                 sortable=False,
                 valueFormatter=value_formatter,
                 minWidth=100,
                 headerClass='header-left'
             )
+
 
             # --- CSS para headers alineados a la izquierda ---
             custom_css = {
