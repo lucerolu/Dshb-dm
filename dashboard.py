@@ -1659,6 +1659,7 @@ if authentication_status:
             file_name="compras_por_mes_por_cuenta.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
         #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
         # Asegúrate de que la columna mes_dt existe
