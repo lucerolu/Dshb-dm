@@ -1714,7 +1714,7 @@ if authentication_status:
                 y="monto",
                 color="cuenta_sucursal",
                 markers=True,
-                title="Compras mensuales por cuenta",
+                #title="Compras mensuales por cuenta",
                 custom_data=["mes_anio", "cuenta_sucursal", "monto"]
             )
 
@@ -1741,7 +1741,8 @@ if authentication_status:
                 ],
                 "displaylogo": False
             }
-
+            st.markdown("### Compras mensuales por cuenta")
+            st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True, config=config)
 
         #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL ------------------------------------------------------------------------------
