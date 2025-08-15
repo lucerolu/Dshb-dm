@@ -1485,7 +1485,7 @@ if authentication_status:
             color_discrete_map=colores_divisiones,
             orientation="h",
             labels={"monto": "Monto", "cuenta_sucursal": "Cuenta - Sucursal", "division": "División"},
-            title="Monto Total por Cuenta en 2025"
+            #title="Monto Total por Cuenta en 2025"
         )
 
         # Custom data para el hover
@@ -1516,7 +1516,8 @@ if authentication_status:
                 x=0.5
             )
         )
-
+        st.markdown("### Monto Total por Cuenta en 2025")
+        st.markdown("<div style='margin-top:-10px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
