@@ -760,6 +760,7 @@ if authentication_status:
         st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
 
         # --------------------------------------- GRÁFICA DE DIFERENCIAS MENSUALES --------------------------------------------------------------------------------------------
+        st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("### Variación de compras respecto al mes anterior")
 
         # Agrupar y ordenar por mes
