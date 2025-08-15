@@ -509,6 +509,7 @@ if authentication_status:
 
         # ------------------------------------ GÁFICA DE LÍNEAS DEL TOTAL GENERAL  -----------------------------------------------------------------------------------------------------------------
         df_total_mes = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+
         fig_total = go.Figure()
         fig_total.add_trace(go.Scatter(
             x=df_total_mes.index,
@@ -516,16 +517,21 @@ if authentication_status:
             mode="lines+markers",
             name="Total",
             line=dict(color="blue"),
-            hovertemplate="%{x}<br>Total: $%{y:,.2f}<extra></extra>"  # 👈 muestra el número con comas y sin abreviar
+            hovertemplate="%{x}<br>Total: $%{y:,.2f}<extra></extra>"  # muestra el número con comas y sin abreviar
         ))
+
         fig_total.update_layout(
-            title="Evolución mensual del total comprado",
             xaxis_title="Mes",
             yaxis_title="Monto",
-            yaxis_tickformat=","  # 👈 muestra ejes con comas en lugar de abreviaturas
+            yaxis_tickformat=","  # ejes con comas en lugar de abreviaturas
         )
+
+        # 👇 Título usando estilo de Streamlit
+        st.markdown("### Evolución mensual del total comprado")
+
+        # Mostrar gráfico
         st.plotly_chart(fig_total, use_container_width=True)
-    
+
         # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
         st.markdown("### Total comprado por mes")
 
