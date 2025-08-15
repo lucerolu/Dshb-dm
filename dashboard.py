@@ -1621,6 +1621,11 @@ if authentication_status:
             color: white;
             font-weight: bold;
         }
+        /* Celdas normales (no totales, no primera columna) */
+        tbody tr:not(:last-child) td:not(:first-child):not(:last-child) {
+            background-color: white;
+            color: black;
+        }
         </style>
         """
 
