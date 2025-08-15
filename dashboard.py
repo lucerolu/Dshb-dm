@@ -2652,22 +2652,38 @@ if authentication_status:
         df_no_ligado = df[df["ligado_sistema"] == 0]
 
         # Agrupar por mes
-        monto_mensual_no_ligado = df_no_ligado.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+        monto_mensual_no_ligado = (
+            df_no_ligado.groupby("mes_nombre")["monto"]
+            .sum()
+            .reindex(orden_meses)
+        )
 
         # --- GRÁFICO ---
         st.subheader("Monto mensual sin ligar")
         fig = px.line(
-            monto_mensual_no_ligado,
             x=monto_mensual_no_ligado.index,
             y=monto_mensual_no_ligado.values,
             labels={"x": "Mes", "y": "Monto sin ligar"},
             markers=True,
         )
-        fig.update_layout(xaxis_title="Mes", yaxis_title="Monto sin ligar", title="Tendencia mensual de facturas no ligadas")
+
+        fig.update_traces(
+            hovertemplate=(
+                "<b>Mes:</b> %{x}<br>"
+                "<b>Monto sin ligar:</b> $%{y:,.2f}<extra></extra>"
+            )
+        )
+
+        fig.update_layout(
+            xaxis_title="Mes",
+            yaxis_title="Monto sin ligar",
+            title="Tendencia mensual de facturas no ligadas"
+        )
+
         st.plotly_chart(fig, use_container_width=True)
 
         # --- ---------CANTIDAD SIN LIGAR MENSUAL POR SUCURSAL (GRAFICO DE BARRAS APILADAS) -----------------------------------------------
-        # Filtrar solo facturas sin ligar
+       # Filtrar solo facturas sin ligar
         df_no_ligado = df[df["ligado_sistema"] == 0].copy()
 
         # Asegurarnos que mes_dt exista y sea datetime
@@ -2707,9 +2723,8 @@ if authentication_status:
             orientation="h",
             title="Distribución mensual del monto sin ligar por sucursal",
             labels={"monto": "Monto sin ligar", "mes_nombre": "Mes"},
-            category_orders={"mes_nombre": meses_filtrados}  # <- esto fuerza el orden
+            category_orders={"mes_nombre": meses_filtrados}
         )
-
 
         fig.update_layout(
             barmode="stack",
@@ -2717,9 +2732,17 @@ if authentication_status:
             yaxis_title="Mes"
         )
 
-        #fig.update_traces(marker_line_width=1, marker_line_color='white')
+        # Hovertemplate personalizado
+        fig.update_traces(
+            hovertemplate=(
+                "<b>Mes:</b> %{y}<br>"
+                "<b>Sucursal:</b> %{color}<br>"
+                "<b>Monto sin ligar:</b> $%{x:,.2f}<extra></extra>"
+            )
+        )
 
         st.plotly_chart(fig, use_container_width=True)
+
 
         #------------- TABLA ------------------------------
         tabla_resumen = monto_por_mes_sucursal.pivot_table(
@@ -2733,17 +2756,22 @@ if authentication_status:
         # Ordenar los meses correctamente
         tabla_resumen = tabla_resumen.reindex(meses_filtrados)
 
-        # Función para aplicar estilo condicional: pintar rojo si el valor es distinto de 0
+        # Renombrar índice
+        tabla_resumen.index.name = "Mes"
+
+        # Función para aplicar estilo condicional
         def resaltar_valores(val):
             color = 'background-color: #BC13FE' if val != 0 else ''
             return color
 
         # Mostrar en Streamlit con estilo
         st.subheader("Tabla resumen del monto sin ligar por mes y sucursal")
-        st.dataframe(tabla_resumen.style
-            .applymap(resaltar_valores)
-            .format("${:,.2f}")
+        st.dataframe(
+            tabla_resumen.style
+                .applymap(resaltar_valores)
+                .format("${:,.2f}")
         )
+
 #------------------------------------------------------------------------------------------------------------------------------------------------
 
 elif authentication_status is False:
