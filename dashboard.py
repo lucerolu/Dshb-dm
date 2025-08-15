@@ -2204,26 +2204,34 @@ if authentication_status:
         #------------------------- GRÁFICAS DE BARRAS: COMPRAS POR SUCURSAL, MES A MES  -----------------------------------------------------
         # Obtener mes actual
         mes_actual = datetime.today().month
-        mes_inicio = (mes_actual - 1) % 12  # mes anterior
 
-        # Reordenar meses: empezamos en el mes anterior y vamos hacia atrás
-        orden_rotado = orden_meses[mes_inicio:] + orden_meses[:mes_inicio]
-        orden_meses_reversa = list(reversed(orden_rotado))
+        # Lista ordenada de meses base (enero a diciembre) en español
+        orden_meses_base = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ]
 
+        # Generar orden desde el mes actual hacia atrás
+        mes_inicio = (mes_actual - 1) % 12
+        orden_meses_reversa = [orden_meses_base[(mes_inicio - i) % 12] for i in range(12)]
+
+        # Agregar el año a cada mes en el orden correcto, tomando en cuenta los datos reales
+        orden_meses_reversa_completa = []
+        for mes_simple in orden_meses_reversa:
+            meses_disponibles = [m for m in orden_meses_desc if m.startswith(mes_simple)]
+            orden_meses_reversa_completa.extend(meses_disponibles)
+
+        # Mostrar las gráficas
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("### Compras por Sucursal, mes a mes")
 
-        for i, mes in enumerate(orden_meses_reversa):
-            # Filtrar solo el mes actual del loop
+        for i, mes in enumerate(orden_meses_reversa_completa):
             df_mes = df[df["mes_nombre"] == mes].copy()
-
-            if df_mes.empty:  # si no hay datos, saltar
-                continue
-
-            # Agrupar solo por sucursal
+            
+            # Agrupar solo por sucursal, sumando montos
             df_mes = df_mes.groupby("sucursal", as_index=False).agg({"monto": "sum"})
-
-            if df_mes["monto"].sum() == 0:  # evitar meses sin compras
+            
+            if df_mes["monto"].sum() == 0:
                 continue
 
             total_mes = df_mes["monto"].sum()
@@ -2231,8 +2239,8 @@ if authentication_status:
             df_mes["texto"] = df_mes.apply(
                 lambda row: f"${row['monto']:,.2f}<br>({row['porcentaje']:.1f}%)", axis=1
             )
+            df_mes["custom_data"] = list(zip(df_mes["sucursal"], df_mes["monto"], df_mes["porcentaje"]))
 
-            # Bar plot
             fig_mes = px.bar(
                 df_mes,
                 x="sucursal",
@@ -2257,7 +2265,6 @@ if authentication_status:
 
             fig_mes.update_layout(showlegend=False)
             st.plotly_chart(fig_mes, use_container_width=True, key=f"bar_{i}_{mes}")
-
 
     # ==========================================================================================================
     # ================================ VISTA POR SUCURSAL ====================================
