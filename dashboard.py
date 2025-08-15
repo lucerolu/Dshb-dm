@@ -1464,7 +1464,7 @@ if authentication_status:
     #---------------------- GRÁFICO DE BARRAS: COMPRA ANUAL POR CUENTA -------------------------------------------------------
     elif opcion == "Compra por Cuenta":
         st.title("Compra Total Anual por Cuenta (2025)")
-
+        st.markdown("<br><br>", unsafe_allow_html=True)
         # Agrupar monto total por cuenta y sucursal
         df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
 
@@ -1517,7 +1517,7 @@ if authentication_status:
             )
         )
         st.markdown("### Monto Total por Cuenta en 2025")
-        st.markdown("<div style='margin-top:-10px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:-20px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
