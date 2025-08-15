@@ -2118,7 +2118,7 @@ if authentication_status:
         grid_options['getRowStyle'] = get_row_style
         grid_options['domLayout'] = 'autoHeight'
 
-        # CSS para header azul
+        # CSS para header azul de la tabla
         custom_css = {
             ".ag-header-cell-label": {
                 "background-color": "#0B083D !important",
@@ -2132,23 +2132,12 @@ if authentication_status:
             }
         }
 
-        # --- Contenedor para tabla + botón ---
-        with st.container():
-            AgGrid(
-                data_sin_total,
-                gridOptions=grid_options,
-                height=400,  # altura de la tabla
-                fit_columns_on_grid_load=False,
-                allow_unsafe_jscode=True,
-                custom_css=custom_css,
-                enable_enterprise_modules=False,
-                theme="ag-theme-alpine"
-            )
+        # --- Layout de título + botón en dos columnas ---
+        col1, col2 = st.columns([3, 1])  # proporción de ancho 3:1
+        with col1:
+            st.subheader("Tabla resumen del monto sin ligar por mes y sucursal")
 
-            # Pequeño espacio entre tabla y botón
-            st.markdown("<div style='height:5px'></div>", unsafe_allow_html=True)
-
-            # Botón de descarga
+        with col2:
             buffer = io.BytesIO()
             tabla_reset.to_excel(buffer, index=False)
             buffer.seek(0)
@@ -2160,6 +2149,17 @@ if authentication_status:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
+        # --- Mostrar tabla debajo ---
+        AgGrid(
+            data_sin_total,
+            gridOptions=grid_options,
+            height=400,  # altura de la tabla
+            fit_columns_on_grid_load=False,
+            allow_unsafe_jscode=True,
+            custom_css=custom_css,
+            enable_enterprise_modules=False,
+            theme="ag-theme-alpine"
+        )
 
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
