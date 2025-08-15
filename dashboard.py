@@ -835,13 +835,21 @@ if authentication_status:
         )
 
         fig_pie.update_layout(
-            title=dict(text="Distribución del total anual comprado por División", x=0.5, xanchor="center", y=1.0),
             height=500,
-            legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5)
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.2,
+                xanchor="center",
+                x=0.5
+            )
         )
 
+        # 👇 Título con Markdown y menos espacio debajo
+        st.markdown("### Distribución del total anual comprado por División")
+        st.markdown("<div style='margin-top:-10px'></div>", unsafe_allow_html=True)
+
         st.plotly_chart(fig_pie, use_container_width=True)
-        st.markdown("<br><br>", unsafe_allow_html=True)
 
         # ------------------------- TARJETAS: TOTAL COMPRADO POR DIVISIÓN ------------------------------
         col1, col2, col3 = st.columns(3)
