@@ -896,12 +896,14 @@ if authentication_status:
         )
 
         fig_bar.update_layout(
-            title=dict(text="Monto total anual por División", x=0.5, xanchor="center", y=1.0),
             showlegend=False
         )
 
+        # 👇 Título con Markdown y menos espacio debajo
+        st.markdown("### Monto total anual por División")
+        st.markdown("<div style='margin-top:-10px'></div>", unsafe_allow_html=True)
+
         st.plotly_chart(fig_bar, use_container_width=True)
-        st.markdown("<br><br>", unsafe_allow_html=True)
 
         # ---------------- TABLA: TOTAL MENSUAL COMPRADO POR DIVISIÓN ---------------------------------------------------------------------------
         # Crear tabla pivote
@@ -1121,12 +1123,14 @@ if authentication_status:
         )
 
         fig_mes_div.update_layout(
-            title=dict(text="Evolución mensual de compras por División", x=0.5, xanchor="center", y=1.0),
             barmode="stack",  # usa 'group' si quieres barras agrupadas en lugar de apiladas
             xaxis=dict(tickangle=-45),
             margin=dict(t=60, b=100),
             legend=dict(orientation="h", yanchor="bottom", y=-0.6, xanchor="center", x=0.5)
         )
+
+        st.markdown("### Evolución mensual de compras por División")
+        st.markdown("<div style='margin-top:-10px'></div>", unsafe_allow_html=True)
 
         st.plotly_chart(
             fig_mes_div, 
@@ -1145,8 +1149,6 @@ if authentication_status:
                 "displaylogo": False
             }
         )
-        st.markdown("<br><br>", unsafe_allow_html=True)
-
 
         #----------------- GRÁFICA DE BARRAS AGRUPADAS: COMPRA POR SUCURSAL Y DIVISIÓN ------------------------------------------------------------
         df_suc_div = df_divisiones.groupby(["sucursal", "division"])["monto"].sum().reset_index()
@@ -1173,15 +1175,16 @@ if authentication_status:
         )
 
         fig_suc_div.update_layout(
-            title=dict(text="Compra anual por Sucursal y División", x=0.5, xanchor="center", y=1.0),
-            barmode="stack",  # usa 'group' si prefieres agrupadas
+            barmode="stack",  # usa 'group' si prefieres barras agrupadas
             xaxis_tickangle=-45,
             margin=dict(t=60, b=100),
             legend=dict(orientation="h", yanchor="bottom", y=-0.6, xanchor="center", x=0.5)
         )
 
+        st.markdown("### Compra anual por Sucursal y División")
+        st.markdown("<div style='margin-top:-10px'></div>", unsafe_allow_html=True)
+
         st.plotly_chart(fig_suc_div, use_container_width=True)
-        st.markdown("<br><br>", unsafe_allow_html=True)
 
         #----------------------- Tabla de compra por division y sucursal ----------------------------------
         tabla_sucursal_division = pd.pivot_table(
