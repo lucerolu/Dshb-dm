@@ -359,6 +359,7 @@ if authentication_status:
             gb.configure_column(
                 "codigo",
                 pinned="left",
+                minWidth=90,
                 width=90,
                 cellStyle={
                     'backgroundColor': '#0B083D',
@@ -371,6 +372,7 @@ if authentication_status:
             # Columna "sucursal" sin anclar pero con mismo estilo
             gb.configure_column(
                 "sucursal",
+                minWidth=130,
                 width=130,
                 cellStyle={
                     'backgroundColor': '#0B083D',
@@ -386,7 +388,7 @@ if authentication_status:
                     col,
                     cellStyle=gradient_code,
                     valueFormatter=value_formatter,
-                    minWidth=80,
+                    minWidth=100,  # mínimo ancho para evitar aplastamiento en móviles
                     headerClass='header-left'
                 )
 
@@ -401,10 +403,9 @@ if authentication_status:
                 },
                 sortable=False,
                 valueFormatter=value_formatter,
-                minWidth=100,
+                minWidth=120,
                 headerClass='header-left'
             )
-
 
             # --- CSS para headers alineados a la izquierda ---
             custom_css = {
@@ -413,19 +414,12 @@ if authentication_status:
                 }
             }
 
-            # --- Script para autoajustar columnas ---
+            # --- Script para scroll horizontal en móviles y ajuste solo en pantallas grandes ---
             on_grid_ready = JsCode("""
             function(params) {
-                function resizeGrid() {
-                    const totalWidth = params.columnApi.getAllColumns()
-                        .map(c => c.getActualWidth())
-                        .reduce((a, b) => a + b, 0);
-                    if (totalWidth < params.api.gridOptionsWrapper.eGridDiv.clientWidth) {
-                        params.api.sizeColumnsToFit();
-                    }
+                if (window.innerWidth > 768) {
+                    params.api.sizeColumnsToFit();
                 }
-                window.addEventListener('resize', resizeGrid);
-                resizeGrid();
             }
             """)
 
@@ -436,17 +430,8 @@ if authentication_status:
             pinned_total_row = total_row.copy()
             for col in pinned_total_row.columns:
                 if col in numeric_cols_sin_total + [ultima_col]:
-                    pinned_total_row[col] = pinned_total_row[col]  # valores ya están listos
+                    pinned_total_row[col] = pinned_total_row[col]
             grid_options['pinnedBottomRowData'] = pinned_total_row.to_dict('records')
-
-            # --- CSS opcional ---
-            custom_css = {
-                ".ag-header-cell-text": {
-                    "font-size": "12px",
-                    "text-overflow": "revert",
-                    "font-weight": "700"
-                }
-            }
 
             # --- Renderizado final ---
             AgGrid(
@@ -456,10 +441,11 @@ if authentication_status:
                 height=800,
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=True,
+                fit_columns_on_grid_load=False,  # desactiva ajuste automático
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
                 enable_enterprise_modules=False
             )
+
             #--------------------- BOTON DE DESCARGA -----------
             def to_excel(df):
                 import io
