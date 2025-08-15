@@ -182,13 +182,13 @@ if authentication_status:
 
         # Menú para las vistas
         opcion = st.selectbox("Selecciona una vista", [
+            "Estado de cuenta",
             "Resumen General",
             "Compra por División",
             "Compra por Cuenta",
             "Compra por Sucursal",
             "Vista por Sucursal",
             "Estado de Ligado",
-            "Estado de cuenta"
         ])
 
         # Botón cerrar sesión
@@ -198,9 +198,291 @@ if authentication_status:
         mostrar_fecha_actualizacion()
 
     # ==========================================================================================================
-    # ============================= RESUMEN GENERAL ============================================================
+    # ============================= ESTADO DE CUENTA ============================================================
     # ==========================================================================================================
-    if opcion == "Resumen General":
+    if opcion == "Estado de cuenta":
+        st.title("Cuadro de estado de cuenta")
+        
+        df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
+        if df_estado_cuenta.empty or fecha_corte is None:
+            st.warning("No hay datos de estado de cuenta.")
+        else:
+            st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
+            #------------------------------------- TARJETAS DE CREDITO DISPONIBLE --------------------------------------------------
+            # Límite de crédito
+            CREDITO_MAX = 180_000_000
+            # Obtener los datos
+            df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
+
+            if not df_estado_cuenta.empty:
+                total_estado_cuenta = df_estado_cuenta["total"].sum()
+
+                credito_disponible = CREDITO_MAX - total_estado_cuenta
+                porcentaje_disponible = (credito_disponible / CREDITO_MAX) * 100
+                porcentaje_usado = (total_estado_cuenta / CREDITO_MAX) * 100
+
+                # Crear las tarjetas
+                col1, col2, col3 = st.columns(3)
+                col1.metric("💰 Crédito disponible", f"${credito_disponible:,.2f}")
+                col2.metric("📊 % Crédito disponible", f"{porcentaje_disponible:.2f}%")
+                col3.metric("📈 % Crédito usado", f"{porcentaje_usado:.2f}%")
+            else:
+                st.info("No hay datos disponibles para mostrar el crédito.")
+            st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
+            #----------------------------------------- TARJETAS -------------------------------------------------------------------
+            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+            hoy = pd.to_datetime(datetime.today().date())
+            
+            total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
+            por_vencer_30 = df_estado_cuenta[
+                (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
+                (df_estado_cuenta["fecha_exigibilidad"] <= hoy + timedelta(days=30))
+            ]["total"].sum()
+            por_vencer_90 = df_estado_cuenta[
+                df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
+            ]["total"].sum()
+            
+            col1, col2, col3 = st.columns(3)
+            col1.metric("🔴 Total vencido", f"${total_vencido:,.2f}")
+            col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
+            col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
+
+            #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
+            # --- Preparar datos ---
+            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+            df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+
+            df_pivot = df_estado_cuenta.pivot_table(
+                index=["sucursal", "codigo_6digitos"],
+                columns="fecha_exigibilidad_str",
+                values="total",
+                aggfunc="sum",
+                fill_value=0,
+                margins=True,
+                margins_name="Total"
+            )
+
+            # Ordenar columnas por fecha
+            cols_ordenadas = sorted(
+                [c for c in df_pivot.columns if c != "Total"],
+                key=lambda x: datetime.strptime(x, "%d/%m/%Y")
+            )
+            if "Total" in df_pivot.columns:
+                cols_ordenadas.append("Total")
+            df_pivot = df_pivot[cols_ordenadas]
+
+            df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
+            df_reset = df_pivot.reset_index()
+            df_reset["codigo"] = df_reset["codigo"].astype(str)
+
+            # --- Separar fila total ---
+            mascara_total = (
+                df_reset["codigo"].str.strip().str.lower() == "total"
+            ) | (
+                df_reset["sucursal"].str.strip().str.lower() == "total"
+            )
+            total_row = df_reset[mascara_total].copy()
+            data_sin_total = df_reset[~mascara_total].copy()
+
+            # Columnas numéricas excluyendo índices y columna Total
+            ultima_col = data_sin_total.columns[-1]
+            numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
+
+            # --- Formateador de valores con comas y 2 decimales ---
+            value_formatter = JsCode("""
+            function(params) { 
+                if (params.value == null) return '0.00';
+                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            """)
+
+            # --- Degradado por celda (excluye la fila Total) ---
+            min_val = data_sin_total[numeric_cols_sin_total].min().min()
+            max_val = data_sin_total[numeric_cols_sin_total].max().max()
+            gradient_code = JsCode(f"""
+            function(params) {{
+                const totalCol = '{ultima_col}';
+                if (params.node.rowPinned || 
+                    (params.data && (
+                        (typeof params.data.codigo === 'string' && params.data.codigo.trim().toLowerCase() === 'total') ||
+                        (typeof params.data.sucursal === 'string' && params.data.sucursal.trim().toLowerCase() === 'total')
+                    ))
+                ) {{
+                    return {{
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'left'  // fila Total alineada a la izquierda
+                    }};
+                }}
+                if (params.colDef.field === totalCol) {{
+                    return {{
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'left'  // columna Total alineada a la izquierda
+                    }};
+                }}
+                let val = params.value;
+                let min = {min_val};
+                let max = {max_val};
+                if (!isNaN(val) && max > min) {{
+                    let ratio = (val - min) / (max - min);
+                    let r,g,b;
+                    if(ratio <= 0.5) {{
+                        let t = ratio/0.5;
+                        r = Math.round(117 + t*(232-117));
+                        g = Math.round(222 + t*(229-222));
+                        b = Math.round(84 + t*(70-84));
+                    }} else {{
+                        let t = (ratio-0.5)/0.5;
+                        r = 232; g = Math.round(229 + t*(96-229)); b = 70;
+                    }}
+                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'left' }};
+                }}
+                return {{ textAlign:'left' }};
+            }}
+            """)
+
+            # --- Reordenar columnas para que "codigo" sea la primera y "sucursal" la segunda ---
+            columnas = list(data_sin_total.columns)
+            if "codigo" in columnas and "sucursal" in columnas:
+                columnas.remove("codigo")
+                columnas.remove("sucursal")
+                data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
+
+            # --- Configuración inicial del grid ---
+            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+            gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
+
+            # Columna "codigo" anclada y alineada a la derecha
+            gb.configure_column(
+                "codigo",
+                pinned="left",
+                width=90,
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign': 'right'
+                }
+            )
+
+            # Columna "sucursal" sin anclar pero con mismo estilo
+            gb.configure_column(
+                "sucursal",
+                width=130,
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign': 'right'
+                }
+            )
+
+            # Columnas numéricas con degradado y header alineado a la izquierda
+            for col in numeric_cols_sin_total:
+                gb.configure_column(
+                    col,
+                    cellStyle=gradient_code,
+                    valueFormatter=value_formatter,
+                    minWidth=80,
+                    headerClass='header-left'
+                )
+
+            # Columna Total con estilo y alineada a la izquierda
+            gb.configure_column(
+                ultima_col,
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign': 'left'
+                },
+                sortable=False,
+                valueFormatter=value_formatter,
+                minWidth=100,
+                headerClass='header-left'
+            )
+
+
+            # --- CSS para headers alineados a la izquierda ---
+            custom_css = {
+                ".header-left": {
+                    "text-align": "left"
+                }
+            }
+
+            # --- Script para autoajustar columnas ---
+            on_grid_ready = JsCode("""
+            function(params) {
+                function resizeGrid() {
+                    const totalWidth = params.columnApi.getAllColumns()
+                        .map(c => c.getActualWidth())
+                        .reduce((a, b) => a + b, 0);
+                    if (totalWidth < params.api.gridOptionsWrapper.eGridDiv.clientWidth) {
+                        params.api.sizeColumnsToFit();
+                    }
+                }
+                window.addEventListener('resize', resizeGrid);
+                resizeGrid();
+            }
+            """)
+
+            grid_options = gb.build()
+            grid_options["onGridReady"] = on_grid_ready
+
+            # --- Fila Total fija al final ---
+            pinned_total_row = total_row.copy()
+            for col in pinned_total_row.columns:
+                if col in numeric_cols_sin_total + [ultima_col]:
+                    pinned_total_row[col] = pinned_total_row[col]  # valores ya están listos
+            grid_options['pinnedBottomRowData'] = pinned_total_row.to_dict('records')
+
+            # --- CSS opcional ---
+            custom_css = {
+                ".ag-header-cell-text": {
+                    "font-size": "12px",
+                    "text-overflow": "revert",
+                    "font-weight": "700"
+                }
+            }
+
+            # --- Renderizado final ---
+            AgGrid(
+                data_sin_total,
+                gridOptions=grid_options,
+                custom_css=custom_css,
+                height=800,
+                allow_unsafe_jscode=True,
+                theme=AgGridTheme.ALPINE,
+                fit_columns_on_grid_load=True,
+                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                enable_enterprise_modules=False
+            )
+            #--------------------- BOTON DE DESCARGA -----------
+            def to_excel(df):
+                import io
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, sheet_name='EstadoCuenta')
+                return output.getvalue()
+            
+            excel_data = to_excel(df_pivot)
+            st.download_button(
+                label="Descargar tabla en Excel",
+                data=excel_data,
+                file_name=f"estado_cuenta_{fecha_corte.strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+            #------------------------------------------------------------------------------------------------------------
+
+
+    # ==========================================================================================================
+    # ============================== RESUMEN GENERAL ==========================================
+    # ==========================================================================================================
+    elif opcion == "Resumen General":
         st.title("Resumen General de Compras - 2025")
         #--------------- TARJETAS: total comprado en el año y en el mes corriente  ------------------------------------------
         ahora = datetime.now()
@@ -507,7 +789,6 @@ if authentication_status:
         )
 
         st.plotly_chart(fig_dif, use_container_width=True)
-
 
     # ================================================================================================================================
     # ============================================= COMPRA POR DIVISION ==================================================================
@@ -2376,288 +2657,7 @@ if authentication_status:
             .applymap(resaltar_valores)
             .format("${:,.2f}")
         )
-
-
-    # ==========================================================================================================
-    # ============================== ESTADO DE CUENTA ==========================================
-    # ==========================================================================================================
-    elif opcion == "Estado de cuenta":
-        st.title("Cuadro de estado de cuenta")
-        
-        df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
-        if df_estado_cuenta.empty or fecha_corte is None:
-            st.warning("No hay datos de estado de cuenta.")
-        else:
-            st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
-            #------------------------------------- TARJETAS DE CREDITO DISPONIBLE --------------------------------------------------
-            # Límite de crédito
-            CREDITO_MAX = 180_000_000
-            # Obtener los datos
-            df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
-
-            if not df_estado_cuenta.empty:
-                total_estado_cuenta = df_estado_cuenta["total"].sum()
-
-                credito_disponible = CREDITO_MAX - total_estado_cuenta
-                porcentaje_disponible = (credito_disponible / CREDITO_MAX) * 100
-                porcentaje_usado = (total_estado_cuenta / CREDITO_MAX) * 100
-
-                # Crear las tarjetas
-                col1, col2, col3 = st.columns(3)
-                col1.metric("💰 Crédito disponible", f"${credito_disponible:,.2f}")
-                col2.metric("📊 % Crédito disponible", f"{porcentaje_disponible:.2f}%")
-                col3.metric("📈 % Crédito usado", f"{porcentaje_usado:.2f}%")
-            else:
-                st.info("No hay datos disponibles para mostrar el crédito.")
-            st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
-            #----------------------------------------- TARJETAS -------------------------------------------------------------------
-            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-            hoy = pd.to_datetime(datetime.today().date())
-            
-            total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
-            por_vencer_30 = df_estado_cuenta[
-                (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
-                (df_estado_cuenta["fecha_exigibilidad"] <= hoy + timedelta(days=30))
-            ]["total"].sum()
-            por_vencer_90 = df_estado_cuenta[
-                df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
-            ]["total"].sum()
-            
-            col1, col2, col3 = st.columns(3)
-            col1.metric("🔴 Total vencido", f"${total_vencido:,.2f}")
-            col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
-            col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
-
-            #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
-            # --- Preparar datos ---
-            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-            df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
-
-            df_pivot = df_estado_cuenta.pivot_table(
-                index=["sucursal", "codigo_6digitos"],
-                columns="fecha_exigibilidad_str",
-                values="total",
-                aggfunc="sum",
-                fill_value=0,
-                margins=True,
-                margins_name="Total"
-            )
-
-            # Ordenar columnas por fecha
-            cols_ordenadas = sorted(
-                [c for c in df_pivot.columns if c != "Total"],
-                key=lambda x: datetime.strptime(x, "%d/%m/%Y")
-            )
-            if "Total" in df_pivot.columns:
-                cols_ordenadas.append("Total")
-            df_pivot = df_pivot[cols_ordenadas]
-
-            df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
-            df_reset = df_pivot.reset_index()
-            df_reset["codigo"] = df_reset["codigo"].astype(str)
-
-            # --- Separar fila total ---
-            mascara_total = (
-                df_reset["codigo"].str.strip().str.lower() == "total"
-            ) | (
-                df_reset["sucursal"].str.strip().str.lower() == "total"
-            )
-            total_row = df_reset[mascara_total].copy()
-            data_sin_total = df_reset[~mascara_total].copy()
-
-            # Columnas numéricas excluyendo índices y columna Total
-            ultima_col = data_sin_total.columns[-1]
-            numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
-
-            # --- Formateador de valores con comas y 2 decimales ---
-            value_formatter = JsCode("""
-            function(params) { 
-                if (params.value == null) return '0.00';
-                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            }
-            """)
-
-            # --- Degradado por celda (excluye la fila Total) ---
-            min_val = data_sin_total[numeric_cols_sin_total].min().min()
-            max_val = data_sin_total[numeric_cols_sin_total].max().max()
-            gradient_code = JsCode(f"""
-            function(params) {{
-                const totalCol = '{ultima_col}';
-                if (params.node.rowPinned || 
-                    (params.data && (
-                        (typeof params.data.codigo === 'string' && params.data.codigo.trim().toLowerCase() === 'total') ||
-                        (typeof params.data.sucursal === 'string' && params.data.sucursal.trim().toLowerCase() === 'total')
-                    ))
-                ) {{
-                    return {{
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textAlign: 'left'  // fila Total alineada a la izquierda
-                    }};
-                }}
-                if (params.colDef.field === totalCol) {{
-                    return {{
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textAlign: 'left'  // columna Total alineada a la izquierda
-                    }};
-                }}
-                let val = params.value;
-                let min = {min_val};
-                let max = {max_val};
-                if (!isNaN(val) && max > min) {{
-                    let ratio = (val - min) / (max - min);
-                    let r,g,b;
-                    if(ratio <= 0.5) {{
-                        let t = ratio/0.5;
-                        r = Math.round(117 + t*(232-117));
-                        g = Math.round(222 + t*(229-222));
-                        b = Math.round(84 + t*(70-84));
-                    }} else {{
-                        let t = (ratio-0.5)/0.5;
-                        r = 232; g = Math.round(229 + t*(96-229)); b = 70;
-                    }}
-                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'left' }};
-                }}
-                return {{ textAlign:'left' }};
-            }}
-            """)
-
-            # --- Reordenar columnas para que "codigo" sea la primera y "sucursal" la segunda ---
-            columnas = list(data_sin_total.columns)
-            if "codigo" in columnas and "sucursal" in columnas:
-                columnas.remove("codigo")
-                columnas.remove("sucursal")
-                data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
-
-            # --- Configuración inicial del grid ---
-            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-            gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
-
-            # Columna "codigo" anclada y alineada a la derecha
-            gb.configure_column(
-                "codigo",
-                pinned="left",
-                width=90,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign': 'right'
-                }
-            )
-
-            # Columna "sucursal" sin anclar pero con mismo estilo
-            gb.configure_column(
-                "sucursal",
-                width=130,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign': 'right'
-                }
-            )
-
-            # Columnas numéricas con degradado y header alineado a la izquierda
-            for col in numeric_cols_sin_total:
-                gb.configure_column(
-                    col,
-                    cellStyle=gradient_code,
-                    valueFormatter=value_formatter,
-                    minWidth=80,
-                    headerClass='header-left'
-                )
-
-            # Columna Total con estilo y alineada a la izquierda
-            gb.configure_column(
-                ultima_col,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign': 'left'
-                },
-                sortable=False,
-                valueFormatter=value_formatter,
-                minWidth=100,
-                headerClass='header-left'
-            )
-
-
-            # --- CSS para headers alineados a la izquierda ---
-            custom_css = {
-                ".header-left": {
-                    "text-align": "left"
-                }
-            }
-
-            # --- Script para autoajustar columnas ---
-            on_grid_ready = JsCode("""
-            function(params) {
-                function resizeGrid() {
-                    const totalWidth = params.columnApi.getAllColumns()
-                        .map(c => c.getActualWidth())
-                        .reduce((a, b) => a + b, 0);
-                    if (totalWidth < params.api.gridOptionsWrapper.eGridDiv.clientWidth) {
-                        params.api.sizeColumnsToFit();
-                    }
-                }
-                window.addEventListener('resize', resizeGrid);
-                resizeGrid();
-            }
-            """)
-
-            grid_options = gb.build()
-            grid_options["onGridReady"] = on_grid_ready
-
-            # --- Fila Total fija al final ---
-            pinned_total_row = total_row.copy()
-            for col in pinned_total_row.columns:
-                if col in numeric_cols_sin_total + [ultima_col]:
-                    pinned_total_row[col] = pinned_total_row[col]  # valores ya están listos
-            grid_options['pinnedBottomRowData'] = pinned_total_row.to_dict('records')
-
-            # --- CSS opcional ---
-            custom_css = {
-                ".ag-header-cell-text": {
-                    "font-size": "12px",
-                    "text-overflow": "revert",
-                    "font-weight": "700"
-                }
-            }
-
-            # --- Renderizado final ---
-            AgGrid(
-                data_sin_total,
-                gridOptions=grid_options,
-                custom_css=custom_css,
-                height=800,
-                allow_unsafe_jscode=True,
-                theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=True,
-                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-                enable_enterprise_modules=False
-            )
-            #--------------------- BOTON DE DESCARGA -----------
-            def to_excel(df):
-                import io
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                    df.to_excel(writer, sheet_name='EstadoCuenta')
-                return output.getvalue()
-            
-            excel_data = to_excel(df_pivot)
-            st.download_button(
-                label="Descargar tabla en Excel",
-                data=excel_data,
-                file_name=f"estado_cuenta_{fecha_corte.strftime('%Y%m%d')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-            #------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------------
 
 elif authentication_status is False:
     st.error("Usuario o contraseña incorrectos")
