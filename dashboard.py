@@ -1682,24 +1682,37 @@ if authentication_status:
         if "mes_dt" not in df_divisiones.columns:
             df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["fecha"]).dt.to_period("M").dt.to_timestamp()
 
-        # ✅ Crear columna mes_anio directamente con nombres completos en español (sin usar abreviaturas)
+        # Crear columna mes_nombre y mes_anio en español
         df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es)
         df_divisiones["mes_anio"] = df_divisiones["mes_nombre"] + " " + df_divisiones["mes_dt"].dt.year.astype(str)
 
-        # Crear columna cuenta_sucursal si no existe
-        if "cuenta_sucursal" not in df_divisiones.columns:
-            df_divisiones["cuenta_sucursal"] = df_divisiones["codigo_normalizado"] + " - " + df_divisiones["sucursal"]
+        # Función para obtener abreviatura de la división
+        def obtener_abreviatura(codigo):
+            codigo_str = str(codigo).strip()
+            for division, info in divisiones.items():
+                if codigo_str in info["codigos"]:
+                    return info["abreviatura"]
+            return ""
 
-        # Preparar los datos para plotly (long-form)
-        df_grafico = df_divisiones.groupby(["mes_anio", "cuenta_sucursal"], as_index=False)["monto"].sum()
+        # Crear columna abreviatura y cuenta_sucursal
+        df_divisiones["abreviatura"] = df_divisiones["codigo_normalizado"].apply(obtener_abreviatura)
+        df_divisiones["cuenta_sucursal"] = (
+            df_divisiones["codigo_normalizado"].astype(str) + " (" +
+            df_divisiones["abreviatura"] + ") - " +
+            df_divisiones["sucursal"]
+        )
 
-        # Definir el orden de los meses en español
+        # Preparar datos para plotly (long-form)
+        df_grafico = df_divisiones.groupby(["mes_anio", "cuenta_sucursal", "abreviatura"], as_index=False)["monto"].sum()
+
+        # Definir el orden de los meses
         orden_meses = df_divisiones.drop_duplicates("mes_anio").sort_values("mes_dt")["mes_anio"].tolist()
 
         # Obtener lista de cuentas únicas
         cuentas = df_grafico["cuenta_sucursal"].unique()
 
         # Crear todas las combinaciones posibles mes-cuenta
+        import itertools
         combinaciones = pd.DataFrame(list(itertools.product(orden_meses, cuentas)), columns=["mes_anio", "cuenta_sucursal"])
 
         # Merge para tener todas las combinaciones y completar montos faltantes con cero
@@ -1708,46 +1721,44 @@ if authentication_status:
 
         # Convertir mes_anio en categoría ordenada
         df_grafico["mes_anio"] = pd.Categorical(df_grafico["mes_anio"], categories=orden_meses, ordered=True)
-
-        # Ordenar el DataFrame por mes_anio
         df_grafico = df_grafico.sort_values("mes_anio")
 
-        # 🟡 Selector de cuentas
+        # Selector de cuentas
         cuentas_disponibles = sorted(df_grafico["cuenta_sucursal"].unique())
         cuentas_seleccionadas = st.multiselect("Selecciona cuentas a mostrar:", cuentas_disponibles, default=cuentas_disponibles)
 
         # Filtrar el DataFrame según selección
         df_filtrado = df_grafico[df_grafico["cuenta_sucursal"].isin(cuentas_seleccionadas)]
 
-        # ✅ Mostrar algunos datos si no se ve nada
+        # Mostrar advertencia si no hay datos
         if df_filtrado.empty:
             st.warning("No hay datos para mostrar con las cuentas seleccionadas.")
-            st.dataframe(df_grafico.head(10))  # Para depuración
+            st.dataframe(df_grafico.head(10))
         else:
-            # Crear gráfico de líneas con customdata
+            # Crear gráfico de líneas con customdata incluyendo abreviatura
             fig = px.line(
                 df_filtrado,
                 x="mes_anio",
                 y="monto",
                 color="cuenta_sucursal",
                 markers=True,
-                #title="Compras mensuales por cuenta",
-                custom_data=["mes_anio", "cuenta_sucursal", "monto"]
+                custom_data=["mes_anio", "cuenta_sucursal", "monto", "abreviatura"]
             )
 
-            # Formato de hovertemplate
+            # Formato de hovertemplate mostrando abreviatura
             fig.update_traces(
                 hovertemplate=(
                     "<b>Mes:</b> %{customdata[0]}<br>"
                     "<b>Cuenta - Sucursal:</b> %{customdata[1]}<br>"
-                    "<b>Monto:</b> $%{customdata[2]:,.2f}<extra></extra>"
+                    "<b>Monto:</b> $%{customdata[2]:,.2f}<br>"
+                    "<b>División:</b> %{customdata[3]}<extra></extra>"
                 )
             )
 
             fig.update_layout(
                 xaxis_title="Mes",
                 yaxis_title="Monto (MXN)",
-                yaxis_tickformat=",",  # Formato con comas en el eje
+                yaxis_tickformat=",",
                 legend_title="Cuenta - Sucursal"
             )
 
@@ -1758,10 +1769,12 @@ if authentication_status:
                 ],
                 "displaylogo": False
             }
+
             st.markdown("<br><br>", unsafe_allow_html=True)
             st.markdown("### Compras mensuales por cuenta")
             st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True, config=config)
+
 
         #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL ------------------------------------------------------------------------------
         st.header("Evolución mensual de compras por cuenta")
