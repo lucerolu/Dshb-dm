@@ -1888,6 +1888,7 @@ if authentication_status:
 
 
         #------------------------------- TABLA: RESUMEN TOTAL POR MES Y SUCURSAL ------------------------------------
+        st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("### Resumen total por mes y sucursal")
 
         # Crear tabla pivote con totales
