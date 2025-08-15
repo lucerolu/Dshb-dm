@@ -419,15 +419,27 @@ if authentication_status:
             function(params) {
                 function ajustarColumnas() {
                     if (window.innerWidth <= 768) {
-                        // Pantallas pequeñas → no ajustar, permitir scroll horizontal
                         params.api.resetColumnState();
                     } else {
-                        // Pantallas grandes → ajustar al contenedor
                         params.api.sizeColumnsToFit();
                     }
                 }
-                window.addEventListener('resize', ajustarColumnas);
+
+                // Ejecutar de inmediato
                 ajustarColumnas();
+
+                // Ejecutar un poco después de que todo se cargue
+                setTimeout(ajustarColumnas, 300);
+
+                // Escuchar cambios de tamaño reales de ventana
+                window.addEventListener('resize', ajustarColumnas);
+
+                // Observador para detectar cambios de tamaño del contenedor
+                const gridDiv = params.api.gridBodyCtrl.eGridBody;
+                if (window.ResizeObserver) {
+                    const ro = new ResizeObserver(() => ajustarColumnas());
+                    ro.observe(gridDiv);
+                }
             }
             """)
 
