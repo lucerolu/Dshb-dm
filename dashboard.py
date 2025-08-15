@@ -413,14 +413,14 @@ if authentication_status:
                     "text-align": "left"
                 },
                 ".ag-center-cols-container .ag-row": {
-                    "height": "24px",
-                    "line-height": "18px",
+                    "height": "20px",
+                    "line-height": "16px",
                     "padding-top": "2px",
                     "padding-bottom": "2px"
                 },
                 ".ag-pinned-left-cols-container .ag-row": {
-                    "height": "24px",
-                    "line-height": "18px",
+                    "height": "20px",
+                    "line-height": "16px",
                     "padding-top": "2px",
                     "padding-bottom": "2px"
                 }
