@@ -2714,7 +2714,7 @@ if authentication_status:
         # Ordenar DataFrame por fecha para que Plotly respete el orden cronológico
         monto_por_mes_sucursal = monto_por_mes_sucursal.sort_values("mes_dt")
 
-        # Crear gráfico de barras apiladas horizontales
+        # Crear gráfico de barras apiladas horizontales con customdata
         fig = px.bar(
             monto_por_mes_sucursal,
             x="monto",
@@ -2723,7 +2723,8 @@ if authentication_status:
             orientation="h",
             title="Distribución mensual del monto sin ligar por sucursal",
             labels={"monto": "Monto sin ligar", "mes_nombre": "Mes"},
-            category_orders={"mes_nombre": meses_filtrados}
+            category_orders={"mes_nombre": meses_filtrados},
+            custom_data=["sucursal"]  # <-- para usar en hovertemplate
         )
 
         fig.update_layout(
@@ -2732,17 +2733,16 @@ if authentication_status:
             yaxis_title="Mes"
         )
 
-        # Hovertemplate personalizado
+        # Hovertemplate personalizado usando customdata[0]
         fig.update_traces(
             hovertemplate=(
                 "<b>Mes:</b> %{y}<br>"
-                "<b>Sucursal:</b> %{color}<br>"
+                "<b>Sucursal:</b> %{customdata[0]}<br>"
                 "<b>Monto sin ligar:</b> $%{x:,.2f}<extra></extra>"
             )
         )
 
         st.plotly_chart(fig, use_container_width=True)
-
 
         #------------- TABLA ------------------------------
         tabla_resumen = monto_por_mes_sucursal.pivot_table(
