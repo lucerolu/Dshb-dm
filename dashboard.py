@@ -2132,21 +2132,29 @@ if authentication_status:
             }
         }
 
-        # Mostrar tabla
-        AgGrid(
-            data_sin_total,
-            gridOptions=grid_options,
-            height=400,
-            fit_columns_on_grid_load=False,
-            allow_unsafe_jscode=True,
-            custom_css=custom_css,
-            enable_enterprise_modules=False,
-            theme="ag-theme-alpine"
-        )
-        # === BOTÓN DE DESCARGA ===
+        # --- Placeholder para controlar renderizado ---
+        placeholder = st.empty()
+
+        with placeholder.container():
+            AgGrid(
+                data_sin_total,
+                gridOptions=grid_options,
+                height=400,  # altura fija de la tabla
+                fit_columns_on_grid_load=False,
+                allow_unsafe_jscode=True,
+                custom_css=custom_css,
+                enable_enterprise_modules=False,
+                theme="ag-theme-alpine"
+            )
+
+        # Pequeño espacio para forzar ajuste inicial de layout
+        st.markdown("<div style='height:5px'></div>", unsafe_allow_html=True)
+
+        # --- Botón de descarga ---
         buffer = io.BytesIO()
         tabla_reset.to_excel(buffer, index=False)
         buffer.seek(0)
+
         st.download_button(
             label="📥 Descargar tabla en Excel",
             data=buffer,
