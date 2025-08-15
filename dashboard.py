@@ -411,6 +411,12 @@ if authentication_status:
             custom_css = {
                 ".header-left": {
                     "text-align": "left"
+                },
+                ".ag-center-cols-container .ag-row": {
+                    "height": "24px",       # altura total de la fila
+                    "line-height": "18px",  # altura del texto
+                    "padding-top": "2px",
+                    "padding-bottom": "2px"
                 }
             }
 
