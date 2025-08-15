@@ -417,9 +417,17 @@ if authentication_status:
             # --- Script para scroll horizontal en móviles y ajuste solo en pantallas grandes ---
             on_grid_ready = JsCode("""
             function(params) {
-                if (window.innerWidth > 768) {
-                    params.api.sizeColumnsToFit();
+                function ajustarColumnas() {
+                    if (window.innerWidth <= 768) {
+                        // Pantallas pequeñas → no ajustar, permitir scroll horizontal
+                        params.api.resetColumnState();
+                    } else {
+                        // Pantallas grandes → ajustar al contenedor
+                        params.api.sizeColumnsToFit();
+                    }
                 }
+                window.addEventListener('resize', ajustarColumnas);
+                ajustarColumnas();
             }
             """)
 
