@@ -2338,9 +2338,8 @@ if authentication_status:
             )
 
             st.plotly_chart(fig, use_container_width=True)
+            st.markdown("<br><br>", unsafe_allow_html=True)
 
-
-        
         #=================== GRAFICA DE BARRAS APILADAS DE MONTO POR MES Y CUENTA ========================
         # Validar selección
         if not sucursales_seleccionadas:
