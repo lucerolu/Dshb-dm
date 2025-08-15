@@ -1882,7 +1882,7 @@ if authentication_status:
             "displaylogo": False
         }
         st.markdown("### Distribución porcentual de compras por sucursal (2025)")
-        st.markdown("<div style='margin-top:-5px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:px'></div>", unsafe_allow_html=True)
         # Mostrar gráfica con zoom y opciones de barra
         st.plotly_chart(fig, use_container_width=True, config=config)
 
@@ -2166,7 +2166,7 @@ if authentication_status:
         # Reordenar los meses empezando por el anterior al mes actual
         mes_inicio = (mes_actual - 1) % 12
         orden_meses_reversa = orden_meses[mes_inicio::-1] + orden_meses[:mes_inicio][::-1]
-
+        st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("### Compras por Sucursal, mes a mes")
 
         for i, mes in enumerate(orden_meses_reversa):
