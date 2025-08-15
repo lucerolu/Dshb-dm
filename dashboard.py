@@ -1523,7 +1523,7 @@ if authentication_status:
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title("Compra mensual por Cuenta (2025)")
-        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:-5px'></div>", unsafe_allow_html=True)
 
         def obtener_abreviatura(codigo):
             for division, info in divisiones.items():
