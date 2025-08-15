@@ -2132,25 +2132,26 @@ if authentication_status:
             }
         }
 
-        # --- Placeholder para controlar renderizado ---
-        placeholder = st.empty()
+        # --- Contenedor principal que reserva espacio para AgGrid + botón ---
+        st.markdown("""
+            <div style="display: flex; flex-direction: column; gap: 5px; min-height: 430px;">
+                <div id="aggrid-container" style="flex: 1 1 auto;"></div>
+            </div>
+        """, unsafe_allow_html=True)
 
-        with placeholder.container():
-            AgGrid(
-                data_sin_total,
-                gridOptions=grid_options,
-                height=400,  # altura fija de la tabla
-                fit_columns_on_grid_load=False,
-                allow_unsafe_jscode=True,
-                custom_css=custom_css,
-                enable_enterprise_modules=False,
-                theme="ag-theme-alpine"
-            )
+        # Renderizamos AgGrid dentro del contenedor
+        AgGrid(
+            data_sin_total,
+            gridOptions=grid_options,
+            height=400,  # altura de la tabla
+            fit_columns_on_grid_load=False,
+            allow_unsafe_jscode=True,
+            custom_css=custom_css,
+            enable_enterprise_modules=False,
+            theme="ag-theme-alpine"
+        )
 
-        # Pequeño espacio para forzar ajuste inicial de layout
-        st.markdown("<div style='height:5px'></div>", unsafe_allow_html=True)
-
-        # --- Botón de descarga ---
+        # --- Botón de descarga debajo de la tabla ---
         buffer = io.BytesIO()
         tabla_reset.to_excel(buffer, index=False)
         buffer.seek(0)
@@ -2161,7 +2162,7 @@ if authentication_status:
             file_name="resumen_mensual.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        
+
         # ------------------------- GRÁFICO DE LÍNEAS: EVOLUCIÓN DE COMPRAS POR MES Y SUCURSAL -------------------------------------
         fig_lineas = go.Figure()
 
