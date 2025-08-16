@@ -586,18 +586,22 @@ if authentication_status:
                     fecha = fechas_ordenadas[i + j]
                     df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha]
 
-                    df_fecha["hover_info"] = df_fecha.apply(
-                        lambda row: f"{row['codigo']} - {row['sucursal']} ({row['abreviatura']})", axis=1
+                    df_fecha["hover_text"] = (
+                        "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"].astype(str) + "<br>" +
+                        "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
+                        "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
+                        "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
+                        "<b>Monto:</b> $" + df_fecha["total"].map("{:,.2f}".format)
                     )
 
                     fig_pie = px.pie(
                         df_fecha,
-                        names="hover_info",       # solo para mostrar la etiqueta de la porción
+                        names="cuenta_sucursal",   # solo para dividir las porciones
                         values="total",
                         color="cuenta_sucursal",
                         color_discrete_map=color_cuentas,
                         hole=0.4,
-                        custom_data=["fecha_exigibilidad_str", "codigo", "sucursal", "abreviatura"]
+                        hover_data=None             # evita conflictos con custom_data
                     )
 
                     fig_pie.update_traces(
