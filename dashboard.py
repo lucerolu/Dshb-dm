@@ -596,12 +596,11 @@ if authentication_status:
                         values="total",
                         color="sucursal",
                         color_discrete_map=colores_sucursales,
-                        hover_data={"total": False, "sucursal": True, "cuenta_sucursal": True},  # hover simple y confiable
-                        text="text_monto"  # muestra el monto dentro de cada porción
+                        hover_data={"total": False, "sucursal": True, "cuenta_sucursal": True}  # hover simple y confiable
                     )
 
-                    # Mostrar nombre + monto dentro de cada porción
-                    fig_sun.update_traces(textinfo="label+text")
+                    # Mostrar el texto dentro de cada porción
+                    fig_sun.update_traces(text=df_fecha["text_monto"], textinfo="label+text")
 
                     # Layout y título
                     fig_sun.update_layout(
