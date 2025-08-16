@@ -589,6 +589,14 @@ if authentication_status:
                 df_fecha["text_sucursal"] = df_fecha["total_sucursal"].map("${:,.2f}".format)
 
                 df_fecha["label_con_monto"] = df_fecha["cuenta_sucursal"] + " $" + df_fecha["total"].map("{:,.2f}".format)
+                df_fecha["hover_info"] = (
+                    "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
+                    "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
+                    "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
+                    "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
+                    "<b>Monto Cuenta:</b> " + df_fecha["text_cuenta"] + "<br>" +
+                    "<b>Total Sucursal:</b> " + df_fecha["text_sucursal"]
+                )
 
                 fig_sun = px.sunburst(
                     df_fecha,
