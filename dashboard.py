@@ -588,25 +588,15 @@ if authentication_status:
                 df_fecha["text_cuenta"] = df_fecha["total"].map("${:,.2f}".format)
                 df_fecha["text_sucursal"] = df_fecha["total_sucursal"].map("${:,.2f}".format)
 
-                # Hover uniforme
-                df_fecha["hover_info"] = (
-                    "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
-                    "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
-                    "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
-                    "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
-                    "<b>Monto Cuenta:</b> " + df_fecha["text_cuenta"] + "<br>" +
-                    "<b>Total Sucursal:</b> " + df_fecha["text_sucursal"]
-                )
+                df_fecha["label_con_monto"] = df_fecha["cuenta_sucursal"] + " $" + df_fecha["total"].map("{:,.2f}".format)
 
-                # Gráfico Sunburst interactivo
                 fig_sun = px.sunburst(
                     df_fecha,
-                    path=["sucursal", "cuenta_sucursal"],
+                    path=["sucursal", "label_con_monto"],  # usa label con monto
                     values="total",
                     color="sucursal",
                     color_discrete_map=colores_sucursales,
-                    hover_data=None,
-                    text="text_cuenta"
+                    hover_data=None
                 )
 
                 fig_sun.update_traces(
