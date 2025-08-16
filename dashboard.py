@@ -248,25 +248,37 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
-            # Cargar archivo JSON
-            with open("config.json", "r", encoding="utf-8") as f:
+            # ------------------ Cargar configuración de colores y divisiones ------------------
+            with open("config_colores.json", "r", encoding="utf-8") as f:
                 config = json.load(f)
 
             divisiones = config["divisiones"]
             colores_sucursales = config["sucursales"]
 
+            # ------------------ Mapas para divisiones ------------------
+            mapa_codigos = {}
+            colores_divisiones = {}
+            for division, info in divisiones.items():
+                for codigo in info["codigos"]:
+                    mapa_codigos[codigo] = division
+                colores_divisiones[division] = info["color"]
+
+            # ------------------ Función para abreviatura ------------------
             def obtener_abreviatura(codigo):
                 for division, info in divisiones.items():
                     if codigo in info["codigos"]:
                         return info["abreviatura"]
                 return ""
 
+            # ------------------ Preparar DataFrame ------------------
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
+            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo"].astype(str)
+
             df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
             df_estado_cuenta["cuenta_sucursal"] = df_estado_cuenta["codigo"] + " (" + df_estado_cuenta["abreviatura"] + ") - " + df_estado_cuenta["sucursal"]
             df_estado_cuenta["color_sucursal"] = df_estado_cuenta["sucursal"].map(colores_sucursales)
 
+            # ------------------ Crear gráfica ------------------
             fig = px.line(
                 df_estado_cuenta,
                 x="fecha_exigibilidad",
