@@ -1602,9 +1602,21 @@ if authentication_status:
                         leg.get_title().set_color("white")  # título en blanco
                         for text in leg.get_texts():
                             text.set_color("white")          # labels en blanco
-                        leg.get_frame().set_facecolor('#121212')  # fondo leyenda
-                        leg.get_frame().set_edgecolor('white')    # borde leyenda
+                        leg.get_frame().set_facecolor('#121212')
+                        leg.get_frame().set_edgecolor('white')
+                        # Alinear la leyenda a la izquierda para que no se estire
+                        leg._legend_box.align = "left"
+                        # Mover la leyenda más a la derecha para que no tape las barras
+                        ax.legend(
+                            title="División",
+                            bbox_to_anchor=(1.15, 1),  # desplazamiento horizontal extra
+                            loc='upper left',
+                            facecolor='#121212',
+                            edgecolor='white'
+                        )
 
+                    # Ajustar márgenes para que la leyenda no se encime con el gráfico
+                    fig.subplots_adjust(right=0.80)
 
                     cols[j].pyplot(fig)
 
