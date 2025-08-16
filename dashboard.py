@@ -576,7 +576,6 @@ if authentication_status:
             )
 
             #----------------------------------- GRAFICO DE ANILLOS ------------------------------------------------------------------------------------------------------------------------
-            # Iterar sobre fechas ordenadas, 2 gráficos por fila
             for i in range(0, len(fechas_ordenadas), 2):
                 col1, col2 = st.columns(2)
 
@@ -586,7 +585,7 @@ if authentication_status:
                     fecha = fechas_ordenadas[i + j]
                     df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                    # Crear columna hover_text
+                    # Crear columna hover_text por fila
                     df_fecha["hover_text"] = df_fecha.apply(
                         lambda row: (
                             f"<b>Fecha:</b> {row['fecha_exigibilidad_str']}<br>"
@@ -597,14 +596,14 @@ if authentication_status:
                         ), axis=1
                     )
 
-                    # Sunburst solo con cuentas, color por sucursal
+                    # Sunburst jerárquico: sucursal → cuenta
                     fig_sun = px.sunburst(
                         df_fecha,
-                        path=["cuenta_sucursal"],  # solo cuentas, sin nodo padre
+                        path=["sucursal", "cuenta_sucursal"],
                         values="total",
                         color="sucursal",
                         color_discrete_map=colores_sucursales,
-                        hover_data={"hover_text": True, "sucursal": True}
+                        hover_data={"hover_text": True}
                     )
 
                     # Hover uniforme
@@ -618,7 +617,6 @@ if authentication_status:
                         template="plotly_white"
                     )
 
-                    # Mostrar gráfico en Streamlit con scroll y zoom
                     col.plotly_chart(
                         fig_sun,
                         use_container_width=True,
