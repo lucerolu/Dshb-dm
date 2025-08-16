@@ -579,46 +579,51 @@ if authentication_status:
             for fecha in fechas_ordenadas:
                 df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                # Nodo interno: Sucursal con monto total
-                df_sucursal = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
-                df_sucursal["hover"] = df_sucursal.apply(
-                    lambda r: f"<b>Fecha:</b> {fecha}<br>"
-                            f"<b>Sucursal:</b> {r['sucursal']}<br>"
-                            f"<b>Total Sucursal:</b> ${r['total']:,.2f}", axis=1
-                )
-                df_sucursal["cuenta_sucursal"] = ""  # placeholder para jerarquía
+                # Total por sucursal
+                df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
+                df_sucursal_total.rename(columns={"total": "total_sucursal"}, inplace=True)
 
-                # Nodo externo: Cuentas con hover completo
-                df_cuenta = df_fecha.copy()
-                df_cuenta["hover"] = df_cuenta.apply(
-                    lambda r: f"<b>Fecha:</b> {fecha}<br>"
-                            f"<b>Sucursal:</b> {r['sucursal']}<br>"
-                            f"<b>Cuenta:</b> {r['cuenta_sucursal']}<br>"
-                            f"<b>Código:</b> {r['codigo']}<br>"
-                            f"<b>División:</b> {r['abreviatura']}<br>"
-                            f"<b>Monto:</b> ${r['total']:,.2f}", axis=1
+                # Crear nodos internos (sucursales)
+                df_sucursal_total["id"] = df_sucursal_total["sucursal"]
+                df_sucursal_total["parent"] = ""  # nodo raíz
+                df_sucursal_total["text"] = df_sucursal_total["sucursal"] + " $" + df_sucursal_total["total_sucursal"].map("{:,.2f}".format)
+                df_sucursal_total["hover_info"] = (
+                    "<b>Fecha:</b> " + fecha + "<br>" +
+                    "<b>Sucursal:</b> " + df_sucursal_total["sucursal"] + "<br>" +
+                    "<b>Total Sucursal:</b> $" + df_sucursal_total["total_sucursal"].map("{:,.2f}".format)
                 )
 
-                # Combinar nodos
-                df_hover = pd.concat([df_sucursal, df_cuenta], ignore_index=True)
+                # Crear nodos externos (cuentas)
+                df_cuentas = df_fecha.copy()
+                df_cuentas["id"] = df_cuentas["sucursal"] + " - " + df_cuentas["cuenta_sucursal"]
+                df_cuentas["parent"] = df_cuentas["sucursal"]
+                df_cuentas["text"] = df_cuentas["cuenta_sucursal"] + " $" + df_cuentas["total"].map("{:,.2f}".format)
+                df_cuentas["hover_info"] = (
+                    "<b>Fecha:</b> " + fecha + "<br>" +
+                    "<b>Código:</b> " + df_cuentas["codigo"] + "<br>" +
+                    "<b>Sucursal:</b> " + df_cuentas["sucursal"] + "<br>" +
+                    "<b>División:</b> " + df_cuentas["abreviatura"] + "<br>" +
+                    "<b>Monto Cuenta:</b> $" + df_cuentas["total"].map("{:,.2f}".format)
+                )
 
-                # Texto dentro de las porciones (solo cuentas)
-                df_hover["text_monto"] = df_hover["total"].apply(lambda x: f"${x:,.2f}" if x>0 else "")
+                # Combinar sucursales y cuentas
+                df_sun = pd.concat([df_sucursal_total, df_cuentas], ignore_index=True)
 
-                # Gráfico Sunburst
+                # Crear sunburst con ids y parents
                 fig_sun = px.sunburst(
-                    df_hover,
-                    path=["sucursal", "cuenta_sucursal"],
-                    values="total",
-                    color="sucursal",
-                    color_discrete_map=colores_sucursales,
-                    hover_data=None
+                    df_sun,
+                    ids="id",
+                    parents="parent",
+                    values="total_sucursal",  # Plotly ignora valores de nodos con hijos; se suman automáticamente
+                    color="parent",  # o "id" para colorear por sucursal
+                    hover_data=None,
                 )
 
+                # Asignar hovertemplate y texto
                 fig_sun.update_traces(
                     hovertemplate="%{customdata}<extra></extra>",
-                    customdata=df_hover["hover"],
-                    text=df_hover["text_monto"],
+                    customdata=df_sun["hover_info"],
+                    text=df_sun["text"],
                     textinfo="label+text"
                 )
 
