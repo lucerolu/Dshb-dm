@@ -586,14 +586,17 @@ if authentication_status:
                     fecha = fechas_ordenadas[i + j]
                     df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha]
 
-                    # Crear gráfico de anillo
+                    df_fecha["hover_info"] = df_fecha.apply(
+                        lambda row: f"{row['codigo']} - {row['sucursal']} ({row['abreviatura']})", axis=1
+                    )
+
                     fig_pie = px.pie(
                         df_fecha,
-                        names="cuenta_sucursal",
+                        names="hover_info",       # solo para mostrar la etiqueta de la porción
                         values="total",
                         color="cuenta_sucursal",
                         color_discrete_map=color_cuentas,
-                        hole=0.4,  # convierte en anillo
+                        hole=0.4,
                         custom_data=["fecha_exigibilidad_str", "codigo", "sucursal", "abreviatura"]
                     )
 
