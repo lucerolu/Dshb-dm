@@ -272,11 +272,15 @@ if authentication_status:
 
             # ------------------ Preparar DataFrame ------------------
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo"].astype(str)
+            # Convertir a string y crear alias 'codigo'
+            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
 
             df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
-            df_estado_cuenta["cuenta_sucursal"] = df_estado_cuenta["codigo"] + " (" + df_estado_cuenta["abreviatura"] + ") - " + df_estado_cuenta["sucursal"]
+            df_estado_cuenta["cuenta_sucursal"] = (
+                df_estado_cuenta["codigo"] + " (" + df_estado_cuenta["abreviatura"] + ") - " + df_estado_cuenta["sucursal"]
+            )
             df_estado_cuenta["color_sucursal"] = df_estado_cuenta["sucursal"].map(colores_sucursales)
+
 
             # ------------------ Crear gráfica ------------------
             fig = px.line(
