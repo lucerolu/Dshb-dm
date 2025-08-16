@@ -255,14 +255,6 @@ if authentication_status:
             divisiones = config["divisiones"]
             colores_sucursales = config["sucursales"]
 
-            # ------------------ Mapas para divisiones ------------------
-            mapa_codigos = {}
-            colores_divisiones = {}
-            for division, info in divisiones.items():
-                for codigo in info["codigos"]:
-                    mapa_codigos[codigo] = division
-                colores_divisiones[division] = info["color"]
-
             # ------------------ Función para abreviatura ------------------
             def obtener_abreviatura(codigo):
                 for division, info in divisiones.items():
@@ -272,40 +264,20 @@ if authentication_status:
 
             # ------------------ Preparar DataFrame ------------------
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-            # Convertir a string y crear alias 'codigo'
             df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
 
             df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
             df_estado_cuenta["cuenta_sucursal"] = (
                 df_estado_cuenta["codigo"] + " (" + df_estado_cuenta["abreviatura"] + ") - " + df_estado_cuenta["sucursal"]
             )
-            df_estado_cuenta["color_sucursal"] = df_estado_cuenta["sucursal"].map(colores_sucursales)
 
-
-            # ------------------ Crear gráfica ------------------
-            fig = px.line(
-                df_estado_cuenta,
-                x="fecha_exigibilidad",
-                y="total",
-                color="sucursal",
-                color_discrete_map=colores_sucursales,
-                custom_data=["sucursal", "codigo", "abreviatura"]
-            )
-
-            fig.update_traces(
-                hovertemplate="<b>Fecha:</b> %{x|%d/%m/%Y}<br>"
-                            "<b>Código:</b> %{customdata[1]}<br>"
-                            "<b>Sucursal:</b> %{customdata[0]}<br>"
-                            "<b>División:</b> %{customdata[2]}<br>"
-                            "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
-            )
-
-            # Crear un mapeo cuenta_sucursal -> color_sucursal
+            # Crear diccionario cuenta_sucursal -> color_sucursal
             color_cuentas = {
-                row["cuenta_sucursal"]: colores_sucursales[row["sucursal"]]
+                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], "#808080")
                 for _, row in df_estado_cuenta.drop_duplicates("cuenta_sucursal").iterrows()
             }
 
+            # ------------------ Crear gráfico ------------------
             fig = px.line(
                 df_estado_cuenta,
                 x="fecha_exigibilidad",
@@ -313,6 +285,23 @@ if authentication_status:
                 color="cuenta_sucursal",
                 color_discrete_map=color_cuentas,
                 custom_data=["sucursal", "codigo", "abreviatura"]
+            )
+
+            fig.update_traces(
+                hovertemplate=(
+                    "<b>Fecha:</b> %{x|%d/%m/%Y}<br>"
+                    "<b>Código:</b> %{customdata[1]}<br>"
+                    "<b>Sucursal:</b> %{customdata[0]}<br>"
+                    "<b>División:</b> %{customdata[2]}<br>"
+                    "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+                )
+            )
+
+            fig.update_layout(
+                xaxis_title="Fecha de exigibilidad",
+                yaxis_title="Monto",
+                hovermode="x unified",
+                template="plotly_white"
             )
 
             st.plotly_chart(fig, use_container_width=True)
