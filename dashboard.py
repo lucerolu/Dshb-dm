@@ -579,46 +579,47 @@ if authentication_status:
             for fecha in fechas_ordenadas:
                 df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                # --- Nodos internos: sucursal ---
-                df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
-                df_sucursal_total["label"] = df_sucursal_total["sucursal"]
-                df_sucursal_total["parent"] = ""  # raíz
-                df_sucursal_total["customdata"] = df_sucursal_total.apply(
-                    lambda row: f"<b>Fecha:</b> {fecha}<br>"
-                                f"<b>Sucursal:</b> {row['sucursal']}<br>"
-                                f"<b>Total Sucursal:</b> ${row['total']:,.2f}", axis=1
+                # Nodo interno: Sucursal con monto total
+                df_sucursal = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
+                df_sucursal["hover"] = df_sucursal.apply(
+                    lambda r: f"<b>Fecha:</b> {fecha}<br>"
+                            f"<b>Sucursal:</b> {r['sucursal']}<br>"
+                            f"<b>Total Sucursal:</b> ${r['total']:,.2f}", axis=1
                 )
+                df_sucursal["cuenta_sucursal"] = ""  # placeholder para jerarquía
 
-                # --- Nodos externos: cuentas ---
+                # Nodo externo: Cuentas con hover completo
                 df_cuenta = df_fecha.copy()
-                df_cuenta["label"] = df_cuenta["cuenta_sucursal"]
-                df_cuenta["parent"] = df_cuenta["sucursal"]
-                df_cuenta["customdata"] = df_cuenta.apply(
-                    lambda row: f"<b>Fecha:</b> {fecha}<br>"
-                                f"<b>Sucursal:</b> {row['sucursal']}<br>"
-                                f"<b>Código:</b> {row['codigo']}<br>"
-                                f"<b>División:</b> {row['abreviatura']}<br>"
-                                f"<b>Monto Cuenta:</b> ${row['total']:,.2f}", axis=1
+                df_cuenta["hover"] = df_cuenta.apply(
+                    lambda r: f"<b>Fecha:</b> {fecha}<br>"
+                            f"<b>Sucursal:</b> {r['sucursal']}<br>"
+                            f"<b>Cuenta:</b> {r['cuenta_sucursal']}<br>"
+                            f"<b>Código:</b> {r['codigo']}<br>"
+                            f"<b>División:</b> {r['abreviatura']}<br>"
+                            f"<b>Monto:</b> ${r['total']:,.2f}", axis=1
                 )
 
-                # --- Unir nodos ---
-                df_nodes = pd.concat([
-                    df_sucursal_total[["label", "parent", "total", "customdata"]],
-                    df_cuenta[["label", "parent", "total", "customdata"]]
-                ])
+                # Combinar nodos
+                df_hover = pd.concat([df_sucursal, df_cuenta], ignore_index=True)
 
-                # --- Crear sunburst ---
+                # Texto dentro de las porciones (solo cuentas)
+                df_hover["text_monto"] = df_hover["total"].apply(lambda x: f"${x:,.2f}" if x>0 else "")
+
+                # Gráfico Sunburst
                 fig_sun = px.sunburst(
-                    df_nodes,
-                    names="label",
-                    parents="parent",
+                    df_hover,
+                    path=["sucursal", "cuenta_sucursal"],
                     values="total",
-                    color="label",  # o "parent" si quieres por sucursal
+                    color="sucursal",
+                    color_discrete_map=colores_sucursales,
                     hover_data=None
                 )
 
                 fig_sun.update_traces(
-                    hovertemplate="%{customdata}<extra></extra>"
+                    hovertemplate="%{customdata}<extra></extra>",
+                    customdata=df_hover["hover"],
+                    text=df_hover["text_monto"],
+                    textinfo="label+text"
                 )
 
                 fig_sun.update_layout(
@@ -626,7 +627,6 @@ if authentication_status:
                     template="plotly_white"
                 )
 
-                # --- Mostrar en Streamlit ---
                 st.plotly_chart(
                     fig_sun,
                     use_container_width=True,
@@ -641,7 +641,6 @@ if authentication_status:
                         "displaylogo": False
                     }
                 )
-
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
