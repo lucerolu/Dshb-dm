@@ -576,86 +576,63 @@ if authentication_status:
             )
 
             #----------------------------------- GRAFICO DE ANILLOS ------------------------------------------------------------------------------------------------------------------------
-            for i in range(0, len(fechas_ordenadas), 2):
-                col1, col2 = st.columns(2)  # dos gráficos por fila
+            for fecha in fechas_ordenadas:
+                df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                for j, col in enumerate([col1, col2]):
-                    if i + j >= len(fechas_ordenadas):
-                        break
-                    fecha = fechas_ordenadas[i + j]
-                    df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
+                # Total por sucursal
+                df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
+                df_sucursal_total.rename(columns={"total": "total_sucursal"}, inplace=True)
+                df_fecha = df_fecha.merge(df_sucursal_total, on="sucursal", how="left")
 
-                    # Agrupar por sucursal para obtener monto total por sucursal
-                    df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
-                    df_sucursal_total.rename(columns={"total": "total_sucursal"}, inplace=True)
+                # Texto para cada cuenta y sucursal
+                df_fecha["text_cuenta"] = df_fecha["total"].map("${:,.2f}".format)
+                df_fecha["text_sucursal"] = df_fecha["total_sucursal"].map("${:,.2f}".format)
 
-                    # Combinar con df_fecha para tener el total por sucursal disponible
-                    df_fecha = df_fecha.merge(df_sucursal_total, on="sucursal", how="left")
+                # Hover uniforme
+                df_fecha["hover_info"] = (
+                    "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
+                    "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
+                    "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
+                    "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
+                    "<b>Monto Cuenta:</b> " + df_fecha["text_cuenta"] + "<br>" +
+                    "<b>Total Sucursal:</b> " + df_fecha["text_sucursal"]
+                )
 
-                    # Texto para mostrar dentro de cada porción
-                    df_fecha["text_cuenta"] = df_fecha["total"].map("${:,.2f}".format)
-                    df_fecha["text_sucursal"] = df_fecha["total_sucursal"].map("${:,.2f}".format)
+                # Gráfico Sunburst interactivo
+                fig_sun = px.sunburst(
+                    df_fecha,
+                    path=["sucursal", "cuenta_sucursal"],
+                    values="total",
+                    color="sucursal",
+                    color_discrete_map=colores_sucursales,
+                    hover_data=None,
+                    text="text_cuenta"
+                )
 
-                    # Crear hover completo
-                    df_fecha["hover_info"] = (
-                        "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
-                        "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
-                        "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
-                        "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
-                        "<b>Monto Cuenta:</b> " + df_fecha["text_cuenta"] + "<br>" +
-                        "<b>Total Sucursal:</b> " + df_fecha["text_sucursal"]
-                    )
+                fig_sun.update_traces(
+                    hovertemplate="%{customdata}<extra></extra>",
+                    customdata=df_fecha["hover_info"]
+                )
 
-                    # Crear gráfico Sunburst con jerarquía sucursal → cuenta_sucursal
-                    # Usamos dos trazas separadas para asegurar hover y texto correctos
-                    fig_sun = go.Figure()
+                fig_sun.update_layout(
+                    title_text=f"Distribución por cuenta - {fecha}",
+                    template="plotly_white"
+                )
 
-                    # Nivel interno: sucursal
-                    df_sucursal = df_fecha.drop_duplicates(subset=["sucursal"])
-                    fig_sun.add_trace(go.Sunburst(
-                        ids=df_sucursal["sucursal"],
-                        labels=df_sucursal["sucursal"],
-                        parents=[""] * len(df_sucursal),
-                        values=df_sucursal["total_sucursal"],
-                        branchvalues="total",
-                        hovertemplate="<b>Sucursal:</b> %{label}<br><b>Total Sucursal:</b> %{value:$,.2f}<extra></extra>",
-                        marker=dict(colors=[colores_sucursales[s] for s in df_sucursal["sucursal"]])
-                    ))
-
-                    # Nivel externo: cuentas
-                    fig_sun.add_trace(go.Sunburst(
-                        ids=df_fecha["cuenta_sucursal"],
-                        labels=df_fecha["cuenta_sucursal"],
-                        parents=df_fecha["sucursal"],
-                        values=df_fecha["total"],
-                        branchvalues="total",
-                        hovertemplate=df_fecha["hover_info"],
-                        text=df_fecha["text_cuenta"],
-                        textinfo="label+text"
-                    ))
-
-                    fig_sun.update_layout(
-                        title_text=f"Distribución por cuenta - {fecha}",
-                        template="plotly_white"
-                    )
-
-                    # Mostrar en Streamlit con scroll y zoom
-                    col.plotly_chart(
-                        fig_sun,
-                        use_container_width=True,
-                        config={
-                            "scrollZoom": True,
-                            "modeBarButtonsToKeep": [
-                                "toImage",
-                                "zoom2d",
-                                "autoScale2d",
-                                "toggleFullscreen"
-                            ],
-                            "displaylogo": False
-                        }
-                    )
-
-
+                st.plotly_chart(
+                    fig_sun,
+                    use_container_width=True,
+                    config={
+                        "scrollZoom": True,
+                        "modeBarButtonsToKeep": [
+                            "toImage",
+                            "zoom2d",
+                            "autoScale2d",
+                            "toggleFullscreen"
+                        ],
+                        "displaylogo": False
+                    }
+                )
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
