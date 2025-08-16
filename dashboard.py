@@ -676,13 +676,19 @@ if authentication_status:
                     )
 
                     fig.update_layout(
-                        title=f"Distribución por cuenta - {fecha}",
+                        title={
+                            'text': f"Distribución por cuenta - {fecha}",
+                            'x': 0.5,            # centrado
+                            'xanchor': 'center', # ancla en el centro
+                            'yanchor': 'top'     # opcional: ancla arriba
+                        },
+                        title_font=dict(size=18, color="#E1E1EC", family="Arial"),
                         template="plotly_white",
                         margin=dict(t=60, l=0, r=0, b=0)
                     )
 
-                    col.plotly_chart(fig, use_container_width=True)
 
+                    col.plotly_chart(fig, use_container_width=True)
 
 
     # ==========================================================================================================
