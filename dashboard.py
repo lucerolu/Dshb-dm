@@ -579,37 +579,46 @@ if authentication_status:
             for fecha in fechas_ordenadas:
                 df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                # Total por sucursal
+                # --- Nodos internos: sucursal ---
                 df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
-                df_sucursal_total.rename(columns={"total": "total_sucursal"}, inplace=True)
-                df_fecha = df_fecha.merge(df_sucursal_total, on="sucursal", how="left")
-
-                # Texto para cada cuenta y sucursal
-                df_fecha["text_cuenta"] = df_fecha["total"].map("${:,.2f}".format)
-                df_fecha["text_sucursal"] = df_fecha["total_sucursal"].map("${:,.2f}".format)
-
-                df_fecha["label_con_monto"] = df_fecha["cuenta_sucursal"] + " $" + df_fecha["total"].map("{:,.2f}".format)
-                df_fecha["hover_info"] = (
-                    "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
-                    "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
-                    "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
-                    "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
-                    "<b>Monto Cuenta:</b> " + df_fecha["text_cuenta"] + "<br>" +
-                    "<b>Total Sucursal:</b> " + df_fecha["text_sucursal"]
+                df_sucursal_total["label"] = df_sucursal_total["sucursal"]
+                df_sucursal_total["parent"] = ""  # raíz
+                df_sucursal_total["customdata"] = df_sucursal_total.apply(
+                    lambda row: f"<b>Fecha:</b> {fecha}<br>"
+                                f"<b>Sucursal:</b> {row['sucursal']}<br>"
+                                f"<b>Total Sucursal:</b> ${row['total']:,.2f}", axis=1
                 )
 
+                # --- Nodos externos: cuentas ---
+                df_cuenta = df_fecha.copy()
+                df_cuenta["label"] = df_cuenta["cuenta_sucursal"]
+                df_cuenta["parent"] = df_cuenta["sucursal"]
+                df_cuenta["customdata"] = df_cuenta.apply(
+                    lambda row: f"<b>Fecha:</b> {fecha}<br>"
+                                f"<b>Sucursal:</b> {row['sucursal']}<br>"
+                                f"<b>Código:</b> {row['codigo']}<br>"
+                                f"<b>División:</b> {row['abreviatura']}<br>"
+                                f"<b>Monto Cuenta:</b> ${row['total']:,.2f}", axis=1
+                )
+
+                # --- Unir nodos ---
+                df_nodes = pd.concat([
+                    df_sucursal_total[["label", "parent", "total", "customdata"]],
+                    df_cuenta[["label", "parent", "total", "customdata"]]
+                ])
+
+                # --- Crear sunburst ---
                 fig_sun = px.sunburst(
-                    df_fecha,
-                    path=["sucursal", "label_con_monto"],  # usa label con monto
+                    df_nodes,
+                    names="label",
+                    parents="parent",
                     values="total",
-                    color="sucursal",
-                    color_discrete_map=colores_sucursales,
+                    color="label",  # o "parent" si quieres por sucursal
                     hover_data=None
                 )
 
                 fig_sun.update_traces(
-                    hovertemplate="%{customdata}<extra></extra>",
-                    customdata=df_fecha["hover_info"]
+                    hovertemplate="%{customdata}<extra></extra>"
                 )
 
                 fig_sun.update_layout(
@@ -617,6 +626,7 @@ if authentication_status:
                     template="plotly_white"
                 )
 
+                # --- Mostrar en Streamlit ---
                 st.plotly_chart(
                     fig_sun,
                     use_container_width=True,
@@ -631,6 +641,7 @@ if authentication_status:
                         "displaylogo": False
                     }
                 )
+
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
