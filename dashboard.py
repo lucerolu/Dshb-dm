@@ -1490,6 +1490,8 @@ if authentication_status:
 
 
         #----------- Graficos de columnas de compra mensual por división y sucursal -------------
+
+        # Cargar colores de divisiones
         with open("config_colores.json", "r", encoding="utf-8") as f:
             config = json.load(f)
 
@@ -1503,104 +1505,93 @@ if authentication_status:
 
         sucursales = df_smd["sucursal"].unique()
         num_sucursales = len(sucursales)
-        
-        # Lista en español (la mantienes como está)
+
+        # Lista en español
         orden_meses_con_anio = [
             "Enero 2025", "Febrero 2025", "Marzo 2025", "Abril 2025", "Mayo 2025", "Junio 2025",
             "Julio 2025", "Agosto 2025", "Septiembre 2025", "Octubre 2025", "Noviembre 2025", "Diciembre 2025"
         ]
 
-        # Mapeo Español → Inglés (solo para conversión interna)
+        # Mapeo español → inglés para conversión
         meses_es_en = {
             'Enero': 'January', 'Febrero': 'February', 'Marzo': 'March', 'Abril': 'April',
             'Mayo': 'May', 'Junio': 'June', 'Julio': 'July', 'Agosto': 'August',
             'Septiembre': 'September', 'Octubre': 'October', 'Noviembre': 'November', 'Diciembre': 'December'
         }
 
-        # Crear columna temporal para conversión
+        # Columna temporal para conversión
         df_smd["mes_nombre_en"] = df_smd["mes_nombre"].str.extract(r"(\w+)\s+(\d{4})").apply(
             lambda row: f"{meses_es_en.get(row[0], row[0])} {row[1]}", axis=1
         )
 
-        # Convertir la columna en inglés a datetime
+        # Convertir a datetime
         df_smd["fecha_mes"] = pd.to_datetime(df_smd["mes_nombre_en"], format="%B %Y")
 
-        # Obtener el mes más reciente con datos
+        # Filtrar hasta el mes más reciente
         max_fecha = df_smd["fecha_mes"].max()
-
-        # También convertir la lista `orden_meses_con_anio` a fechas para comparar con max_fecha
         orden_meses_fecha = [
             pd.to_datetime(f"{meses_es_en[m.split()[0]]} {m.split()[1]}", format="%B %Y")
             for m in orden_meses_con_anio
         ]
-
-        # Filtrar los que estén antes o igual a max_fecha
         meses_hasta_max = [
             orden_meses_con_anio[i] for i, fecha in enumerate(orden_meses_fecha) if fecha <= max_fecha
         ]
 
-        # Re-categorizar `mes_nombre` para ordenarlo visualmente
+        # Categorizar para orden
         df_smd["mes_nombre"] = pd.Categorical(df_smd["mes_nombre"], categories=meses_hasta_max, ordered=True)
-
-        # Orden final
         df_smd = df_smd.sort_values(["sucursal", "mes_nombre"])
-
-        # (Opcional) limpiar columna temporal
         df_smd.drop(columns=["mes_nombre_en"], inplace=True)
-
 
         st.title("Evolución de compras por sucursal")
 
-        # Opción para columnas: 1 o 2, para simular responsive
+        # Columnas por fila
         num_columnas = st.radio("Número de columnas de gráficos por fila:", options=[1, 2], index=1)
-        num_filas = math.ceil(num_sucursales / num_columnas)
 
-        # Ordenar divisiones para colores
+        # Orden de divisiones y paleta
         divisiones_ordenadas = sorted(df_smd["division"].unique())
         palette = [colores_divisiones.get(div, "#777777") for div in divisiones_ordenadas]
 
+        # Iterar por filas
         for i in range(0, num_sucursales, num_columnas):
             cols = st.columns(num_columnas)
-
             for j in range(num_columnas):
                 if i + j < num_sucursales:
-                        suc = sucursales[i + j]
-                        df_filtrado = df_smd[df_smd["sucursal"] == suc]
+                    suc = sucursales[i + j]
+                    df_filtrado = df_smd[df_smd["sucursal"] == suc]
 
-                        fig, ax = plt.subplots(figsize=(8, 4))
-                        fig.patch.set_facecolor('#121212')  # fondo figura negro
-                        ax.set_facecolor('#121212')          # fondo eje negro
+                    fig, ax = plt.subplots(figsize=(8, 4))
+                    fig.patch.set_facecolor('#121212')
+                    ax.set_facecolor('#121212')
 
-                        # Gráfico de barras horizontal con paleta personalizada
-                        sns.barplot(
-                            data=df_filtrado,
-                            x="monto",
-                            y="mes_nombre",
-                            hue="division",
-                            palette=palette,
-                            ax=ax,
-                            orient="h"
-                        )
-                        # Aquí agregas las etiquetas con formato moneda y separador de miles
-                        for container in ax.containers:
-                            ax.bar_label(container, labels=[f"${x:,.0f}" for x in container.datavalues], padding=3, color='white', fontsize=9)
+                    sns.barplot(
+                        data=df_filtrado,
+                        x="monto",
+                        y="mes_nombre",
+                        hue="division",
+                        hue_order=divisiones_ordenadas,
+                        palette=palette,
+                        ax=ax,
+                        orient="h"
+                    )
 
-                        # Formatear el eje X con signo $ y comas
-                        ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('${x:,.0f}'))
-                        # Colores textos para fondo oscuro
-                        ax.set_title(f"{suc} - Evolución de Compras", color="white")
-                        ax.set_xlabel("Monto", color="white")
-                        ax.set_ylabel("Mes", color="white")
+                    # Etiquetas con formato moneda
+                    for container in ax.containers:
+                        ax.bar_label(container, labels=[f"${x:,.0f}" for x in container.datavalues], padding=3, color='white', fontsize=9)
 
-                        ax.tick_params(colors="white")      # ticks color blanco
-                        ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left', facecolor='#121212', edgecolor='white', labelcolor='white')
+                    ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('${x:,.0f}'))
+                    ax.set_title(f"{suc} - Evolución de Compras", color="white")
+                    ax.set_xlabel("Monto", color="white")
+                    ax.set_ylabel("Mes", color="white")
+                    ax.tick_params(colors="white")
 
-                        # Cambiar color textos de leyenda
-                        leg = ax.get_legend()
-                        for text in leg.get_texts():
-                            text.set_color("white")
+                    leg = ax.get_legend()
+                    leg.set_title("División", prop={"color": "white"})
+                    for text in leg.get_texts():
+                        text.set_color("white")
+                    ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left', facecolor='#121212', edgecolor='white')
 
-                        cols[j].pyplot(fig)
+                    cols[j].pyplot(fig)
+
 
 
     # ==========================================================================================================
