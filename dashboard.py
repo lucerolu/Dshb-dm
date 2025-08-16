@@ -582,18 +582,17 @@ if authentication_status:
                 # Total por sucursal
                 df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
                 df_sucursal_total.rename(columns={"total": "total_sucursal"}, inplace=True)
-
-                # Crear nodos internos (sucursales)
                 df_sucursal_total["id"] = df_sucursal_total["sucursal"]
-                df_sucursal_total["parent"] = ""  # nodo raíz
+                df_sucursal_total["parent"] = ""
                 df_sucursal_total["text"] = df_sucursal_total["sucursal"] + " $" + df_sucursal_total["total_sucursal"].map("{:,.2f}".format)
                 df_sucursal_total["hover_info"] = (
                     "<b>Fecha:</b> " + fecha + "<br>" +
                     "<b>Sucursal:</b> " + df_sucursal_total["sucursal"] + "<br>" +
                     "<b>Total Sucursal:</b> $" + df_sucursal_total["total_sucursal"].map("{:,.2f}".format)
                 )
+                df_sucursal_total["valor"] = df_sucursal_total["total_sucursal"]
 
-                # Crear nodos externos (cuentas)
+                # Nodos cuentas
                 df_cuentas = df_fecha.copy()
                 df_cuentas["id"] = df_cuentas["sucursal"] + " - " + df_cuentas["cuenta_sucursal"]
                 df_cuentas["parent"] = df_cuentas["sucursal"]
@@ -605,21 +604,20 @@ if authentication_status:
                     "<b>División:</b> " + df_cuentas["abreviatura"] + "<br>" +
                     "<b>Monto Cuenta:</b> $" + df_cuentas["total"].map("{:,.2f}".format)
                 )
+                df_cuentas["valor"] = df_cuentas["total"]
 
-                # Combinar sucursales y cuentas
+                # Combinar
                 df_sun = pd.concat([df_sucursal_total, df_cuentas], ignore_index=True)
 
-                # Crear sunburst con ids y parents
                 fig_sun = px.sunburst(
                     df_sun,
                     ids="id",
                     parents="parent",
-                    values="total_sucursal",  # Plotly ignora valores de nodos con hijos; se suman automáticamente
-                    color="parent",  # o "id" para colorear por sucursal
-                    hover_data=None,
+                    values="valor",
+                    color="parent",
+                    hover_data=None
                 )
 
-                # Asignar hovertemplate y texto
                 fig_sun.update_traces(
                     hovertemplate="%{customdata}<extra></extra>",
                     customdata=df_sun["hover_info"],
@@ -646,6 +644,7 @@ if authentication_status:
                         "displaylogo": False
                     }
                 )
+
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
