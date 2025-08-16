@@ -586,29 +586,51 @@ if authentication_status:
                     fecha = fechas_ordenadas[i + j]
                     df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                    # Crear columna con texto que se mostrará dentro de cada porción
-                    df_fecha["text_monto"] = df_fecha["total"].apply(lambda x: f"${x:,.0f}")
+                    # Agrupar por sucursal para obtener monto total por sucursal
+                    df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
+                    df_sucursal_total.rename(columns={"total": "total_sucursal"}, inplace=True)
 
-                    # Gráfico sunburst jerarquía sucursal -> cuenta_sucursal
+                    # Combinar con df_fecha para tener el total por sucursal disponible
+                    df_fecha = df_fecha.merge(df_sucursal_total, on="sucursal", how="left")
+
+                    # Columna de texto para monto por cuenta y por sucursal
+                    df_fecha["text_monto_cuenta"] = df_fecha["total"].map("${:,.2f}".format)
+                    df_fecha["text_monto_sucursal"] = df_fecha["total_sucursal"].map("${:,.2f}".format)
+
+                    # Crear hover completo
+                    df_fecha["hover_info"] = (
+                        "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
+                        "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
+                        "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
+                        "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
+                        "<b>Monto Cuenta:</b> " + df_fecha["text_monto_cuenta"] + "<br>" +
+                        "<b>Total Sucursal:</b> " + df_fecha["text_monto_sucursal"]
+                    )
+
+                    # Gráfico Sunburst con jerarquía sucursal → cuenta_sucursal
                     fig_sun = px.sunburst(
                         df_fecha,
                         path=["sucursal", "cuenta_sucursal"],
                         values="total",
                         color="sucursal",
                         color_discrete_map=colores_sucursales,
-                        hover_data={"total": False, "sucursal": True, "cuenta_sucursal": True}  # hover simple y confiable
+                        hover_data=None
                     )
 
-                    # Mostrar el texto dentro de cada porción
-                    fig_sun.update_traces(text=df_fecha["text_monto"], textinfo="label+text")
+                    # Asignar hovertemplate y texto dentro de la porción
+                    fig_sun.update_traces(
+                        customdata=df_fecha["hover_info"],
+                        hovertemplate="%{customdata}<extra></extra>",
+                        text=df_fecha["text_monto_cuenta"],  # monto dentro de la porción
+                        textinfo="label+text"
+                    )
 
-                    # Layout y título
                     fig_sun.update_layout(
                         title_text=f"Distribución por cuenta - {fecha}",
                         template="plotly_white"
                     )
 
-                    # Mostrar gráfico en Streamlit con scroll y zoom
+                    # Mostrar en Streamlit con scroll y zoom
                     col.plotly_chart(
                         fig_sun,
                         use_container_width=True,
@@ -623,6 +645,7 @@ if authentication_status:
                             "displaylogo": False
                         }
                     )
+
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
