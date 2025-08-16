@@ -1551,7 +1551,6 @@ if authentication_status:
         divisiones_ordenadas = sorted(df_smd["division"].unique())
         palette = [colores_divisiones.get(div, "#777777") for div in divisiones_ordenadas]
 
-        # Iterar por filas
         for i in range(0, num_sucursales, num_columnas):
             cols = st.columns(num_columnas)
             for j in range(num_columnas):
@@ -1563,39 +1562,49 @@ if authentication_status:
                     fig.patch.set_facecolor('#121212')
                     ax.set_facecolor('#121212')
 
+                    # Divisiones presentes en este subset y paleta ajustada
+                    divisiones_presentes = df_filtrado["division"].unique()
+                    palette_grafico = {div: colores_divisiones.get(div, "#777777") for div in divisiones_presentes}
+
                     sns.barplot(
                         data=df_filtrado,
                         x="monto",
                         y="mes_nombre",
                         hue="division",
-                        hue_order=divisiones_ordenadas,
-                        palette=palette,
+                        hue_order=divisiones_presentes,  # solo divisiones presentes
+                        palette=palette_grafico,
                         ax=ax,
                         orient="h"
                     )
 
-                    # Etiquetas con formato moneda
+                    # Etiquetas de las barras, al borde para no sobreponerse
                     for container in ax.containers:
-                        ax.bar_label(container, labels=[f"${x:,.0f}" for x in container.datavalues], padding=3, color='white', fontsize=9)
+                        ax.bar_label(
+                            container,
+                            labels=[f"${x:,.0f}" for x in container.datavalues],
+                            padding=3,
+                            color='white',
+                            fontsize=9,
+                            label_type='edge'
+                        )
 
+                    # Formato eje X
                     ax.xaxis.set_major_formatter(mtick.StrMethodFormatter('${x:,.0f}'))
                     ax.set_title(f"{suc} - Evolución de Compras", color="white")
                     ax.set_xlabel("Monto", color="white")
                     ax.set_ylabel("Mes", color="white")
                     ax.tick_params(colors="white")
 
+                    # Leyenda solo con divisiones presentes
                     leg = ax.get_legend()
                     leg.set_title("División")
-                    leg.get_title().set_color("white")  # <-- color del título de la leyenda
-
-                    # Cambiar color de los labels
+                    leg.get_title().set_color("white")
                     for text in leg.get_texts():
                         text.set_color("white")
-                    ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left', facecolor='#121212', edgecolor='white')
+                    ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left',
+                            facecolor='#121212', edgecolor='white')
 
                     cols[j].pyplot(fig)
-
-
 
     # ==========================================================================================================
     # ===================== COMPRA POR CUENTA ======================================
