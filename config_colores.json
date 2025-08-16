@@ -19,18 +19,18 @@
   },
   "divisiones": {
       "Agrícola": {
-        "abreviatura": "AGR",
+        "abreviatura": "AG",
         "color": "#367C2B",
         "codigos": ["300594", "300412", "300356", "300601", "300602", "300255", "300598", "300606", "300427", "300564", "300596", "300563", "300417", "300456"]
       },
       "Construcción": {
         "abreviatura": "CF",
-        "color": "#FFDE00",
+        "color": "#FFA500",
         "codigos": ["300595", "300421", "300294", "300357", "300298", "300622", "300600", "300597", "300323", "300419"]
       },
       "Jardinería y Golf": {
-        "abreviatura": "TG",
-        "color": "#FFA500",
+        "abreviatura": "JG",
+        "color": "#FFDE00",
         "codigos": ["300288", "300424"]
       }
   }

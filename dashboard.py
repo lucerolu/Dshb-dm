@@ -247,6 +247,56 @@ if authentication_status:
             col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
+            #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
+            # Función para abreviatura
+            def obtener_abreviatura(codigo):
+                for division, info in divisiones.items():
+                    if codigo in info["codigos"]:
+                        return info["abreviatura"]
+                return ""
+
+            # ---- Preparar DataFrame ----
+            # Aquí usarías tu df_estado_cuenta original, no el pivot final
+            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo"].astype(str)
+
+            df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
+            df_estado_cuenta["cuenta_sucursal"] = df_estado_cuenta["codigo"] + " (" + df_estado_cuenta["abreviatura"] + ") - " + df_estado_cuenta["sucursal"]
+
+            # Mapeo de colores por sucursal
+            df_estado_cuenta["color_sucursal"] = df_estado_cuenta["sucursal"].map(colores_sucursales)
+
+            # ---- Crear gráfica ----
+            fig = px.line(
+                df_estado_cuenta,
+                x="fecha_exigibilidad",
+                y="total",
+                color="sucursal",  # cada sucursal su línea
+                color_discrete_map=colores_sucursales,
+                custom_data=["sucursal", "codigo", "abreviatura"]
+            )
+
+            # Hovertemplate personalizado
+            fig.update_traces(
+                hovertemplate="<b>Fecha:</b> %{x|%d/%m/%Y}<br>"
+                            "<b>Código:</b> %{customdata[1]}<br>"
+                            "<b>Sucursal:</b> %{customdata[0]}<br>"
+                            "<b>División:</b> %{customdata[2]}<br>"
+                            "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+            )
+
+            # Formato de ejes
+            fig.update_layout(
+                xaxis_title="Fecha de exigibilidad",
+                yaxis_title="Monto",
+                hovermode="x unified",
+                template="plotly_white"
+            )
+
+            # En Streamlit
+            import streamlit as st
+            st.plotly_chart(fig, use_container_width=True)
+
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
             # --- Preparar datos ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
