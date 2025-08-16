@@ -300,15 +300,18 @@ if authentication_status:
                             "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
             )
 
+            # Crear un mapeo cuenta_sucursal -> color_sucursal
+            color_cuentas = {
+                row["cuenta_sucursal"]: colores_sucursales[row["sucursal"]]
+                for _, row in df_estado_cuenta.drop_duplicates("cuenta_sucursal").iterrows()
+            }
+
             fig = px.line(
                 df_estado_cuenta,
                 x="fecha_exigibilidad",
                 y="total",
-                color="cuenta_sucursal",  # cada cuenta es una línea
-                color_discrete_map={
-                    cuenta: colores_sucursales[sucursal]
-                    for cuenta, sucursal in zip(df_estado_cuenta["cuenta_sucursal"], df_estado_cuenta["sucursal"])
-                },
+                color="cuenta_sucursal",
+                color_discrete_map=color_cuentas,
                 custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
