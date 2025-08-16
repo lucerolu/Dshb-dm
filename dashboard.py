@@ -582,47 +582,37 @@ if authentication_status:
                 # Total por sucursal
                 df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
                 df_sucursal_total.rename(columns={"total": "total_sucursal"}, inplace=True)
-                df_sucursal_total["id"] = df_sucursal_total["sucursal"]
-                df_sucursal_total["parent"] = ""
-                df_sucursal_total["text"] = df_sucursal_total["sucursal"] + " $" + df_sucursal_total["total_sucursal"].map("{:,.2f}".format)
-                df_sucursal_total["hover_info"] = (
-                    "<b>Fecha:</b> " + fecha + "<br>" +
-                    "<b>Sucursal:</b> " + df_sucursal_total["sucursal"] + "<br>" +
-                    "<b>Total Sucursal:</b> $" + df_sucursal_total["total_sucursal"].map("{:,.2f}".format)
+
+                # Columnas de texto para mostrar en gráfico
+                df_fecha["text_monto"] = df_fecha["total"].map("${:,.2f}".format)
+                df_fecha["text_sucursal"] = df_fecha["sucursal"].map(
+                    df_sucursal_total.set_index("sucursal")["total_sucursal"].map("${:,.2f}".format)
                 )
-                df_sucursal_total["valor"] = df_sucursal_total["total_sucursal"]
 
-                # Nodos cuentas
-                df_cuentas = df_fecha.copy()
-                df_cuentas["id"] = df_cuentas["sucursal"] + " - " + df_cuentas["cuenta_sucursal"]
-                df_cuentas["parent"] = df_cuentas["sucursal"]
-                df_cuentas["text"] = df_cuentas["cuenta_sucursal"] + " $" + df_cuentas["total"].map("{:,.2f}".format)
-                df_cuentas["hover_info"] = (
-                    "<b>Fecha:</b> " + fecha + "<br>" +
-                    "<b>Código:</b> " + df_cuentas["codigo"] + "<br>" +
-                    "<b>Sucursal:</b> " + df_cuentas["sucursal"] + "<br>" +
-                    "<b>División:</b> " + df_cuentas["abreviatura"] + "<br>" +
-                    "<b>Monto Cuenta:</b> $" + df_cuentas["total"].map("{:,.2f}".format)
+                # Hover completo
+                df_fecha["hover_info"] = (
+                    "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
+                    "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
+                    "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
+                    "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
+                    "<b>Monto Cuenta:</b> " + df_fecha["text_monto"] + "<br>" +
+                    "<b>Total Sucursal:</b> " + df_fecha["text_sucursal"]
                 )
-                df_cuentas["valor"] = df_cuentas["total"]
 
-                # Combinar nodos
-                df_sun = pd.concat([df_sucursal_total, df_cuentas], ignore_index=True)
-
-                # Crear gráfico Sunburst
+                # Gráfico Sunburst simple por path
                 fig_sun = px.sunburst(
-                    df_sun,
-                    ids="id",
-                    parents="parent",
-                    values="valor",
-                    color="parent",  # color por sucursal
+                    df_fecha,
+                    path=["sucursal", "cuenta_sucursal"],
+                    values="total",
+                    color="sucursal",
+                    color_discrete_map=colores_sucursales,
                     hover_data=None
                 )
 
                 fig_sun.update_traces(
                     hovertemplate="%{customdata}<extra></extra>",
-                    customdata=df_sun["hover_info"],
-                    text=df_sun["text"],
+                    customdata=df_fecha["hover_info"],
+                    text=df_fecha["text_monto"],
                     textinfo="label+text"
                 )
 
