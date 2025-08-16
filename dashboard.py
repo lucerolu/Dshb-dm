@@ -584,8 +584,9 @@ if authentication_status:
                     if i + j >= len(fechas_ordenadas):
                         break
                     fecha = fechas_ordenadas[i + j]
-                    df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha]
+                    df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
+                    # Hover personalizado
                     df_fecha["hover_text"] = (
                         "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"].astype(str) + "<br>" +
                         "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
@@ -594,29 +595,29 @@ if authentication_status:
                         "<b>Monto:</b> $" + df_fecha["total"].map("{:,.2f}".format)
                     )
 
-                    fig_pie = px.pie(
+                    # Crear gráfico sunburst
+                    fig_sunburst = px.sunburst(
                         df_fecha,
-                        names="cuenta_sucursal",   # solo para dividir las porciones
+                        path=["sucursal", "cuenta_sucursal"],  # jerarquía
                         values="total",
-                        color="cuenta_sucursal",
-                        color_discrete_map=color_cuentas,
-                        hole=0.4,
-                        hover_data=None             # evita conflictos con custom_data
+                        color="sucursal",
+                        color_discrete_map=colores_sucursales,
+                        hover_data={"hover_text": True, "total": False},
                     )
 
-                    fig_pie.update_traces(
-                        hovertemplate="%{customdata}<extra></extra>",
-                        customdata=df_fecha["hover_text"]
+                    # Hovertemplate personalizado
+                    fig_sunburst.update_traces(
+                        hovertemplate="%{customdata[0]}<extra></extra>",
+                        customdata=df_fecha[["hover_text"]].values
                     )
 
-                    fig_pie.update_layout(
+                    fig_sunburst.update_layout(
                         title_text=f"Distribución por cuenta - {fecha}",
-                        showlegend=True,
                         template="plotly_white"
                     )
 
                     col.plotly_chart(
-                        fig_pie,
+                        fig_sunburst,
                         use_container_width=True,
                         config={
                             "scrollZoom": True,
