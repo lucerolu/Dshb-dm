@@ -481,7 +481,7 @@ if authentication_status:
                     'fontWeight': 'bold',
                     'textAlign': 'left'
                 },
-                sortable=False,
+                sortable=True,  
                 valueFormatter=value_formatter,
                 minWidth=120,
                 headerClass='header-left'
