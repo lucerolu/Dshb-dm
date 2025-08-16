@@ -606,15 +606,16 @@ if authentication_status:
                 )
                 df_cuentas["valor"] = df_cuentas["total"]
 
-                # Combinar
+                # Combinar nodos
                 df_sun = pd.concat([df_sucursal_total, df_cuentas], ignore_index=True)
 
+                # Crear gráfico Sunburst
                 fig_sun = px.sunburst(
                     df_sun,
                     ids="id",
                     parents="parent",
                     values="valor",
-                    color="parent",
+                    color="parent",  # color por sucursal
                     hover_data=None
                 )
 
@@ -632,18 +633,9 @@ if authentication_status:
 
                 st.plotly_chart(
                     fig_sun,
-                    use_container_width=True,
-                    config={
-                        "scrollZoom": True,
-                        "modeBarButtonsToKeep": [
-                            "toImage",
-                            "zoom2d",
-                            "autoScale2d",
-                            "toggleFullscreen"
-                        ],
-                        "displaylogo": False
-                    }
+                    use_container_width=True
                 )
+
 
 
     # ==========================================================================================================
