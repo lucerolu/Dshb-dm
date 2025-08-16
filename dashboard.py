@@ -576,55 +576,112 @@ if authentication_status:
             )
 
             #----------------------------------- GRAFICO DE ANILLOS ------------------------------------------------------------------------------------------------------------------------
-            for fecha in fechas_ordenadas:
-                df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
+            # --- helper para formato moneda ---
+            def fmt(v):
+                try:
+                    return f"${float(v):,.2f}"
+                except Exception:
+                    return "$0.00"
 
-                # Total por sucursal
-                df_sucursal_total = df_fecha.groupby("sucursal", as_index=False)["total"].sum()
-                df_sucursal_total.rename(columns={"total": "total_sucursal"}, inplace=True)
+            # Asegura que estas columnas existan y tipos correctos
+            df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
 
-                # Columnas de texto para mostrar en gráfico
-                df_fecha["text_monto"] = df_fecha["total"].map("${:,.2f}".format)
-                df_fecha["text_sucursal"] = df_fecha["sucursal"].map(
-                    df_sucursal_total.set_index("sucursal")["total_sucursal"].map("${:,.2f}".format)
-                )
+            # Loop: 2 gráficos por fila
+            for i in range(0, len(fechas_ordenadas), 2):
+                col1, col2 = st.columns(2)
+                for j, col in enumerate([col1, col2]):
+                    if i + j >= len(fechas_ordenadas):
+                        break
 
-                # Hover completo
-                df_fecha["hover_info"] = (
-                    "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
-                    "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
-                    "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
-                    "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
-                    "<b>Monto Cuenta:</b> " + df_fecha["text_monto"] + "<br>" +
-                    "<b>Total Sucursal:</b> " + df_fecha["text_sucursal"]
-                )
+                    fecha = fechas_ordenadas[i + j]
+                    # --- dataset de esa fecha ---
+                    df_fecha_raw = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                # Gráfico Sunburst simple por path
-                fig_sun = px.sunburst(
-                    df_fecha,
-                    path=["sucursal", "cuenta_sucursal"],
-                    values="total",
-                    color="sucursal",
-                    color_discrete_map=colores_sucursales,
-                    hover_data=None
-                )
+                    # MUY IMPORTANTE: agrupar por sucursal + cuenta para evitar duplicados
+                    df_fecha = (
+                        df_fecha_raw.groupby(["sucursal", "cuenta_sucursal", "codigo", "abreviatura"], as_index=False)["total"]
+                        .sum()
+                    )
 
-                fig_sun.update_traces(
-                    hovertemplate="%{customdata}<extra></extra>",
-                    customdata=df_fecha["hover_info"],
-                    text=df_fecha["text_monto"],
-                    textinfo="label+text"
-                )
+                    # Totales por sucursal (para texto del nodo padre)
+                    tot_por_suc = df_fecha.groupby("sucursal", as_index=False)["total"].sum().rename(columns={"total": "total_sucursal"})
+                    map_tot_suc = dict(zip(tot_por_suc["sucursal"], tot_por_suc["total_sucursal"]))
 
-                fig_sun.update_layout(
-                    title_text=f"Distribución por cuenta - {fecha}",
-                    template="plotly_white"
-                )
+                    # --- construir nodos: ids, parents, values, labels, colors, text, hover ---
+                    ids, parents, values, labels, colors, texts, hovertexts = [], [], [], [], [], [], []
 
-                st.plotly_chart(
-                    fig_sun,
-                    use_container_width=True
-                )
+                    # Nodos de sucursal (padres)
+                    for _, r in tot_por_suc.iterrows():
+                        suc = r["sucursal"]
+                        t_suc = r["total_sucursal"]
+                        sid = f"S|{suc}"
+                        ids.append(sid)
+                        parents.append("")                  # raíz implícita
+                        values.append(t_suc)                # branchvalues='total' y valor del padre = suma cuentas
+                        labels.append(suc)
+                        colors.append(colores_sucursales.get(suc, "#808080"))
+                        texts.append(fmt(t_suc))            # muestra total sucursal en el anillo interno
+                        hovertexts.append(
+                            f"<b>Fecha:</b> {fecha}<br>"
+                            f"<b>Sucursal:</b> {suc}<br>"
+                            f"<b>Total Sucursal:</b> {fmt(t_suc)}"
+                        )
+
+                    # Nodos de cuenta (hijas)
+                    # Orden estable por sucursal para consistencia visual
+                    df_fecha = df_fecha.sort_values(["sucursal", "cuenta_sucursal"]).reset_index(drop=True)
+                    for _, r in df_fecha.iterrows():
+                        suc = r["sucursal"]
+                        cuenta = r["cuenta_sucursal"]
+                        monto = float(r["total"])
+                        codigo = r["codigo"]
+                        abrev = r["abreviatura"]
+                        t_suc = map_tot_suc.get(suc, 0.0)
+
+                        cid = f"A|{suc}|{cuenta}"
+                        ids.append(cid)
+                        parents.append(f"S|{suc}")
+                        values.append(monto)
+                        labels.append(cuenta)                      # etiqueta externa = cuenta (como querías)
+                        colors.append(colores_sucursales.get(suc, "#808080"))   # color por sucursal
+                        texts.append(fmt(monto))                   # muestra monto cuenta en el anillo externo
+                        hovertexts.append(
+                            f"<b>Fecha:</b> {fecha}<br>"
+                            f"<b>Código:</b> {codigo}<br>"
+                            f"<b>Sucursal:</b> {suc}<br>"
+                            f"<b>División:</b> {abrev}<br>"
+                            f"<b>Monto Cuenta:</b> {fmt(monto)}<br>"
+                            f"<b>Total Sucursal:</b> {fmt(t_suc)}"
+                        )
+
+                    # --- Sunburst GO: control total, sin customdata que se desordene ---
+                    fig = go.Figure(
+                        go.Sunburst(
+                            ids=ids,
+                            parents=parents,
+                            values=values,
+                            labels=labels,
+                            text=texts,                 # monto visible en cada porción
+                            textinfo="label+text",
+                            insidetextorientation="horizontal",
+                            marker=dict(
+                                colors=colors,
+                                line=dict(color="white", width=1)
+                            ),
+                            branchvalues="total",
+                            hovertext=hovertexts,
+                            hovertemplate="%{hovertext}<extra></extra>"
+                        )
+                    )
+
+                    fig.update_layout(
+                        title=f"Distribución por cuenta - {fecha}",
+                        template="plotly_white",
+                        margin=dict(t=60, l=0, r=0, b=0)
+                    )
+
+                    col.plotly_chart(fig, use_container_width=True)
 
 
 
