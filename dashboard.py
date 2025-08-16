@@ -575,8 +575,57 @@ if authentication_status:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-            #------------------------------------------------------------------------------------------------------------
+            #----------------------------------- GRAFICO DE ANILLOS -----------------------------------------
+            # Iterar sobre fechas ordenadas
+            for i in range(0, len(fechas_ordenadas), 2):
+                col1, col2 = st.columns(2)  # dos gráficos por fila
 
+                for j, col in enumerate([col1, col2]):
+                    if i + j >= len(fechas_ordenadas):
+                        break
+                    fecha = fechas_ordenadas[i + j]
+                    df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha]
+
+                    # Crear gráfico de anillo
+                    fig_pie = px.pie(
+                        df_fecha,
+                        names="cuenta_sucursal",
+                        values="total",
+                        color="cuenta_sucursal",
+                        color_discrete_map=color_cuentas,
+                        hole=0.4,  # hace anillo
+                        custom_data=["sucursal", "codigo", "abreviatura"]
+                    )
+
+                    fig_pie.update_traces(
+                        hovertemplate=(
+                            "<b>Cuenta:</b> %{label}<br>"
+                            "<b>Sucursal:</b> %{customdata[0]}<br>"
+                            "<b>División:</b> %{customdata[2]}<br>"
+                            "<b>Monto:</b> $%{value:,.2f}<extra></extra>"
+                        )
+                    )
+
+                    fig_pie.update_layout(
+                        title_text=f"Distribución por cuenta - {fecha}",
+                        showlegend=True,
+                        template="plotly_white"
+                    )
+
+                    col.plotly_chart(
+                        fig_pie,
+                        use_container_width=True,
+                        config={
+                            "scrollZoom": True,
+                            "modeBarButtonsToKeep": [
+                                "toImage",
+                                "zoom2d",
+                                "autoScale2d",
+                                "toggleFullscreen"
+                            ],
+                            "displaylogo": False
+                        }
+                    )
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
