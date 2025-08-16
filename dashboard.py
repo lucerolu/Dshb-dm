@@ -1585,7 +1585,10 @@ if authentication_status:
                     ax.tick_params(colors="white")
 
                     leg = ax.get_legend()
-                    leg.set_title("División", prop={"color": "white"})
+                    leg.set_title("División")
+                    leg.get_title().set_color("white")  # <-- color del título de la leyenda
+
+                    # Cambiar color de los labels
                     for text in leg.get_texts():
                         text.set_color("white")
                     ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left', facecolor='#121212', edgecolor='white')
