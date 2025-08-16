@@ -300,11 +300,16 @@ if authentication_status:
                             "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
             )
 
-            fig.update_layout(
-                xaxis_title="Fecha de exigibilidad",
-                yaxis_title="Monto",
-                hovermode="x unified",
-                template="plotly_white"
+            fig = px.line(
+                df_estado_cuenta,
+                x="fecha_exigibilidad",
+                y="total",
+                color="cuenta_sucursal",  # cada cuenta es una línea
+                color_discrete_map={
+                    cuenta: colores_sucursales[sucursal]
+                    for cuenta, sucursal in zip(df_estado_cuenta["cuenta_sucursal"], df_estado_cuenta["sucursal"])
+                },
+                custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
             st.plotly_chart(fig, use_container_width=True)
