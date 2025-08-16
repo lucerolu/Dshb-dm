@@ -593,15 +593,16 @@ if authentication_status:
                         values="total",
                         color="cuenta_sucursal",
                         color_discrete_map=color_cuentas,
-                        hole=0.4,  # hace anillo
-                        custom_data=["sucursal", "codigo", "abreviatura"]
+                        hole=0.4,  # convierte en anillo
+                        custom_data=["fecha_exigibilidad_str", "codigo", "sucursal", "abreviatura"]
                     )
 
                     fig_pie.update_traces(
                         hovertemplate=(
-                            "<b>Cuenta:</b> %{label}<br>"
-                            "<b>Sucursal:</b> %{customdata[0]}<br>"
-                            "<b>División:</b> %{customdata[2]}<br>"
+                            "<b>Fecha:</b> %{customdata[0]}<br>"
+                            "<b>Código:</b> %{customdata[1]}<br>"
+                            "<b>Sucursal:</b> %{customdata[2]}<br>"
+                            "<b>División:</b> %{customdata[3]}<br>"
                             "<b>Monto:</b> $%{value:,.2f}<extra></extra>"
                         )
                     )
