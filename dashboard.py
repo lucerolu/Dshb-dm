@@ -605,13 +605,8 @@ if authentication_status:
                     )
 
                     fig_pie.update_traces(
-                        hovertemplate=(
-                            "<b>Fecha:</b> %{customdata[0]}<br>"
-                            "<b>Código:</b> %{customdata[1]}<br>"
-                            "<b>Sucursal:</b> %{customdata[2]}<br>"
-                            "<b>División:</b> %{customdata[3]}<br>"
-                            "<b>Monto:</b> $%{value:,.2f}<extra></extra>"
-                        )
+                        hovertemplate="%{customdata}<extra></extra>",
+                        customdata=df_fecha["hover_text"]
                     )
 
                     fig_pie.update_layout(
