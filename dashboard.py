@@ -308,7 +308,7 @@ if authentication_status:
             fig.update_layout(
                 xaxis_title="Fecha de exigibilidad",
                 yaxis_title="Monto",
-                hovermode="x unified",
+                hovermode="closest",  # <-- cambiar aquí
                 template="plotly_white"
             )
 
