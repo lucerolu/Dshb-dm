@@ -575,9 +575,10 @@ if authentication_status:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-            #----------------------------------- GRAFICO DE ANILLOS -----------------------------------------
+            #----------------------------------- GRAFICO DE ANILLOS ------------------------------------------------------------------------------------------------------------------------
+            # Iterar sobre fechas ordenadas
             for i in range(0, len(fechas_ordenadas), 2):
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns(2)  # dos gráficos por fila
 
                 for j, col in enumerate([col1, col2]):
                     if i + j >= len(fechas_ordenadas):
@@ -585,37 +586,48 @@ if authentication_status:
                     fecha = fechas_ordenadas[i + j]
                     df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                    # Crear columna hover_text
+                    # Crear columna hover_text correctamente (convertir montos a string)
                     df_fecha["hover_text"] = (
                         "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
                         "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
                         "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
                         "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
-                        "<b>Monto:</b> $" + df_fecha["total"].map("{:,.2f}")
+                        "<b>Monto:</b> $" + df_fecha["total"].map(lambda x: f"{x:,.2f}")
                     )
 
-                    # Gráfico Sunburst con hover uniforme
-                    fig_sunburst = px.sunburst(
+                    # Gráfico de anillo (sunburst) jerarquía: sucursal → cuenta
+                    fig_pie = px.sunburst(
                         df_fecha,
                         path=["sucursal", "cuenta_sucursal"],
                         values="total",
                         color="sucursal",
                         color_discrete_map=colores_sucursales,
-                        hover_name="hover_text",  # <- aquí asignamos hover directamente
-                        hover_data=None
+                        hover_data={"hover_text": True}
                     )
 
-                    fig_sunburst.update_layout(
+                    # Hover uniforme usando hover_text
+                    fig_pie.update_traces(
+                        hovertemplate="%{customdata[0]}<extra></extra>",
+                        customdata=df_fecha[["hover_text"]].values
+                    )
+
+                    fig_pie.update_layout(
                         title_text=f"Distribución por cuenta - {fecha}",
                         template="plotly_white"
                     )
 
+                    # Mostrar gráfico en Streamlit con scroll y zoom
                     col.plotly_chart(
-                        fig_sunburst,
+                        fig_pie,
                         use_container_width=True,
                         config={
                             "scrollZoom": True,
-                            "modeBarButtonsToKeep": ["toImage", "zoom2d", "autoScale2d", "toggleFullscreen"],
+                            "modeBarButtonsToKeep": [
+                                "toImage",
+                                "zoom2d",
+                                "autoScale2d",
+                                "toggleFullscreen"
+                            ],
                             "displaylogo": False
                         }
                     )
