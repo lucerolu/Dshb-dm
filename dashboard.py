@@ -576,7 +576,6 @@ if authentication_status:
             )
 
             #----------------------------------- GRAFICO DE ANILLOS ------------------------------------------------------------------------------------------------------------------------
-            # Iterar sobre fechas ordenadas
             for i in range(0, len(fechas_ordenadas), 2):
                 col1, col2 = st.columns(2)  # dos gráficos por fila
 
@@ -593,9 +592,9 @@ if authentication_status:
                     # Combinar con df_fecha para tener el total por sucursal disponible
                     df_fecha = df_fecha.merge(df_sucursal_total, on="sucursal", how="left")
 
-                    # Columna de texto para monto por cuenta y por sucursal
-                    df_fecha["text_monto_cuenta"] = df_fecha["total"].map("${:,.2f}".format)
-                    df_fecha["text_monto_sucursal"] = df_fecha["total_sucursal"].map("${:,.2f}".format)
+                    # Texto para mostrar dentro de cada porción
+                    df_fecha["text_cuenta"] = df_fecha["total"].map("${:,.2f}".format)
+                    df_fecha["text_sucursal"] = df_fecha["total_sucursal"].map("${:,.2f}".format)
 
                     # Crear hover completo
                     df_fecha["hover_info"] = (
@@ -603,27 +602,37 @@ if authentication_status:
                         "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
                         "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
                         "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
-                        "<b>Monto Cuenta:</b> " + df_fecha["text_monto_cuenta"] + "<br>" +
-                        "<b>Total Sucursal:</b> " + df_fecha["text_monto_sucursal"]
+                        "<b>Monto Cuenta:</b> " + df_fecha["text_cuenta"] + "<br>" +
+                        "<b>Total Sucursal:</b> " + df_fecha["text_sucursal"]
                     )
 
-                    # Gráfico Sunburst con jerarquía sucursal → cuenta_sucursal
-                    fig_sun = px.sunburst(
-                        df_fecha,
-                        path=["sucursal", "cuenta_sucursal"],
-                        values="total",
-                        color="sucursal",
-                        color_discrete_map=colores_sucursales,
-                        hover_data=None
-                    )
+                    # Crear gráfico Sunburst con jerarquía sucursal → cuenta_sucursal
+                    # Usamos dos trazas separadas para asegurar hover y texto correctos
+                    fig_sun = go.Figure()
 
-                    # Asignar hovertemplate y texto dentro de la porción
-                    fig_sun.update_traces(
-                        customdata=df_fecha["hover_info"],
-                        hovertemplate="%{customdata}<extra></extra>",
-                        text=df_fecha["text_monto_cuenta"],  # monto dentro de la porción
+                    # Nivel interno: sucursal
+                    df_sucursal = df_fecha.drop_duplicates(subset=["sucursal"])
+                    fig_sun.add_trace(go.Sunburst(
+                        ids=df_sucursal["sucursal"],
+                        labels=df_sucursal["sucursal"],
+                        parents=[""] * len(df_sucursal),
+                        values=df_sucursal["total_sucursal"],
+                        branchvalues="total",
+                        hovertemplate="<b>Sucursal:</b> %{label}<br><b>Total Sucursal:</b> %{value:$,.2f}<extra></extra>",
+                        marker=dict(colors=[colores_sucursales[s] for s in df_sucursal["sucursal"]])
+                    ))
+
+                    # Nivel externo: cuentas
+                    fig_sun.add_trace(go.Sunburst(
+                        ids=df_fecha["cuenta_sucursal"],
+                        labels=df_fecha["cuenta_sucursal"],
+                        parents=df_fecha["sucursal"],
+                        values=df_fecha["total"],
+                        branchvalues="total",
+                        hovertemplate=df_fecha["hover_info"],
+                        text=df_fecha["text_cuenta"],
                         textinfo="label+text"
-                    )
+                    ))
 
                     fig_sun.update_layout(
                         title_text=f"Distribución por cuenta - {fecha}",
@@ -645,6 +654,7 @@ if authentication_status:
                             "displaylogo": False
                         }
                     )
+
 
 
     # ==========================================================================================================
