@@ -1602,8 +1602,9 @@ if authentication_status:
                         leg.get_title().set_color("white")  # título en blanco
                         for text in leg.get_texts():
                             text.set_color("white")          # labels en blanco
-                        ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left',
-                                facecolor='#121212', edgecolor='white')
+                        leg.get_frame().set_facecolor('#121212')  # fondo leyenda
+                        leg.get_frame().set_edgecolor('white')    # borde leyenda
+
 
                     cols[j].pyplot(fig)
 
