@@ -586,7 +586,7 @@ if authentication_status:
                     fecha = fechas_ordenadas[i + j]
                     df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                    # Crear columna hover_text consistente
+                    # Crear columna hover_text
                     df_fecha["hover_text"] = (
                         "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"].astype(str) + "<br>" +
                         "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
@@ -595,36 +595,30 @@ if authentication_status:
                         "<b>Monto:</b> $" + df_fecha["total"].map("{:,.2f}".format)
                     )
 
-                    # Gráfico sunburst jerárquico: sucursal → cuenta_sucursal
-                    fig_sunburst = px.sunburst(
+                    # Gráfico de anillo con jerarquía sucursal → cuenta_sucursal
+                    fig_pie = px.sunburst(
                         df_fecha,
-                        path=["sucursal", "cuenta_sucursal"],  # jerarquía
+                        path=["sucursal", "cuenta_sucursal"],
                         values="total",
                         color="sucursal",
                         color_discrete_map=colores_sucursales,
-                        hover_data={"hover_text": True, "total": False}
+                        hover_data={"hover_text": True}
                     )
 
-                    # Asegurar que todos los hover muestren hover_text
-                    fig_sunburst.update_traces(
+                    # Hover uniforme usando la columna hover_text
+                    fig_pie.update_traces(
                         hovertemplate="%{customdata[0]}<extra></extra>",
                         customdata=df_fecha[["hover_text"]].values
                     )
 
-                    # Mantener leyenda consistente: siempre vertical y con sentido uniforme
-                    fig_sunburst.update_layout(
+                    fig_pie.update_layout(
                         title_text=f"Distribución por cuenta - {fecha}",
-                        template="plotly_white",
-                        legend=dict(
-                            traceorder="normal",  # sentido uniforme
-                            title="Sucursal",
-                            orientation="v",      # vertical
-                        )
+                        template="plotly_white"
                     )
 
-                    # Mostrar en Streamlit con scrollZoom habilitado
+                    # Mostrar gráfico en Streamlit con scroll y zoom
                     col.plotly_chart(
-                        fig_sunburst,
+                        fig_pie,
                         use_container_width=True,
                         config={
                             "scrollZoom": True,
@@ -637,7 +631,6 @@ if authentication_status:
                             "displaylogo": False
                         }
                     )
-
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
