@@ -576,17 +576,16 @@ if authentication_status:
             )
 
             #----------------------------------- GRAFICO DE ANILLOS -----------------------------------------
-            # Iterar sobre fechas ordenadas
+            # Iterar fechas
             for i in range(0, len(fechas_ordenadas), 2):
-                col1, col2 = st.columns(2)  # dos gráficos por fila
-
+                col1, col2 = st.columns(2)
                 for j, col in enumerate([col1, col2]):
                     if i + j >= len(fechas_ordenadas):
                         break
                     fecha = fechas_ordenadas[i + j]
                     df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                    # Crear columna hover_text
+                    # Crear hover_text
                     df_fecha["hover_text"] = (
                         "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"].astype(str) + "<br>" +
                         "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
@@ -595,30 +594,29 @@ if authentication_status:
                         "<b>Monto:</b> $" + df_fecha["total"].map("{:,.2f}".format)
                     )
 
-                    # Gráfico de anillo con jerarquía sucursal → cuenta_sucursal
-                    fig_pie = px.sunburst(
-                        df_fecha,
-                        path=["sucursal", "cuenta_sucursal"],
-                        values="total",
-                        color="sucursal",
-                        color_discrete_map=colores_sucursales,
-                        hover_data={"hover_text": True}
-                    )
+                    fig = go.Figure()
 
-                    # Hover uniforme usando la columna hover_text
-                    fig_pie.update_traces(
-                        hovertemplate="%{customdata[0]}<extra></extra>",
-                        customdata=df_fecha[["hover_text"]].values
-                    )
+                    # Crear una traza por sucursal
+                    for sucursal, df_suc in df_fecha.groupby("sucursal"):
+                        fig.add_trace(go.Pie(
+                            labels=df_suc["cuenta_sucursal"],
+                            values=df_suc["total"],
+                            name=sucursal,
+                            hole=0.4,
+                            hovertext=df_suc["hover_text"],
+                            hoverinfo="text",
+                            marker_colors=[color_cuentas[c] for c in df_suc["cuenta_sucursal"]],
+                            sort=False
+                        ))
 
-                    fig_pie.update_layout(
+                    fig.update_layout(
                         title_text=f"Distribución por cuenta - {fecha}",
-                        template="plotly_white"
+                        template="plotly_white",
+                        showlegend=True
                     )
 
-                    # Mostrar gráfico en Streamlit con scroll y zoom
                     col.plotly_chart(
-                        fig_pie,
+                        fig,
                         use_container_width=True,
                         config={
                             "scrollZoom": True,
