@@ -277,19 +277,27 @@ if authentication_status:
                 for _, row in df_estado_cuenta.drop_duplicates("cuenta_sucursal").iterrows()
             }
 
-            # ------------------ Crear gráfico ------------------
+            # Convertir fechas a strings ordenadas para que se comporten como categorías
+            df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+
+            # Ordenar las fechas para que aparezcan correctamente en el eje
+            fechas_ordenadas = sorted(df_estado_cuenta["fecha_exigibilidad_str"].unique(),
+                                    key=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
+
+            # Crear gráfico usando eje X categórico
             fig = px.line(
                 df_estado_cuenta,
-                x="fecha_exigibilidad",
+                x="fecha_exigibilidad_str",  # eje categórico
                 y="total",
                 color="cuenta_sucursal",
                 color_discrete_map=color_cuentas,
+                category_orders={"fecha_exigibilidad_str": fechas_ordenadas},  # asegura orden correcto
                 custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
             fig.update_traces(
                 hovertemplate=(
-                    "<b>Fecha:</b> %{x|%d/%m/%Y}<br>"
+                    "<b>Fecha:</b> %{x}<br>"
                     "<b>Código:</b> %{customdata[1]}<br>"
                     "<b>Sucursal:</b> %{customdata[0]}<br>"
                     "<b>División:</b> %{customdata[2]}<br>"
