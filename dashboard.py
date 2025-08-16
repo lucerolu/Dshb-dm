@@ -578,7 +578,7 @@ if authentication_status:
             #----------------------------------- GRAFICO DE ANILLOS ------------------------------------------------------------------------------------------------------------------------
             # Iterar sobre fechas ordenadas
             for i in range(0, len(fechas_ordenadas), 2):
-                col1, col2 = st.columns(2)  # dos gráficos por fila
+                col1, col2 = st.columns(2)
 
                 for j, col in enumerate([col1, col2]):
                     if i + j >= len(fechas_ordenadas):
@@ -586,39 +586,41 @@ if authentication_status:
                     fecha = fechas_ordenadas[i + j]
                     df_fecha = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
 
-                    # Crear columna hover_text correctamente (convertir montos a string)
-                    df_fecha["hover_text"] = (
-                        "<b>Fecha:</b> " + df_fecha["fecha_exigibilidad_str"] + "<br>" +
-                        "<b>Código:</b> " + df_fecha["codigo"] + "<br>" +
-                        "<b>Sucursal:</b> " + df_fecha["sucursal"] + "<br>" +
-                        "<b>División:</b> " + df_fecha["abreviatura"] + "<br>" +
-                        "<b>Monto:</b> $" + df_fecha["total"].map(lambda x: f"{x:,.2f}")
+                    # Crear columna hover_text por fila (convertir monto a string)
+                    df_fecha["hover_text"] = df_fecha.apply(
+                        lambda row: (
+                            f"<b>Fecha:</b> {row['fecha_exigibilidad_str']}<br>"
+                            f"<b>Código:</b> {row['codigo']}<br>"
+                            f"<b>Sucursal:</b> {row['sucursal']}<br>"
+                            f"<b>División:</b> {row['abreviatura']}<br>"
+                            f"<b>Monto:</b> ${row['total']:,.2f}"
+                        ), axis=1
                     )
 
-                    # Gráfico de anillo (sunburst) jerarquía: sucursal → cuenta
-                    fig_pie = px.sunburst(
+                    # Sunburst jerarquía: sucursal -> cuenta
+                    fig_sun = px.sunburst(
                         df_fecha,
                         path=["sucursal", "cuenta_sucursal"],
                         values="total",
                         color="sucursal",
                         color_discrete_map=colores_sucursales,
-                        hover_data={"hover_text": True}
+                        hover_name="cuenta_sucursal",  # nombre que se muestra al pasar mouse
+                        hover_data={"total": True, "hover_text": True, "sucursal": False}  # solo hover_text será mostrado
                     )
 
-                    # Hover uniforme usando hover_text
-                    fig_pie.update_traces(
+                    # Forzar hover para que siempre muestre hover_text
+                    fig_sun.update_traces(
                         hovertemplate="%{customdata[0]}<extra></extra>",
                         customdata=df_fecha[["hover_text"]].values
                     )
 
-                    fig_pie.update_layout(
+                    fig_sun.update_layout(
                         title_text=f"Distribución por cuenta - {fecha}",
                         template="plotly_white"
                     )
 
-                    # Mostrar gráfico en Streamlit con scroll y zoom
                     col.plotly_chart(
-                        fig_pie,
+                        fig_sun,
                         use_container_width=True,
                         config={
                             "scrollZoom": True,
@@ -631,6 +633,7 @@ if authentication_status:
                             "displaylogo": False
                         }
                     )
+
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
