@@ -1597,12 +1597,13 @@ if authentication_status:
 
                     # Leyenda solo con divisiones presentes
                     leg = ax.get_legend()
-                    leg.set_title("División")
-                    leg.get_title().set_color("white")
-                    for text in leg.get_texts():
-                        text.set_color("white")
-                    ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left',
-                            facecolor='#121212', edgecolor='white')
+                    if leg is not None:
+                        leg.set_title("División")
+                        leg.get_title().set_color("white")  # título en blanco
+                        for text in leg.get_texts():
+                            text.set_color("white")          # labels en blanco
+                        ax.legend(title="División", bbox_to_anchor=(1.05, 1), loc='upper left',
+                                facecolor='#121212', edgecolor='white')
 
                     cols[j].pyplot(fig)
 
