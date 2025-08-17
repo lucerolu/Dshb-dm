@@ -699,28 +699,21 @@ if authentication_status:
 
         # ----------------- Selector de periodo compacto -----------------
         opciones_periodo = ["Año Natural", "Año Fiscal"]
+        periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
 
-        # Columnas con proporciones ajustadas para que no ocupen toda la pantalla
-        col1, col2, col3 = st.columns([1, 1, 1])
+        # Detectar años disponibles
+        df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
+        años_disponibles = sorted(df["fecha"].dt.year.unique())
+        año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
-        # Contenedor principal alineado a la izquierda
-        col_izq = st.container()
-        with col_izq:
-            # Crear tres columnas internas pequeñas para radio y select
-            col1, col2, col3 = st.columns([1, 2, 1])  # ajusta proporciones según necesites
-            with col1:
-                st.markdown("**Periodo:**")
-            with col2:
-                periodo = st.radio("", ["Año Natural", "Año Fiscal"], horizontal=True)
-            with col3:
-                años_disponibles = sorted(df["fecha"].dt.year.unique())
-                año_seleccionado = st.selectbox("", años_disponibles, index=len(años_disponibles)-1)
-
-        # Ahora filtramos según la selección
+        # Filtrar por periodo
         if periodo == "Año Natural":
             df_filtrado = df[df["fecha"].dt.year == año_seleccionado]
             titulo_periodo = f"{año_seleccionado}"
+
         elif periodo == "Año Fiscal":
+            # Año fiscal: 1 nov (año_seleccionado-1) -> 31 oct (año_seleccionado)
             inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
             fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
             df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
