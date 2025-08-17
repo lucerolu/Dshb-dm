@@ -1043,7 +1043,34 @@ if authentication_status:
     # ================================================================================================================================
     elif opcion == "Compra por División":
         st.title("Distribución de Compras por División - 2025")
+        # ----------------- Selector de periodo compacto -----------------
+        opciones_periodo = ["Año Natural", "Año Fiscal"]
+        periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
+
+        # Detectar años disponibles
+        df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
+        años_disponibles = sorted(df["fecha"].dt.year.unique())
+        año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
         st.markdown("<br><br>", unsafe_allow_html=True)
+
+        # Filtrar por periodo
+        if periodo == "Año Natural":
+            df_filtrado = df[df["fecha"].dt.year == año_seleccionado]
+            titulo_periodo = f"{año_seleccionado}"
+
+        elif periodo == "Año Fiscal":
+            # Año fiscal: 1 nov (año_seleccionado-1) -> 31 oct (año_seleccionado)
+            inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
+            fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
+            df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
+            titulo_periodo = f"Fiscal {año_seleccionado}"
+        st.markdown("<br><br>", unsafe_allow_html=True)
+
+        # Usar df_filtrado en lugar del df original
+        df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
+
+        # Agrupar para el gráfico de pastel
+        df_agrupado = df_divisiones_filtrado.groupby("division")["monto"].sum().reset_index()
 
         #------------------------- GRÁFICO DE PASTEL ---------------------------------------------------------
         df_agrupado = df_divisiones.groupby("division")["monto"].sum().reset_index()
@@ -1141,7 +1168,7 @@ if authentication_status:
 
         # ---------------- TABLA: TOTAL MENSUAL COMPRADO POR DIVISIÓN ---------------------------------------------------------------------------
         # Crear tabla pivote
-        tabla_pivot = df_divisiones.pivot_table(
+        tabla_pivot = df_divisiones_filtrado.pivot_table(
             index="division",
             columns="mes_nombre",
             values="monto",
@@ -1385,7 +1412,7 @@ if authentication_status:
         )
 
         #----------------- GRÁFICA DE BARRAS AGRUPADAS: COMPRA POR SUCURSAL Y DIVISIÓN ------------------------------------------------------------
-        df_suc_div = df_divisiones.groupby(["sucursal", "division"])["monto"].sum().reset_index()
+        df_suc_div = df_divisiones_filtrado.groupby(["sucursal", "division"])["monto"].sum().reset_index()
 
         fig_suc_div = px.bar(
             df_suc_div,
@@ -1403,7 +1430,7 @@ if authentication_status:
             textposition="inside",
             hovertemplate=(
                 "<b>Sucursal:</b> %{x}<br>"
-                "<b>División:</b> %{customdata[0]}<br>"  # ← usamos el custom_data
+                "<b>División:</b> %{customdata[0]}<br>"
                 "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
             )
         )
@@ -1420,15 +1447,16 @@ if authentication_status:
 
         st.plotly_chart(fig_suc_div, use_container_width=True)
 
+
         #----------------------- Tabla de compra por division y sucursal ----------------------------------
         tabla_sucursal_division = pd.pivot_table(
-            df_divisiones,
+            df_divisiones_filtrado,   # ✅ aquí aplicamos el filtrado
             values="monto",
-            index="division",       # Filas
-            columns="sucursal",     # Columnas
+            index="division",
+            columns="sucursal",
             aggfunc="sum",
-            margins=True,           # Agrega totales
-            margins_name="Total",   # Nombre para los totales
+            margins=True,
+            margins_name="Total",
         )
 
         # Renombrar índice
@@ -1586,7 +1614,7 @@ if authentication_status:
         colores_divisiones = {k: v["color"] for k, v in config["divisiones"].items()}
 
         # Agrupar datos
-        df_smd = df.groupby(["sucursal", "mes_nombre", "division"], as_index=False)["monto"].sum()
+        df_smd = df_filtrado.groupby(["sucursal", "mes_nombre", "division"], as_index=False)["monto"].sum()
         df_smd["sucursal"] = df_smd["sucursal"].astype(str)
         df_smd["mes_nombre"] = df_smd["mes_nombre"].astype(str)
         df_smd["division"] = df_smd["division"].astype(str)
@@ -1644,7 +1672,7 @@ if authentication_status:
             for j in range(num_columnas):
                 if i + j < num_sucursales:
                     suc = sucursales[i + j]
-                    df_filtrado = df_smd[df_smd["sucursal"] == suc]
+                    df_sucursal = df_smd[df_smd["sucursal"] == suc]
 
                     fig, ax = plt.subplots(figsize=(8, 4))
                     fig.patch.set_facecolor('#121212')
@@ -1655,7 +1683,7 @@ if authentication_status:
                     palette_grafico = {div: colores_divisiones.get(div, "#777777") for div in divisiones_presentes}
 
                     sns.barplot(
-                        data=df_filtrado,
+                        data=df_sucursal,
                         x="monto",
                         y="mes_nombre",
                         hue="division",
