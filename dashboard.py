@@ -703,14 +703,18 @@ if authentication_status:
         # Columnas con proporciones ajustadas para que no ocupen toda la pantalla
         col1, col2, col3 = st.columns([1, 1, 1])
 
-        with col1:
-            st.markdown("**Periodo:**")  # etiqueta opcional para clarificar
-        with col2:
-            periodo = st.radio("", opciones_periodo, horizontal=True)  # sin título, compacto
-        with col3:
-            df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
-            años_disponibles = sorted(df["fecha"].dt.year.unique())
-            año_seleccionado = st.selectbox("", años_disponibles, index=len(años_disponibles)-1)  # sin título
+        # Contenedor principal alineado a la izquierda
+        col_izq = st.container()
+        with col_izq:
+            # Crear tres columnas internas pequeñas para radio y select
+            col1, col2, col3 = st.columns([1, 2, 1])  # ajusta proporciones según necesites
+            with col1:
+                st.markdown("**Periodo:**")
+            with col2:
+                periodo = st.radio("", ["Año Natural", "Año Fiscal"], horizontal=True)
+            with col3:
+                años_disponibles = sorted(df["fecha"].dt.year.unique())
+                año_seleccionado = st.selectbox("", años_disponibles, index=len(años_disponibles)-1)
 
         # Ahora filtramos según la selección
         if periodo == "Año Natural":
