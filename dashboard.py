@@ -699,12 +699,18 @@ if authentication_status:
 
         # ----------------- Selector de periodo -----------------
         opciones_periodo = ["Año Natural", "Año Fiscal"]
-        periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
 
-        # Detectar años disponibles
-        df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
-        años_disponibles = sorted(df["fecha"].dt.year.unique())
-        año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
+        col1, col2 = st.columns([1, 1])  # Ajusta proporción si quieres que una columna sea más ancha
+
+        with col1:
+            periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
+
+        with col2:
+            # Detectar años disponibles
+            df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
+            años_disponibles = sorted(df["fecha"].dt.year.unique())
+            año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
+
         st.markdown("<br><br>", unsafe_allow_html=True)
 
         # Filtrar por periodo
