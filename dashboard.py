@@ -737,8 +737,13 @@ if authentication_status:
         st.markdown("<br><br>", unsafe_allow_html=True)
 
         # ------------------------------------ GÁFICA DE LÍNEAS DEL TOTAL GENERAL  -----------------------------------------------------------------------------------------------------------------
-        df_total_mes = df_filtrado.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+        # Agrupar y conservar solo los meses que realmente existen en df_filtrado
+        df_total_mes = df_filtrado.groupby("mes_nombre")["monto"].sum()
 
+        # Ordenar los meses que sí están presentes
+        df_total_mes = df_total_mes.reindex([m for m in orden_meses if m in df_total_mes.index])
+
+        # Crear figura
         fig_total = go.Figure()
         fig_total.add_trace(go.Scatter(
             x=df_total_mes.index,
@@ -746,26 +751,29 @@ if authentication_status:
             mode="lines+markers",
             name="Total",
             line=dict(color="blue"),
-            hovertemplate="%{x}<br>Total: $%{y:,.2f}<extra></extra>"  # muestra el número con comas y sin abreviar
+            hovertemplate="%{x}<br>Total: $%{y:,.2f}<extra></extra>"
         ))
 
         fig_total.update_layout(
             xaxis_title="Mes",
             yaxis_title="Monto",
-            yaxis_tickformat=","  # ejes con comas en lugar de abreviaturas
+            yaxis_tickformat=","
         )
 
-        # 👇 Título usando estilo de Streamlit
         st.markdown("### Evolución mensual del total comprado")
-
-        # Mostrar gráfico
         st.plotly_chart(fig_total, use_container_width=True)
 
         # ----------------------------------------- TABLA: TOTAL COMPRADO POR MES --------------------------------------------------------------------------------------------
         st.markdown("### Total comprado por mes")
 
-        # Agrupar y pivotear
-        tabla_horizontal = df_filtrado.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+        # Agrupar
+        tabla_horizontal = df_filtrado.groupby("mes_nombre")["monto"].sum()
+
+        # Filtrar y ordenar solo los meses presentes en df_filtrado
+        meses_presentes = [m for m in orden_meses if m in tabla_horizontal.index]
+        tabla_horizontal = tabla_horizontal.reindex(meses_presentes)
+
+        # Crear DataFrame y transponer
         tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
         tabla_horizontal_df.index = ["Total Comprado"]
 
@@ -785,13 +793,11 @@ if authentication_status:
             for col in tabla_html.columns
         ])
 
-        # Fila de montos (alineados izquierda)
         row_html = ''.join([
             f'<td style="padding:8px; text-align:left;">{val}</td>'
             for val in tabla_html.iloc[0]
         ])
 
-        # HTML completo con estilos y scroll fijo en la primera columna
         html_table = f"""
         <div style="overflow-x:auto; width: 100%;">
         <table style="border-collapse:collapse; min-width:800px; width:100%;">
@@ -814,9 +820,7 @@ if authentication_status:
         </div>
         """
 
-        # Mostrar tabla en Streamlit
         st.markdown(html_table, unsafe_allow_html=True)
-
 
     # -------------------------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
         #st.markdown("### Gráfica de Total comprado por mes")
