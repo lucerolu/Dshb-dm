@@ -695,27 +695,49 @@ if authentication_status:
     # ============================== RESUMEN GENERAL ==========================================
     # ==========================================================================================================
     elif opcion == "Resumen General":
-        st.title("Resumen General de Compras - 2025")
+        st.title("Resumen General de Compras")
+
+        # ----------------- Selector de periodo -----------------
+        opciones_periodo = ["Año Natural", "Año Fiscal"]
+        periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
+
+        # Detectar años disponibles
+        df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
+        años_disponibles = sorted(df["fecha"].dt.year.unique())
+        año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
+
+        # Filtrar por periodo
+        if periodo == "Año Natural":
+            df_filtrado = df[df["fecha"].dt.year == año_seleccionado]
+            titulo_periodo = f"{año_seleccionado}"
+
+        elif periodo == "Año Fiscal":
+            # Año fiscal: 1 nov (año_seleccionado-1) -> 31 oct (año_seleccionado)
+            inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
+            fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
+            df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
+            titulo_periodo = f"Fiscal {año_seleccionado}"
+
         #--------------- TARJETAS: total comprado en el año y en el mes corriente  ------------------------------------------
         ahora = datetime.now()
-        ahora_pd = pd.Timestamp(ahora)  # Convertir a pandas Timestamp
+        ahora_pd = pd.Timestamp(ahora)
         mes_actual_period = ahora_pd.to_period("M")
         mes_actual_esp = meses_es.get(ahora.strftime("%B"), "") + " " + str(ahora.year)
 
         col1, col2 = st.columns(2)
 
         with col1:
-            total_anual = df["monto"].sum()
-            st.metric("Total comprado en el año", f"${total_anual:,.2f}")
+            total_anual = df_filtrado["monto"].sum()
+            st.metric(f"Total comprado ({titulo_periodo})", f"${total_anual:,.2f}")
 
         with col2:
-            total_mes_actual = df[df["mes_period"] == mes_actual_period]["monto"].sum()
-            mes_actual_esp = meses_es.get(ahora.strftime("%B"), "") + " " + str(ahora.year)
+            total_mes_actual = df_filtrado[df_filtrado["mes_period"] == mes_actual_period]["monto"].sum()
             st.metric(f"Total comprado en {mes_actual_esp}", f"${total_mes_actual:,.2f}")
+
         st.markdown("<br><br>", unsafe_allow_html=True)
 
         # ------------------------------------ GÁFICA DE LÍNEAS DEL TOTAL GENERAL  -----------------------------------------------------------------------------------------------------------------
-        df_total_mes = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+        df_total_mes = df_filtrado.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
 
         fig_total = go.Figure()
         fig_total.add_trace(go.Scatter(
@@ -743,7 +765,7 @@ if authentication_status:
         st.markdown("### Total comprado por mes")
 
         # Agrupar y pivotear
-        tabla_horizontal = df.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
+        tabla_horizontal = df_filtrado.groupby("mes_nombre")["monto"].sum().reindex(orden_meses)
         tabla_horizontal_df = pd.DataFrame(tabla_horizontal).T
         tabla_horizontal_df.index = ["Total Comprado"]
 
@@ -799,7 +821,7 @@ if authentication_status:
     # -------------------------------------------- GRÁFICA: Total comprado por mes ------------------------------------------------------------------------------
         #st.markdown("### Gráfica de Total comprado por mes")
         # Agrupar de nuevo (en bruto, sin formato)
-        df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
+        df_mensual = df_filtrado.groupby("mes_nombre", as_index=False)["monto"].sum()
         df_mensual["mes_nombre"] = pd.Categorical(df_mensual["mes_nombre"], categories=orden_meses, ordered=True)
         df_mensual = df_mensual.sort_values("mes_nombre")
 
@@ -840,7 +862,7 @@ if authentication_status:
         st.markdown("#### Compra vs mes anterior")
 
         # Agrupar y ordenar por mes
-        df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
+        df_mensual = df_filtrado.groupby("mes_nombre", as_index=False)["monto"].sum()
         df_mensual["mes_nombre"] = pd.Categorical(df_mensual["mes_nombre"], categories=orden_meses, ordered=True)
         df_mensual = df_mensual.sort_values("mes_nombre").reset_index(drop=True)
 
@@ -977,7 +999,7 @@ if authentication_status:
         st.markdown("### Variación de compras respecto al mes anterior")
 
         # Agrupar y ordenar por mes
-        df_mensual = df.groupby("mes_nombre", as_index=False)["monto"].sum()
+        df_mensual = df_filtrado.groupby("mes_nombre", as_index=False)["monto"].sum()
         df_mensual["mes_nombre"] = pd.Categorical(df_mensual["mes_nombre"], categories=orden_meses, ordered=True)
         df_mensual = df_mensual.sort_values("mes_nombre").reset_index(drop=True)
 
