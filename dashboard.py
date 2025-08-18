@@ -232,7 +232,7 @@ if authentication_status:
             <div style="font-size:20px; font-weight:bold;">${total_mes_actual:,.2f}</div>
         </div>
         """, unsafe_allow_html=True)
-
+        st.markdown("---")
         # Fecha actualización
         mostrar_fecha_actualizacion()
 
