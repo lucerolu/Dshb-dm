@@ -2540,7 +2540,7 @@ if authentication_status:
         # Agregar el año a cada mes en el orden correcto, tomando en cuenta los datos reales
         orden_meses_reversa_completa = []
         for mes_simple in orden_meses_reversa:
-            meses_disponibles = [m for m in orden_meses_desc if m.startswith(mes_simple)]
+            meses_disponibles = [m for m in df_filtrado["mes_nombre"].unique() if m.startswith(mes_simple)]
             orden_meses_reversa_completa.extend(meses_disponibles)
 
         # Mostrar las gráficas
@@ -2548,8 +2548,8 @@ if authentication_status:
         st.markdown("### Compras por Sucursal, mes a mes")
 
         for i, mes in enumerate(orden_meses_reversa_completa):
-            df_mes = df[df["mes_nombre"] == mes].copy()
-            
+            df_mes = df_filtrado[df_filtrado["mes_nombre"] == mes].copy()
+ 
             # Agrupar solo por sucursal, sumando montos
             df_mes = df_mes.groupby("sucursal", as_index=False).agg({"monto": "sum"})
             
