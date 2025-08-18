@@ -1842,7 +1842,13 @@ if authentication_status:
             "Monto: $" + df_cta["monto"].map("{:,.2f}".format)
         )
 
-        # Gráfico de barras
+        # Después de agrupar y ordenar
+        df_cta = df_cta.reset_index(drop=True)
+
+        # Crear customdata como array de listas
+        custom_hover = df_cta[["hover_text"]].values
+
+        # Gráfico
         fig = px.bar(
             df_cta,
             x="monto",
@@ -1856,13 +1862,11 @@ if authentication_status:
                 "division": "División"
             },
             text="monto",
-            hover_data={"hover_text": True},
         )
 
-        # Usar hovertemplate para mostrar la columna hover_text
         fig.update_traces(
             hovertemplate="%{customdata[0]}<extra></extra>",
-            customdata=df_cta[["hover_text"]],
+            customdata=custom_hover,
             texttemplate="$%{x:,.2f}",
             textposition="outside",
             cliponaxis=False
