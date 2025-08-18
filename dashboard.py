@@ -191,9 +191,7 @@ if authentication_status:
             "Estado de Ligado",
         ])
 
-        # Cerrar sesión
         authenticator.logout("Cerrar sesión", "sidebar")
-
         st.markdown("---")
 
         # Crear columna fecha si no existe
@@ -208,22 +206,19 @@ if authentication_status:
         # Año natural 2025
         df_natural = df[df["fecha"].dt.year == 2025]
         total_anual_natural = df_natural["monto"].sum()
-        total_mes_natural = df_natural[df_natural["mes_period"] == mes_actual_period]["monto"].sum()
+        total_mes_actual = df_natural[df_natural["mes_period"] == mes_actual_period]["monto"].sum()
 
         # Año fiscal 2025
         inicio_fiscal = pd.Timestamp(2024, 11, 1)
         fin_fiscal = pd.Timestamp(2025, 10, 31)
         df_fiscal = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
         total_anual_fiscal = df_fiscal["monto"].sum()
-        total_mes_fiscal = df_fiscal[df_fiscal["mes_period"] == mes_actual_period]["monto"].sum()
 
-        st.markdown("### Totales de Compras")
-        st.metric(label="Año Natural 2025", value=f"${total_anual_natural:,.2f}")
-        st.metric(label=f"Mes actual ({mes_actual_esp})", value=f"${total_mes_natural:,.2f}")
-
-        st.markdown("---")
-        st.metric(label="Año Fiscal 2025", value=f"${total_anual_fiscal:,.2f}")
-        st.metric(label=f"Mes actual ({mes_actual_esp})", value=f"${total_mes_fiscal:,.2f}")
+        # Mostrar métricas compactas
+        st.markdown("### Totales de Compras", unsafe_allow_html=True)
+        st.markdown(f"<small>Año Natural 2025: <b>${total_anual_natural:,.2f}</b></small>", unsafe_allow_html=True)
+        st.markdown(f"<small>Año Fiscal 2025: <b>${total_anual_fiscal:,.2f}</b></small>", unsafe_allow_html=True)
+        st.markdown(f"<small>Mes Actual ({mes_actual_esp}): <b>${total_mes_actual:,.2f}</b></small>", unsafe_allow_html=True)
 
         # Fecha actualización
         mostrar_fecha_actualizacion()
