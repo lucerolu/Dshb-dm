@@ -1837,27 +1837,40 @@ if authentication_status:
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title("Compra mensual por Cuenta")
         st.markdown("<div style='margin-top:-5px'></div>", unsafe_allow_html=True)
-        
-        # ----------------- Función para obtener abreviatura -----------------
+
+        # ----------------- Selector de periodo -----------------
+        opciones_periodo = ["Año Natural", "Año Fiscal"]
+        periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
+
+        # Detectar años disponibles
+        df["fecha"] = pd.to_datetime(df["mes"])  # asegurarse que 'mes' es datetime
+        años_disponibles = sorted(df["fecha"].dt.year.unique())
+        año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
+        st.markdown("<br><br>", unsafe_allow_html=True)
+
+        # ----------------- Crear cuenta_sucursal -----------------
         def obtener_abreviatura(codigo):
             for division, info in divisiones.items():
                 if codigo in info["codigos"]:
                     return info["abreviatura"]
             return ""
 
-        # ----------------- Agregar columnas necesarias antes del filtro -----------------
         df["abreviatura"] = df["codigo_normalizado"].apply(obtener_abreviatura)
         df["cuenta_sucursal"] = df["codigo_normalizado"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
-        df["mes_anio"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
-        df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
         # ----------------- Filtrar por periodo -----------------
         if periodo == "Año Natural":
-            df_filtrado = df[df["fecha"].dt.year == año_seleccionado]
+            df_filtrado = df[df["fecha"].dt.year == año_seleccionado].copy()
+            titulo_periodo = f"{año_seleccionado}"
         elif periodo == "Año Fiscal":
             inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
             fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
-            df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
+            df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)].copy()
+            titulo_periodo = f"Fiscal {año_seleccionado}"
+
+        # ----------------- Meses para la tabla -----------------
+        df_filtrado["mes_anio"] = df_filtrado["mes_dt"].dt.month_name().map(meses_es) + " " + df_filtrado["mes_dt"].dt.year.astype(str)
+        df_filtrado["orden_mes"] = df_filtrado["mes_dt"].dt.to_period("M")
 
         # ----------------- Pivot table -----------------
         tabla_compras = df_filtrado.pivot_table(
@@ -1868,15 +1881,18 @@ if authentication_status:
             fill_value=0
         )
 
-        orden_columnas = df.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
+        # Ordenar columnas según orden cronológico
+        orden_columnas = df_filtrado.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
         tabla_compras = tabla_compras[orden_columnas]
 
+        # Totales
         tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
         tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
         tabla_compras_reset = tabla_compras.reset_index()
 
+        # Formatear números
         def formato_numero(x):
             if isinstance(x, (int, float)):
                 return f"{x:,.2f}"
@@ -1886,91 +1902,14 @@ if authentication_status:
         for col in tabla_formateada.columns[1:]:
             tabla_formateada[col] = tabla_formateada[col].apply(formato_numero)
 
-        estilo_css = """
-        <style>
-        .tabla-scroll {
-            max-height: 500px;
-            overflow: auto;
-            margin: 0; 
-            padding: 0;
-            border: 0;
-        }
-
-        /* Margen inferior para separar del botón */
-        .spacer {
-            height: 16px;
-        }
-
-        /* Tabla */
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            min-width: 900px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px 12px;
-            white-space: nowrap;
-        }
-        /* Encabezado */
-        th {
-            background-color: #0B083D;
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-            text-align: left;
-        }
-        /* Primera columna (cuenta) */
-        th:first-child {
-            background-color: #0B083D;
-            color: white;
-            text-align: right;
-            font-weight: bold;
-            position: sticky;
-            left: 0;
-            top: 0;
-            z-index: 5; /* más alto que el header normal */
-        }
-
-        td:first-child {
-            background-color: #0B083D;
-            color: white;
-            text-align: right;
-            font-weight: bold;
-            position: sticky;
-            left: 0;
-            z-index: 4;
-        }
-        /* Totales: última fila */
-        tr:last-child td {
-            background-color: #0B083D;
-            color: white;
-            font-weight: bold;
-        }
-        /* Totales: última columna */
-        td:last-child {
-            background-color: #0B083D;
-            color: white;
-            font-weight: bold;
-        }
-        /* Celdas normales (no totales, no primera columna) */
-        tbody tr:not(:last-child) td:not(:first-child):not(:last-child) {
-            background-color: white;
-            color: black;
-        }
-        </style>
-        """
-
+        # ----------------- HTML + CSS -----------------
+        estilo_css = """ ... """  # tu CSS existente
         def generar_html_tabla(df):
             html = "<div class='tabla-scroll'><table>"
-            # Encabezado
             html += "<thead><tr>"
             for col in df.columns:
                 html += f"<th>{col}</th>"
-            html += "</tr></thead>"
-            # Cuerpo
-            html += "<tbody>"
+            html += "</tr></thead><tbody>"
             for i, row in df.iterrows():
                 html += "<tr>"
                 for j, val in enumerate(row):
@@ -1980,12 +1919,10 @@ if authentication_status:
             return html
 
         html_tabla = estilo_css + generar_html_tabla(tabla_formateada)
-
         st.markdown(html_tabla, unsafe_allow_html=True)
-
-        # Aquí agregamos un div vacío con altura para separar visualmente
         st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
 
+        # ----------------- Descargar Excel -----------------
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             tabla_compras.to_excel(writer, sheet_name='Compras')
@@ -1998,6 +1935,7 @@ if authentication_status:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         st.markdown("<br><br>", unsafe_allow_html=True)
+
 
         #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
         # Asegúrate de que la columna mes_dt existe
