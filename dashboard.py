@@ -1834,8 +1834,8 @@ if authentication_status:
         # Ordenar de mayor a menor
         df_cta = df_cta.sort_values("monto", ascending=False)
 
-        # Crear columna formateada para hover
-        df_cta["monto_str"] = df_cta["monto"].map("${:,.2f}".format)
+        # Crear columna formateada para hover y renombrarla a "Monto"
+        df_cta["Monto"] = df_cta["monto"].map("${:,.2f}".format)
 
         # Gráfico de barras
         fig = px.bar(
@@ -1851,7 +1851,7 @@ if authentication_status:
                 "division": "División"
             },
             text="monto",
-            hover_data={"monto": False, "monto_str": True}  # mostrar monto formateado en hover
+            hover_data={"monto": False, "Monto": True}  # ⚡ ahora saldrá "Monto: $12,345.67"
         )
 
         # Ajustar trazas
