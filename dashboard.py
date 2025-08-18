@@ -2128,7 +2128,7 @@ if authentication_status:
             df_barras = df_divisiones_filtrado.groupby(["mes_nombre", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
             # --- Definir orden de meses y cuentas ---
-            orden_meses = df_divisiones_filtrado.drop_duplicates("mes_nombre").sort_values("mes_dt")["mes_nombre"].tolist()
+            orden_meses = df_divisiones_filtrado.drop_duplicates("mes_nombre").sort_values("mes_dt", ascending=False)["mes_nombre"].tolist()
             todas_cuentas = df_divisiones_filtrado["cuenta_sucursal"].unique()
 
             # Crear combinaciones mes-cuenta para completar valores faltantes
