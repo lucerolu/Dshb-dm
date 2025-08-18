@@ -1839,7 +1839,7 @@ if authentication_status:
             df_cta,
             x="monto",
             y="cuenta_sucursal",
-            color="division",   
+            color="division",
             color_discrete_map=colores_divisiones,
             orientation="h",
             labels={
@@ -1847,18 +1847,19 @@ if authentication_status:
                 "cuenta_sucursal": "Cuenta - Sucursal",
                 "division": "División"
             },
+            text="monto"  # <-- aquí ponemos la columna directamente
         )
 
-        # Hover y texto (ya sincronizado con cada barra)
+        # Hover
         fig.update_traces(
-            customdata=df_cta[["codigo_normalizado", "sucursal", "division", "monto"]],
             hovertemplate=(
                 "<b>Código:</b> %{customdata[0]}<br>"
                 "<b>Sucursal:</b> %{customdata[1]}<br>"
                 "<b>División:</b> %{customdata[2]}<br>"
-                "<b>Monto:</b> $%{customdata[3]:,.2f}<extra></extra>"
+                "<b>Monto:</b> $%{x:,.2f}<extra></extra>"
             ),
-            text=df_cta.apply(lambda r: f"${r['monto']:,.2f}", axis=1),  # cada barra toma su propio valor
+            customdata=df_cta[["codigo_normalizado", "sucursal", "division"]],
+            texttemplate="$%{x:,.2f}",  # sincroniza el texto con la longitud de la barra
             textposition="outside",
             cliponaxis=False
         )
