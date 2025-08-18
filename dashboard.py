@@ -2716,8 +2716,8 @@ if authentication_status:
 
 
         #------------------------------ GRÁFICA DE BARRAS: COMPRAS ACUMULADAS POR CUENTA --------------------------------------------------------------------------------------
-        # 1️⃣ Agregar abreviatura de la división
-        df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)].copy()
+        # Filtrar df_filtrado también por sucursales seleccionadas
+        df_cta_filtrado = df_filtrado[df_filtrado["sucursal"].isin(sucursales_seleccionadas)].copy()
 
         # Función para obtener abreviatura
         def obtener_abreviatura(codigo):
@@ -2727,10 +2727,12 @@ if authentication_status:
                     return info["abreviatura"]
             return ""
 
-        df_filtrado["abreviatura"] = df_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
+        df_cta_filtrado["abreviatura"] = df_cta_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
 
         # Agrupar por cuenta y sucursal
-        df_cta = df_filtrado.groupby(["codigo_normalizado", "sucursal", "abreviatura"], as_index=False)["monto"].sum()
+        df_cta = df_cta_filtrado.groupby(
+            ["codigo_normalizado", "sucursal", "abreviatura"], as_index=False
+        )["monto"].sum()
 
         # Crear etiqueta con abreviatura incluida
         df_cta["cuenta_sucursal"] = (
