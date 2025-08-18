@@ -1815,7 +1815,7 @@ if authentication_status:
             titulo_periodo = f"Fiscal {año_seleccionado}"
         st.markdown("<br><br>", unsafe_allow_html=True)
         # Usar df_filtrado en lugar del df original
-        df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
+        #df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
         #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
        
