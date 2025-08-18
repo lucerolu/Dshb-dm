@@ -176,9 +176,6 @@ if authentication_status:
 
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
-        # Título general del sidebar
-        st.markdown("<h3 style='color:white; margin-bottom:20px;'>Totales Comprados</h3>", unsafe_allow_html=True)
-
         # Mostrar bienvenida
         if "user_name" in st.session_state:
             st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
@@ -196,6 +193,9 @@ if authentication_status:
 
         authenticator.logout("Cerrar sesión", "sidebar")
         st.markdown("---")
+
+        # Título de los totales justo después de la línea
+        st.markdown("<h4 style='color:white; margin-bottom:15px;'>Totales de Compra</h4>", unsafe_allow_html=True)
 
         # Crear columna fecha si no existe
         if "fecha" not in df.columns:
