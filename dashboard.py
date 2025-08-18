@@ -1857,6 +1857,7 @@ if authentication_status:
             },
             text="monto",
             hover_data={"hover_text": True},
+            category_orders={"cuenta_sucursal": df_cta["cuenta_sucursal"].tolist()}  # 🔑 fija el orden de las barras
         )
 
         # Usar hovertemplate para mostrar la columna hover_text
@@ -1874,7 +1875,7 @@ if authentication_status:
             yaxis_title="Cuenta - Sucursal",
             margin=dict(r=70),
             template="plotly_dark",
-            yaxis={'categoryorder': 'total ascending'},
+            yaxis={'categoryorder': 'array', 'categoryarray': df_cta["cuenta_sucursal"].tolist()},  # 🔑 asegura coincidencia exacta
             height=800,
             legend=dict(
                 orientation="h",
@@ -1889,7 +1890,6 @@ if authentication_status:
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
-
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
