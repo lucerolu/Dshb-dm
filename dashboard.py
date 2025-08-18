@@ -1360,7 +1360,7 @@ if authentication_status:
         st.markdown("<br><br>", unsafe_allow_html=True)
 
         # ------------ GRÁFICA DE BARRAS AGRUPADAS: EVOLUCIÓN MENSUAL COMPRADO POR DIVISIÓN ------------------------------------------------------------
-        df_mes_div = df_divisiones.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
+        df_mes_div = df_divisiones_filtrado.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
         df_mes_div["mes_nombre"] = pd.Categorical(df_mes_div["mes_nombre"], categories=orden_meses, ordered=True)
         df_mes_div = df_mes_div.sort_values("mes_nombre")
 
