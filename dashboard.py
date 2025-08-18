@@ -2594,6 +2594,30 @@ if authentication_status:
     elif opcion == "Vista por Sucursal":
         st.title("Vista detallada por Sucursal")
 
+        # ----------------- Selector de periodo compacto -----------------
+        opciones_periodo = ["Año Natural", "Año Fiscal"]
+        periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
+
+        # Detectar años disponibles
+        df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
+        años_disponibles = sorted(df["fecha"].dt.year.unique())
+        año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
+
+        # Filtrar por periodo
+        if periodo == "Año Natural":
+            df_filtrado = df[df["fecha"].dt.year == año_seleccionado]
+            titulo_periodo = f"{año_seleccionado}"
+
+        elif periodo == "Año Fiscal":
+            # Año fiscal: 1 nov (año_seleccionado-1) -> 31 oct (año_seleccionado)
+            inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
+            fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
+            df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
+            titulo_periodo = f"Fiscal {año_seleccionado}"
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        # Usar df_filtrado en lugar del df original
+        df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
+
         # Recalcular df_pivot
         df_pivot = df.pivot_table(index="mes_nombre", columns="sucursal", values="monto", aggfunc="sum").fillna(0)
         df_pivot = df_pivot.reindex(orden_meses)
@@ -2604,7 +2628,7 @@ if authentication_status:
         st.markdown("<br><br>", unsafe_allow_html=True)
         # ----------------------------- TARJETAS: TOTAL ACUMULADO ANUAL Y MES ACTUAL ------------------------------------------------------------------------------------------------------------------
         if sucursales_seleccionadas:  # si hay selección
-            df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)]
+            df_filtrado = df_filtrado[df_filtrado["sucursal"].isin(sucursales_seleccionadas)]
         else:
             df_filtrado = df.copy()  # o un df vacío si quieres no mostrar nada
 
