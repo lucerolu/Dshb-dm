@@ -1771,8 +1771,7 @@ if authentication_status:
             inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
             fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
             df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
-            titulo_periodo = f"Fiscal {año_seleccionado}"
-        st.markdown("<br><br>", unsafe_allow_html=True)
+            titulo_periodo = f"Fiscal {año_seleccionado}
         # Usar df_filtrado en lugar del df original
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
