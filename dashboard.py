@@ -1759,7 +1759,6 @@ if authentication_status:
         df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
         años_disponibles = sorted(df["fecha"].dt.year.unique())
         año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
-        st.markdown("<br><br>", unsafe_allow_html=True)
 
         # Filtrar por periodo
         if periodo == "Año Natural":
@@ -1771,7 +1770,8 @@ if authentication_status:
             inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
             fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
             df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
-            titulo_periodo = f"Fiscal {año_seleccionado}
+            titulo_periodo = f"Fiscal {año_seleccionado}"
+        st.markdown("<br><br>", unsafe_allow_html=True)
         # Usar df_filtrado en lugar del df original
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
