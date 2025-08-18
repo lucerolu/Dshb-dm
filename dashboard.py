@@ -1824,7 +1824,7 @@ if authentication_status:
 
         # 2️⃣ Agrupar por cuenta y sucursal
         df_cta = df_filtrado.groupby(
-            ["codigo_normalizado", "sucursal", "division"],  # incluir division
+            ["codigo_normalizado", "sucursal", "division"],
             as_index=False
         )["monto"].sum()
 
@@ -1834,15 +1834,7 @@ if authentication_status:
         # Ordenar de mayor a menor
         df_cta = df_cta.sort_values("monto", ascending=False)
 
-        # Crear columna para hover
-        df_cta["hover_text"] = (
-            "Código: " + df_cta["codigo_normalizado"] + "<br>" +
-            "Sucursal: " + df_cta["sucursal"] + "<br>" +
-            "División: " + df_cta["division"] + "<br>" +
-            "Monto: $" + df_cta["monto"].map("{:,.2f}".format)
-        )
-
-        # Gráfico de barras
+        # Gráfico de barras sin hover
         fig = px.bar(
             df_cta,
             x="monto",
@@ -1856,13 +1848,11 @@ if authentication_status:
                 "division": "División"
             },
             text="monto",
-            hover_data={"hover_text": True},
         )
 
-        # Usar hovertemplate para mostrar la columna hover_text
+        # Ajustar trazas para ocultar hover
         fig.update_traces(
-            hovertemplate="%{customdata[0]}<extra></extra>",
-            customdata=df_cta[["hover_text"]],
+            hoverinfo="skip",  # ⚡ sin tooltip
             texttemplate="$%{x:,.2f}",
             textposition="outside",
             cliponaxis=False
@@ -1889,6 +1879,7 @@ if authentication_status:
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
+
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
