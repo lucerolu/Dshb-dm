@@ -1832,7 +1832,14 @@ if authentication_status:
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
 
         # Ordenar de mayor a menor
-        df_cta = df_cta.sort_values("monto", ascending=False)
+        df_cta = df_cta.sort_values("monto", ascending=False).reset_index(drop=True)
+
+        # Establecer categoría para que Plotly respete el orden exacto en y
+        df_cta["cuenta_sucursal"] = pd.Categorical(
+            df_cta["cuenta_sucursal"],
+            categories=df_cta["cuenta_sucursal"],
+            ordered=True
+        )
 
         # Crear columna para hover
         df_cta["hover_text"] = (
@@ -1842,13 +1849,10 @@ if authentication_status:
             "Monto: $" + df_cta["monto"].map("{:,.2f}".format)
         )
 
-        # Después de agrupar y ordenar
-        df_cta = df_cta.reset_index(drop=True)
-
         # Crear customdata como array de listas
         custom_hover = df_cta[["hover_text"]].values
 
-        # Gráfico
+        # Gráfico de barras
         fig = px.bar(
             df_cta,
             x="monto",
@@ -1864,6 +1868,7 @@ if authentication_status:
             text="monto",
         )
 
+        # Configurar hover y texto
         fig.update_traces(
             hovertemplate="%{customdata[0]}<extra></extra>",
             customdata=custom_hover,
@@ -1878,7 +1883,6 @@ if authentication_status:
             yaxis_title="Cuenta - Sucursal",
             margin=dict(r=70),
             template="plotly_dark",
-            yaxis={'categoryorder': 'total ascending'},
             height=800,
             legend=dict(
                 orientation="h",
@@ -1889,11 +1893,11 @@ if authentication_status:
             )
         )
 
+        # Mostrar en Streamlit
         st.markdown("### Monto Total Anual por Cuenta")
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
-
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
