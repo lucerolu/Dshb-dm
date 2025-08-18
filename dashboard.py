@@ -1624,11 +1624,25 @@ if authentication_status:
         sucursales = df_smd["sucursal"].unique()
         num_sucursales = len(sucursales)
 
-        # Lista en español
-        orden_meses_con_anio = [
-            "Enero 2025", "Febrero 2025", "Marzo 2025", "Abril 2025", "Mayo 2025", "Junio 2025",
-            "Julio 2025", "Agosto 2025", "Septiembre 2025", "Octubre 2025", "Noviembre 2025", "Diciembre 2025"
-        ]
+        # 📌 Detectar el año base a partir de los datos filtrados
+        anio_min = df_smd["mes_nombre"].str.extract(r"(\d{4})").astype(float).min()[0]
+        anio_max = df_smd["mes_nombre"].str.extract(r"(\d{4})").astype(float).max()[0]
+        anio = int(anio_min) if opciones_periodo == "Año Natural" else int(anio_max) - 1
+
+        # 📌 Lista de meses según periodo
+        if opciones_periodo == "Año Natural":
+            orden_meses_con_anio = [
+                f"Enero {anio}", f"Febrero {anio}", f"Marzo {anio}", f"Abril {anio}",
+                f"Mayo {anio}", f"Junio {anio}", f"Julio {anio}", f"Agosto {anio}",
+                f"Septiembre {anio}", f"Octubre {anio}", f"Noviembre {anio}", f"Diciembre {anio}"
+            ]
+        else:  # Año Fiscal (Julio - Junio)
+            orden_meses_con_anio = [
+                f"Julio {anio}", f"Agosto {anio}", f"Septiembre {anio}", f"Octubre {anio}",
+                f"Noviembre {anio}", f"Diciembre {anio}",
+                f"Enero {anio+1}", f"Febrero {anio+1}", f"Marzo {anio+1}",
+                f"Abril {anio+1}", f"Mayo {anio+1}", f"Junio {anio+1}"
+            ]
 
         # Mapeo español → inglés para conversión
         meses_es_en = {
