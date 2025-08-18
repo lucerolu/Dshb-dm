@@ -1777,6 +1777,7 @@ if authentication_status:
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
         #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
+        
         # Agrupar monto total por cuenta y sucursal
         df_cta = df_divisiones_filtrado.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
 
@@ -1828,13 +1829,13 @@ if authentication_status:
                 x=0.5
             )
         )
-        st.markdown("### Monto Total por Cuenta en 2025")
+        st.markdown("### Monto Total Anual por Cuenta")
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
-        st.title("Compra mensual por Cuenta (2025)")
+        st.title("Compra mensual por Cuenta")
         st.markdown("<div style='margin-top:-5px'></div>", unsafe_allow_html=True)
 
         def obtener_abreviatura(codigo):
