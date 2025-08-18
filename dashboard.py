@@ -194,8 +194,37 @@ if authentication_status:
         # Botón cerrar sesión
         authenticator.logout("Cerrar sesión", "sidebar")
 
+        st.markdown("---")  # separador
+
+        # -------------------- Totales fijos --------------------
+        ahora = datetime.now()
+        ahora_pd = pd.Timestamp(ahora)
+        mes_actual_period = ahora_pd.to_period("M")
+        mes_actual_esp = meses_es.get(ahora.strftime("%B"), "") + " " + str(ahora.year)
+
+        # Año natural 2025
+        df_natural = df[df["fecha"].dt.year == 2025]
+        total_anual_natural = df_natural["monto"].sum()
+        total_mes_natural = df_natural[df_natural["mes_period"] == mes_actual_period]["monto"].sum()
+
+        # Año fiscal 2025
+        inicio_fiscal = pd.Timestamp(2024, 11, 1)
+        fin_fiscal = pd.Timestamp(2025, 10, 31)
+        df_fiscal = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
+        total_anual_fiscal = df_fiscal["monto"].sum()
+        total_mes_fiscal = df_fiscal[df_fiscal["mes_period"] == mes_actual_period]["monto"].sum()
+
+        st.markdown("### Totales de Compras")
+        st.metric(label="Año Natural 2025", value=f"${total_anual_natural:,.2f}")
+        st.metric(label=f"Mes actual ({mes_actual_esp})", value=f"${total_mes_natural:,.2f}")
+
+        st.markdown("---")
+        st.metric(label="Año Fiscal 2025", value=f"${total_anual_fiscal:,.2f}")
+        st.metric(label=f"Mes actual ({mes_actual_esp})", value=f"${total_mes_fiscal:,.2f}")
+
         # Fecha de última actualización al final del sidebar
         mostrar_fecha_actualizacion()
+
 
     # ==========================================================================================================
     # ============================= ESTADO DE CUENTA ============================================================
