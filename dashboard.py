@@ -1851,12 +1851,13 @@ if authentication_status:
                 "division": "División"
             },
             text="monto",
-            hover_data={"monto": False, "monto_str": True}  # mostrar monto formateado en hover
         )
 
-        # Ajustar trazas
+        # Ajustar trazas con tooltip personalizado
         fig.update_traces(
-            texttemplate="$%{x:,.2f}",  # monto fuera de barra con comas
+            customdata=df_cta[["monto_str"]],
+            hovertemplate="Monto: %{customdata[0]}<extra></extra>",  # ⚡ con ":" y texto limpio
+            texttemplate="$%{x:,.2f}",
             textposition="outside",
             cliponaxis=False
         )
