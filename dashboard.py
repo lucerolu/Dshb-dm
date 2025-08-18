@@ -1991,13 +1991,13 @@ if authentication_status:
 
 
         #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
-        # Asegúrate de que la columna mes_dt existe
+        # Asegúrate de que la columna mes_dt exista en df_divisiones_filtra
         if "mes_dt" not in df_divisiones_filtrado.columns:
-            df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["fecha"]).dt.to_period("M").dt.to_timestamp()
+            df_divisiones_filtrado["mes_dt"] = pd.to_datetime(df_divisiones_filtrado["fecha"]).dt.to_period("M").dt.to_timestamp()
 
-        # Crear columna mes_nombre y mes_anio en español
-        df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es)
-        df_divisiones["mes_anio"] = df_divisiones["mes_nombre"] + " " + df_divisiones["mes_dt"].dt.year.astype(str)
+        # Crear columnas mes_nombre y mes_anio en español
+        df_divisiones_filtrado["mes_nombre"] = df_divisiones_filtrado["mes_dt"].dt.month_name().map(meses_es)
+        df_divisiones_filtrado["mes_anio"] = df_divisiones_filtrado["mes_nombre"] + " " + df_divisiones_filtrado["mes_dt"].dt.year.astype(str)
 
         # Función para obtener abreviatura de la división
         def obtener_abreviatura(codigo):
@@ -2007,16 +2007,18 @@ if authentication_status:
                     return info["abreviatura"]
             return ""
 
-        # Crear columna abreviatura y cuenta_sucursal
-        df_divisiones["abreviatura"] = df_divisiones["codigo_normalizado"].apply(obtener_abreviatura)
-        df_divisiones["cuenta_sucursal"] = (
-            df_divisiones["codigo_normalizado"].astype(str) + " (" +
-            df_divisiones["abreviatura"] + ") - " +
-            df_divisiones["sucursal"]
+        # Crear columnas abreviatura y cuenta_sucursal
+        df_divisiones_filtrado["abreviatura"] = df_divisiones_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
+        df_divisiones_filtrado["cuenta_sucursal"] = (
+            df_divisiones_filtrado["codigo_normalizado"].astype(str) + " (" +
+            df_divisiones_filtrado["abreviatura"] + ") - " +
+            df_divisiones_filtrado["sucursal"]
         )
 
-        # Preparar datos para plotly (long-form)
-        df_grafico = df_divisiones_filtrado.groupby(["mes_anio", "cuenta_sucursal", "abreviatura"], as_index=False)["monto"].sum()
+        # Agrupar datos para plotly (long-form)
+        df_grafico = df_divisiones_filtrado.groupby(
+            ["mes_anio", "cuenta_sucursal", "abreviatura"], as_index=False
+        )["monto"].sum()
 
         # Definir el orden de los meses
         orden_meses = df_divisiones_filtrado.drop_duplicates("mes_anio").sort_values("mes_dt")["mes_anio"].tolist()
@@ -2026,9 +2028,12 @@ if authentication_status:
 
         # Crear todas las combinaciones posibles mes-cuenta
         import itertools
-        combinaciones = pd.DataFrame(list(itertools.product(orden_meses, cuentas)), columns=["mes_anio", "cuenta_sucursal"])
+        combinaciones = pd.DataFrame(
+            list(itertools.product(orden_meses, cuentas)),
+            columns=["mes_anio", "cuenta_sucursal"]
+        )
 
-        # Merge para tener todas las combinaciones y completar montos faltantes con cero
+        # Merge para completar montos faltantes con cero
         df_grafico = combinaciones.merge(df_grafico, on=["mes_anio", "cuenta_sucursal"], how="left")
         df_grafico["monto"] = df_grafico["monto"].fillna(0)
 
@@ -2038,7 +2043,11 @@ if authentication_status:
 
         # Selector de cuentas
         cuentas_disponibles = sorted(df_grafico["cuenta_sucursal"].unique())
-        cuentas_seleccionadas = st.multiselect("Selecciona cuentas a mostrar:", cuentas_disponibles, default=cuentas_disponibles)
+        cuentas_seleccionadas = st.multiselect(
+            "Selecciona cuentas a mostrar:",
+            cuentas_disponibles,
+            default=cuentas_disponibles
+        )
 
         # Filtrar el DataFrame según selección
         df_filtrado = df_grafico[df_grafico["cuenta_sucursal"].isin(cuentas_seleccionadas)]
@@ -2077,9 +2086,7 @@ if authentication_status:
 
             config = {
                 "scrollZoom": True,
-                "modeBarButtonsToKeep": [
-                    "toImage", "zoom2d", "autoScale2d", "toggleFullscreen"
-                ],
+                "modeBarButtonsToKeep": ["toImage", "zoom2d", "autoScale2d", "toggleFullscreen"],
                 "displaylogo": False
             }
 
