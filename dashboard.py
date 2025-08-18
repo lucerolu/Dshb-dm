@@ -2096,12 +2096,13 @@ if authentication_status:
             st.plotly_chart(fig, use_container_width=True, config=config)
 
 
-        #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL ------------------------------------------------------------------------------
+        #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL -----------------
         st.header("Evolución mensual de compras por cuenta")
+
         if df_divisiones_filtrado.empty:
             st.warning("No hay datos disponibles.")
         else:
-            # Crear columna abreviatura y cuenta_sucursal igual que en tabla
+            # --- Crear columnas necesarias en df_divisiones_filtrado ---
             def obtener_abreviatura(codigo):
                 codigo_str = str(codigo).strip()
                 for division, info in divisiones.items():
@@ -2109,38 +2110,41 @@ if authentication_status:
                         return info["abreviatura"]
                 return ""
 
-            df_divisiones["abreviatura"] = df_divisiones["codigo_normalizado"].apply(obtener_abreviatura)
-            df_divisiones["cuenta_sucursal"] = (
-                df_divisiones["codigo_normalizado"].astype(str) + " (" +
-                df_divisiones["abreviatura"] + ") - " +
-                df_divisiones["sucursal"]
+            df_divisiones_filtrado["abreviatura"] = df_divisiones_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
+            df_divisiones_filtrado["cuenta_sucursal"] = (
+                df_divisiones_filtrado["codigo_normalizado"].astype(str) + " (" +
+                df_divisiones_filtrado["abreviatura"] + ") - " +
+                df_divisiones_filtrado["sucursal"]
             )
-
-
-            df_divisiones["sucursal_nombre"] = df_divisiones["cuenta_sucursal"].str.split(" - ").str[-1]
+            df_divisiones_filtrado["sucursal_nombre"] = df_divisiones_filtrado["cuenta_sucursal"].str.split(" - ").str[-1]
 
             # Crear columna mes_nombre en español
-            df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
+            df_divisiones_filtrado["mes_nombre"] = (
+                df_divisiones_filtrado["mes_dt"].dt.month_name().map(meses_es) + " " +
+                df_divisiones_filtrado["mes_dt"].dt.year.astype(str)
+            )
 
-            # Agrupar
+            # --- Agrupar datos por mes y cuenta ---
             df_barras = df_divisiones_filtrado.groupby(["mes_nombre", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
-            # Obtener cuentas y meses para completar combinaciones
-            orden_meses = [m for m in orden_meses_desc if pd.notna(m)]
+            # --- Definir orden de meses y cuentas ---
+            orden_meses = df_divisiones_filtrado.drop_duplicates("mes_nombre").sort_values("mes_dt")["mes_nombre"].tolist()
             todas_cuentas = df_divisiones_filtrado["cuenta_sucursal"].unique()
 
+            # Crear combinaciones mes-cuenta para completar valores faltantes
             idx = pd.MultiIndex.from_product([orden_meses, todas_cuentas], names=["mes_nombre", "cuenta_sucursal"])
-
             df_barras = df_barras.set_index(["mes_nombre", "cuenta_sucursal"]).reindex(idx, fill_value=0).reset_index()
 
+            # Añadir sucursal_nombre mediante merge
             df_sucursales = df_divisiones_filtrado.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
             df_barras = df_barras.merge(df_sucursales, on="cuenta_sucursal", how="left")
 
+            # Convertir mes_nombre en categoría ordenada
             df_barras["mes_nombre"] = pd.Categorical(df_barras["mes_nombre"], categories=orden_meses, ordered=True)
 
+            # --- Crear gráfico de barras por mes ---
             for mes in orden_meses:
                 df_mes = df_barras[df_barras["mes_nombre"] == mes].copy()
-
                 if df_mes.empty:
                     continue
 
@@ -2182,6 +2186,7 @@ if authentication_status:
                 )
 
                 st.plotly_chart(fig, use_container_width=True)
+
 
     # ==========================================================================================================
     # =========================== COMPRA POR SUCURSAL ======================================
