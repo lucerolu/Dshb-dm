@@ -158,6 +158,8 @@ if authentication_status:
     else:
         st.warning("No hay datos disponibles para mostrar.")
 
+    # ---------------- Preparar colores de divisiones desde config ----------------
+    colores_divisiones = {div: data["color"] for div, data in config["divisiones"].items()}
 
     #------------------------------ MAPEO COLOR ABREVIATURA -------------------------------------------------------------------------
     # Cargar configuración de colores
@@ -1301,12 +1303,12 @@ if authentication_status:
                 }
 
                 .construccion {
-                    background-color: #FFDE00 !important;
+                    background-color: #FFA500 !important;
                     color: black;
                 }
 
                 .jardineria {
-                    background-color: #FFA500 !important;
+                    background-color: #FFDE00 !important;
                     color: black;
                 }
 
@@ -1518,8 +1520,8 @@ if authentication_status:
         # Diccionario de colores
         colores_div = {
             "Agrícola": "#367C2B",
-            "Construcción": "#FFDE00",
-            "Jardinería y Golf": "#FFA500"
+            "Construcción": "#FFA500",
+            "Jardinería y Golf": "#FFDE00"
         }
 
         # Función para construir la tabla con estilo
@@ -1815,9 +1817,11 @@ if authentication_status:
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
         #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
-        
         # Agrupar monto total por cuenta y sucursal
-        df_cta = df_divisiones_filtrado.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
+        df_cta = df_divisiones_filtrado.groupby(
+            ["codigo_normalizado", "sucursal", "division"], 
+            as_index=False
+        )["monto"].sum()
 
         # Crear etiqueta tipo "1234 - Monterrey"
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
@@ -1825,21 +1829,25 @@ if authentication_status:
         # Ordenar de mayor a menor monto
         df_cta = df_cta.sort_values("monto", ascending=False)
 
-        # Aplicar color por división
+        # 🔑 Aplicar color correcto según división
         df_cta["color_div"] = df_cta["division"].map(colores_divisiones).fillna("#777777")
 
+        # Gráfico de barras
         fig = px.bar(
             df_cta,
             x="monto",
             y="cuenta_sucursal",
-            color="division",
-            color_discrete_map=colores_divisiones,
+            color="division",   # se respeta el nombre
+            color_discrete_map=colores_divisiones,  # ahora sí mapea bien
             orientation="h",
-            labels={"monto": "Monto", "cuenta_sucursal": "Cuenta - Sucursal", "division": "División"},
-            #title="Monto Total por Cuenta en 2025"
+            labels={
+                "monto": "Monto",
+                "cuenta_sucursal": "Cuenta - Sucursal",
+                "division": "División"
+            },
         )
 
-        # Custom data para el hover
+        # Hover y texto en las barras
         fig.update_traces(
             customdata=df_cta[["cuenta_sucursal", "division", "monto"]],
             hovertemplate=(
@@ -1852,6 +1860,7 @@ if authentication_status:
             cliponaxis=False
         )
 
+        # Layout
         fig.update_layout(
             xaxis_title="Monto (MXN)",
             yaxis_title="Cuenta - Sucursal",
@@ -1867,10 +1876,12 @@ if authentication_status:
                 x=0.5
             )
         )
+
         st.markdown("### Monto Total Anual por Cuenta")
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
+        
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
