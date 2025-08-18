@@ -1834,6 +1834,14 @@ if authentication_status:
         # Ordenar de mayor a menor
         df_cta = df_cta.sort_values("monto", ascending=False)
 
+        # Crear columna para hover
+        df_cta["hover_text"] = (
+            "Código: " + df_cta["codigo_normalizado"] + "<br>" +
+            "Sucursal: " + df_cta["sucursal"] + "<br>" +
+            "División: " + df_cta["division"] + "<br>" +
+            "Monto: $" + df_cta["monto"].map("{:,.2f}".format)
+        )
+
         # Gráfico de barras
         fig = px.bar(
             df_cta,
@@ -1847,18 +1855,14 @@ if authentication_status:
                 "cuenta_sucursal": "Cuenta - Sucursal",
                 "division": "División"
             },
-            text="monto"
+            text="monto",
+            hover_data={"hover_text": True},
         )
 
-        # Hover
+        # Usar hovertemplate para mostrar la columna hover_text
         fig.update_traces(
-            customdata=df_cta[["codigo_normalizado","sucursal","division"]],
-            hovertemplate=(
-                "<b>Código:</b> %{customdata[0]}<br>"
-                "<b>Sucursal:</b> %{customdata[1]}<br>"
-                "<b>División:</b> %{customdata[2]}<br>"
-                "<b>Monto:</b> $%{x:,.2f}<extra></extra>"
-            ),
+            hovertemplate="%{customdata[0]}<extra></extra>",
+            customdata=df_cta[["hover_text"]],
             texttemplate="$%{x:,.2f}",
             textposition="outside",
             cliponaxis=False
