@@ -1627,21 +1627,21 @@ if authentication_status:
         # 📌 Detectar el año base a partir de los datos filtrados
         anio_min = df_smd["mes_nombre"].str.extract(r"(\d{4})").astype(float).min()[0]
         anio_max = df_smd["mes_nombre"].str.extract(r"(\d{4})").astype(float).max()[0]
-        anio = int(anio_min) if opciones_periodo == "Año Natural" else int(anio_max) - 1
+        anio = int(anio_min) if periodo == "Año Natural" else int(anio_max)  # ← usamos 'periodo', no 'opciones_periodo'
 
         # 📌 Lista de meses según periodo
-        if opciones_periodo == "Año Natural":
+        if periodo == "Año Natural":
             orden_meses_con_anio = [
                 f"Enero {anio}", f"Febrero {anio}", f"Marzo {anio}", f"Abril {anio}",
                 f"Mayo {anio}", f"Junio {anio}", f"Julio {anio}", f"Agosto {anio}",
                 f"Septiembre {anio}", f"Octubre {anio}", f"Noviembre {anio}", f"Diciembre {anio}"
             ]
-        else:  # Año Fiscal (Julio - Junio)
+        else:  # 📌 Año Fiscal (Noviembre → Octubre)
             orden_meses_con_anio = [
-                f"Julio {anio}", f"Agosto {anio}", f"Septiembre {anio}", f"Octubre {anio}",
-                f"Noviembre {anio}", f"Diciembre {anio}",
-                f"Enero {anio+1}", f"Febrero {anio+1}", f"Marzo {anio+1}",
-                f"Abril {anio+1}", f"Mayo {anio+1}", f"Junio {anio+1}"
+                f"Noviembre {anio-1}", f"Diciembre {anio-1}",
+                f"Enero {anio}", f"Febrero {anio}", f"Marzo {anio}", f"Abril {anio}",
+                f"Mayo {anio}", f"Junio {anio}", f"Julio {anio}", f"Agosto {anio}",
+                f"Septiembre {anio}", f"Octubre {anio}"
             ]
 
         # Mapeo español → inglés para conversión
