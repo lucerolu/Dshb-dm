@@ -1839,7 +1839,7 @@ if authentication_status:
             df_cta,
             x="monto",
             y="cuenta_sucursal",
-            color="division",   # ahora viene directo del mapa
+            color="division",   
             color_discrete_map=colores_divisiones,
             orientation="h",
             labels={
@@ -1849,16 +1849,16 @@ if authentication_status:
             },
         )
 
-        # Hover y texto (separamos bien las columnas)
+        # Hover y texto (ya sincronizado con cada barra)
         fig.update_traces(
-            customdata=df_cta[["codigo_normalizado", "sucursal", "division"]],
+            customdata=df_cta[["codigo_normalizado", "sucursal", "division", "monto"]],
             hovertemplate=(
                 "<b>Código:</b> %{customdata[0]}<br>"
                 "<b>Sucursal:</b> %{customdata[1]}<br>"
                 "<b>División:</b> %{customdata[2]}<br>"
-                "<b>Monto:</b> $%{x:,.2f}<extra></extra>"
+                "<b>Monto:</b> $%{customdata[3]:,.2f}<extra></extra>"
             ),
-            text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
+            text=df_cta.apply(lambda r: f"${r['monto']:,.2f}", axis=1),  # cada barra toma su propio valor
             textposition="outside",
             cliponaxis=False
         )
@@ -1884,6 +1884,7 @@ if authentication_status:
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
+
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
