@@ -1818,14 +1818,11 @@ if authentication_status:
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
         #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
-        # Agrupar por cuenta y sucursal
+       
         df_cta = df_divisiones_filtrado.groupby(
-            ["codigo_normalizado", "sucursal"], 
+            ["codigo_normalizado", "sucursal", "division"], 
             as_index=False
         )["monto"].sum()
-
-        # Asignar división (según config)
-        df_cta["division"] = df_cta["codigo_normalizado"].map(mapa_codigos)
 
         # Crear etiqueta tipo "1234 - Monterrey"
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
@@ -1838,7 +1835,7 @@ if authentication_status:
             df_cta,
             x="monto",
             y="cuenta_sucursal",
-            color="division",   # ← ahora se toma directo de config
+            color="division",   # ← ya viene del df filtrado
             color_discrete_map=colores_divisiones,
             orientation="h",
             labels={
@@ -1848,13 +1845,14 @@ if authentication_status:
             },
         )
 
-        # Hover y texto
+        # Hover y texto (separamos bien las columnas)
         fig.update_traces(
-            customdata=df_cta[["cuenta_sucursal", "division", "monto"]],
+            customdata=df_cta[["codigo_normalizado", "sucursal", "division", "monto"]],
             hovertemplate=(
-                "<b>Cuenta - Sucursal:</b> %{customdata[0]}<br>"
-                "<b>División:</b> %{customdata[1]}<br>"
-                "<b>Monto:</b> $%{customdata[2]:,.2f}<extra></extra>"
+                "<b>Código:</b> %{customdata[0]}<br>"
+                "<b>Sucursal:</b> %{customdata[1]}<br>"
+                "<b>División:</b> %{customdata[2]}<br>"
+                "<b>Monto:</b> $%{customdata[3]:,.2f}<extra></extra>"
             ),
             text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
             textposition="outside",
