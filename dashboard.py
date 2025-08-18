@@ -164,7 +164,7 @@ if authentication_status:
     with open("config_colores.json", "r", encoding="utf-8") as f:
         config = json.load(f)
 
-    colores_divisiones = {div: data["color"] for div, data in config["divisiones"].items()}
+    #colores_divisiones = {div: data["color"] for div, data in config["divisiones"].items()}
 
     # Crear un dict {codigo: (color, abreviatura)}
     codigo_division_map = {}
@@ -1790,7 +1790,7 @@ if authentication_status:
     # ===================== COMPRA POR CUENTA ======================================
     # ==========================================================================================================
 
-    # ---------------------- GRAFICO DE BARRAS: COMPRA ANUAL POR CUENTA ----------------------
+    #---------------------- GRÁFICO DE BARRAS: COMPRA ANUAL POR CUENTA -------------------------------------------------------
     elif opcion == "Compra por Cuenta":
         st.title("Compra Total Anual por Cuenta")
         # ----------------- Selector de periodo compacto -----------------
@@ -1798,7 +1798,7 @@ if authentication_status:
         periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
 
         # Detectar años disponibles
-        df["fecha"] = pd.to_datetime(df["mes"])
+        df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
         años_disponibles = sorted(df["fecha"].dt.year.unique())
         año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
 
@@ -1808,21 +1808,29 @@ if authentication_status:
             titulo_periodo = f"{año_seleccionado}"
 
         elif periodo == "Año Fiscal":
+            # Año fiscal: 1 nov (año_seleccionado-1) -> 31 oct (año_seleccionado)
             inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
             fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
             df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
             titulo_periodo = f"Fiscal {año_seleccionado}"
-
         st.markdown("<br><br>", unsafe_allow_html=True)
-
         # Usar df_filtrado en lugar del df original
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
-        # Agrupar monto total por cuenta y sucursal
+        #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
         df_cta = df_divisiones_filtrado.groupby(
-            ["codigo_normalizado", "sucursal", "division"], 
+            ["codigo_normalizado", "sucursal"], 
             as_index=False
         )["monto"].sum()
+
+        # Asignar división correcta según config
+        def asignar_division(codigo):
+            for division, data in config["divisiones"].items():
+                if codigo in data["codigos"]:
+                    return division
+            return "Otras"
+
+        df_cta["division"] = df_cta["codigo_normalizado"].apply(asignar_division)
 
         # Crear etiqueta tipo "1234 - Monterrey"
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
@@ -1830,16 +1838,16 @@ if authentication_status:
         # Ordenar de mayor a menor monto
         df_cta = df_cta.sort_values("monto", ascending=False)
 
-        # 🔑 Aplicar color correcto según división
-        df_cta["color_div"] = df_cta["division"].map(colores_divisiones).fillna("#777777")
+        # Colores según división (definidos dentro del bloque)
+        colores_divisiones = {div: data["color"] for div, data in config["divisiones"].items()}
 
         # Gráfico de barras
         fig = px.bar(
             df_cta,
             x="monto",
             y="cuenta_sucursal",
-            color="division",   # se respeta el nombre
-            color_discrete_map=colores_divisiones,  # ahora sí mapea bien
+            color="division",
+            color_discrete_map=colores_divisiones,
             orientation="h",
             labels={
                 "monto": "Monto",
@@ -1882,8 +1890,6 @@ if authentication_status:
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
-
-        
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
