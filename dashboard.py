@@ -1819,14 +1819,14 @@ if authentication_status:
 
         #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
        
-        # Partimos de df_filtrado (ya trae el periodo aplicado)
+        # 1️⃣ Agregar división antes de agrupar
+        df_filtrado["division"] = df_filtrado["codigo_normalizado"].map(mapa_codigos)
+
+        # 2️⃣ Agrupar por cuenta y sucursal
         df_cta = df_filtrado.groupby(
-            ["codigo_normalizado", "sucursal"], 
+            ["codigo_normalizado", "sucursal", "division"],  # incluir division
             as_index=False
         )["monto"].sum()
-
-        # Asignar división usando el mapa de códigos
-        df_cta["division"] = df_cta["codigo_normalizado"].map(mapa_codigos)
 
         # Crear etiqueta tipo "1234 - Monterrey"
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
@@ -1847,45 +1847,22 @@ if authentication_status:
                 "cuenta_sucursal": "Cuenta - Sucursal",
                 "division": "División"
             },
-            text="monto"  # <-- aquí ponemos la columna directamente
+            text="monto"
         )
 
         # Hover
         fig.update_traces(
+            customdata=df_cta[["codigo_normalizado","sucursal","division"]],
             hovertemplate=(
                 "<b>Código:</b> %{customdata[0]}<br>"
                 "<b>Sucursal:</b> %{customdata[1]}<br>"
                 "<b>División:</b> %{customdata[2]}<br>"
                 "<b>Monto:</b> $%{x:,.2f}<extra></extra>"
             ),
-            customdata=df_cta[["codigo_normalizado", "sucursal", "division"]],
-            texttemplate="$%{x:,.2f}",  # sincroniza el texto con la longitud de la barra
+            texttemplate="$%{x:,.2f}",
             textposition="outside",
             cliponaxis=False
         )
-
-        # Layout
-        fig.update_layout(
-            xaxis_title="Monto (MXN)",
-            yaxis_title="Cuenta - Sucursal",
-            margin=dict(r=70),
-            template="plotly_dark",
-            yaxis={'categoryorder': 'total ascending'},
-            height=800,
-            legend=dict(
-                orientation="h",
-                yanchor="top",
-                y=-0.15,
-                xanchor="center",
-                x=0.5
-            )
-        )
-
-        st.markdown("### Monto Total Anual por Cuenta")
-        st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown("<br><br>", unsafe_allow_html=True)
-
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
