@@ -158,9 +158,7 @@ if authentication_status:
     else:
         st.warning("No hay datos disponibles para mostrar.")
 
-    # ---------------- Preparar colores de divisiones desde config ----------------
-    colores_divisiones = {div: data["color"] for div, data in config["divisiones"].items()}
-
+    
     #------------------------------ MAPEO COLOR ABREVIATURA -------------------------------------------------------------------------
     # Cargar configuración de colores
     with open("config_colores.json", "r", encoding="utf-8") as f:
@@ -1789,6 +1787,7 @@ if authentication_status:
     # ==========================================================================================================
     # ===================== COMPRA POR CUENTA ======================================
     # ==========================================================================================================
+
     #---------------------- GRÁFICO DE BARRAS: COMPRA ANUAL POR CUENTA -------------------------------------------------------
     elif opcion == "Compra por Cuenta":
         st.title("Compra Total Anual por Cuenta")
@@ -1816,6 +1815,8 @@ if authentication_status:
         # Usar df_filtrado en lugar del df original
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
+        # ---------------- Preparar colores de divisiones desde config ----------------
+        colores_divisiones = {div: data["color"] for div, data in config["divisiones"].items()}
         #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
         # Agrupar monto total por cuenta y sucursal
         df_cta = df_divisiones_filtrado.groupby(
