@@ -1824,7 +1824,7 @@ if authentication_status:
 
         # 2️⃣ Agrupar por cuenta y sucursal
         df_cta = df_filtrado.groupby(
-            ["codigo_normalizado", "sucursal", "division"],  # incluir division
+            ["codigo_normalizado", "sucursal", "division"],
             as_index=False
         )["monto"].sum()
 
@@ -1834,13 +1834,6 @@ if authentication_status:
         # Ordenar de mayor a menor
         df_cta = df_cta.sort_values("monto", ascending=False).reset_index(drop=True)
 
-        # Establecer categoría para que Plotly respete el orden exacto en y
-        df_cta["cuenta_sucursal"] = pd.Categorical(
-            df_cta["cuenta_sucursal"],
-            categories=df_cta["cuenta_sucursal"],
-            ordered=True
-        )
-
         # Crear columna para hover
         df_cta["hover_text"] = (
             "Código: " + df_cta["codigo_normalizado"] + "<br>" +
@@ -1849,48 +1842,39 @@ if authentication_status:
             "Monto: $" + df_cta["monto"].map("{:,.2f}".format)
         )
 
-        # Crear customdata como array de listas
-        custom_hover = df_cta[["hover_text"]].values
+        # Crear el gráfico usando go.Bar
+        fig = go.Figure()
 
-        # Gráfico de barras
-        fig = px.bar(
-            df_cta,
-            x="monto",
-            y="cuenta_sucursal",
-            color="division",
-            color_discrete_map=colores_divisiones,
-            orientation="h",
-            labels={
-                "monto": "Monto",
-                "cuenta_sucursal": "Cuenta - Sucursal",
-                "division": "División"
-            },
-            text="monto",
-        )
+        # Obtener lista de divisiones únicas para colorear
+        divisiones = df_cta["division"].unique()
 
-        # Configurar hover y texto
-        fig.update_traces(
-            hovertemplate="%{customdata[0]}<extra></extra>",
-            customdata=custom_hover,
-            texttemplate="$%{x:,.2f}",
-            textposition="outside",
-            cliponaxis=False
-        )
+        for div in divisiones:
+            df_div = df_cta[df_cta["division"] == div]
+            fig.add_trace(go.Bar(
+                x=df_div["monto"],
+                y=df_div["cuenta_sucursal"],
+                orientation="h",
+                name=div,
+                marker_color=colores_divisiones.get(div, "#333333"),
+                text=df_div["monto"].map("${:,.2f}".format),
+                textposition="outside",
+                hovertemplate=df_div["hover_text"]
+            ))
 
         # Layout
         fig.update_layout(
             xaxis_title="Monto (MXN)",
             yaxis_title="Cuenta - Sucursal",
-            margin=dict(r=70),
             template="plotly_dark",
             height=800,
+            margin=dict(r=70),
             legend=dict(
                 orientation="h",
                 yanchor="top",
                 y=-0.15,
                 xanchor="center",
                 x=0.5
-            )
+            ),
         )
 
         # Mostrar en Streamlit
