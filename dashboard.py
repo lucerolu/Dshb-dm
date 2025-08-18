@@ -1824,7 +1824,7 @@ if authentication_status:
 
         # 2️⃣ Agrupar por cuenta y sucursal
         df_cta = df_filtrado.groupby(
-            ["codigo_normalizado", "sucursal", "division"],
+            ["codigo_normalizado", "sucursal", "division"],  # incluir division
             as_index=False
         )["monto"].sum()
 
@@ -1842,9 +1842,6 @@ if authentication_status:
             "Monto: $" + df_cta["monto"].map("{:,.2f}".format)
         )
 
-        # ⚡ Forzar que el eje Y respete el orden exacto de df_cta
-        y_order = df_cta["cuenta_sucursal"].tolist()
-
         # Gráfico de barras
         fig = px.bar(
             df_cta,
@@ -1860,13 +1857,12 @@ if authentication_status:
             },
             text="monto",
             hover_data={"hover_text": True},
-            category_orders={"cuenta_sucursal": y_order},  # 🔑 fijamos orden exacto
         )
 
         # Usar hovertemplate para mostrar la columna hover_text
         fig.update_traces(
-            customdata=df_cta[["hover_text"]],
             hovertemplate="%{customdata[0]}<extra></extra>",
+            customdata=df_cta[["hover_text"]],
             texttemplate="$%{x:,.2f}",
             textposition="outside",
             cliponaxis=False
@@ -1878,7 +1874,7 @@ if authentication_status:
             yaxis_title="Cuenta - Sucursal",
             margin=dict(r=70),
             template="plotly_dark",
-            yaxis={'categoryorder': 'array', 'categoryarray': y_order},  # 🔑 asegura correspondencia exacta
+            yaxis={'categoryorder': 'total ascending'},
             height=800,
             legend=dict(
                 orientation="h",
