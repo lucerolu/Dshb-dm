@@ -176,6 +176,9 @@ if authentication_status:
 
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
+        # Título general del sidebar
+        st.markdown("<h3 style='color:white; margin-bottom:20px;'>Totales Comprados</h3>", unsafe_allow_html=True)
+
         # Mostrar bienvenida
         if "user_name" in st.session_state:
             st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
@@ -214,26 +217,24 @@ if authentication_status:
         df_fiscal = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
         total_anual_fiscal = df_fiscal["monto"].sum()
 
-       # Mostrar métricas estilo 'st.metric' pero más compactas
+        # Mostrar métricas con títulos en blanco
         st.markdown(f"""
         <div style="margin-bottom:15px;">
-            <div style="font-size:12px; color:#555;">Año Natural 2025</div>
+            <div style="font-size:12px; color:white;">Año Natural 2025</div>
             <div style="font-size:20px; font-weight:bold;">${total_anual_natural:,.2f}</div>
         </div>
         <div style="margin-bottom:15px;">
-            <div style="font-size:12px; color:#555;">Año Fiscal 2025</div>
+            <div style="font-size:12px; color:white;">Año Fiscal 2025</div>
             <div style="font-size:20px; font-weight:bold;">${total_anual_fiscal:,.2f}</div>
         </div>
         <div style="margin-bottom:15px;">
-            <div style="font-size:12px; color:#555;">Mes Actual ({mes_actual_esp})</div>
+            <div style="font-size:12px; color:white;">Mes Actual ({mes_actual_esp})</div>
             <div style="font-size:20px; font-weight:bold;">${total_mes_actual:,.2f}</div>
         </div>
         """, unsafe_allow_html=True)
 
         # Fecha actualización
         mostrar_fecha_actualizacion()
-
-
 
     # ==========================================================================================================
     # ============================= ESTADO DE CUENTA ============================================================
