@@ -1750,10 +1750,35 @@ if authentication_status:
     # ==========================================================================================================
     #---------------------- GRÁFICO DE BARRAS: COMPRA ANUAL POR CUENTA -------------------------------------------------------
     elif opcion == "Compra por Cuenta":
-        st.title("Compra Total Anual por Cuenta (2025)")
-        
+        st.title("Compra Total Anual por Cuenta")
+        # ----------------- Selector de periodo compacto -----------------
+        opciones_periodo = ["Año Natural", "Año Fiscal"]
+        periodo = st.radio("Selecciona periodo", opciones_periodo, horizontal=True)
+
+        # Detectar años disponibles
+        df["fecha"] = pd.to_datetime(df["mes"])  # asegúrate de tener columna 'mes' en formato fecha
+        años_disponibles = sorted(df["fecha"].dt.year.unique())
+        año_seleccionado = st.selectbox("Selecciona el año", años_disponibles, index=len(años_disponibles)-1)
+        st.markdown("<br><br>", unsafe_allow_html=True)
+
+        # Filtrar por periodo
+        if periodo == "Año Natural":
+            df_filtrado = df[df["fecha"].dt.year == año_seleccionado]
+            titulo_periodo = f"{año_seleccionado}"
+
+        elif periodo == "Año Fiscal":
+            # Año fiscal: 1 nov (año_seleccionado-1) -> 31 oct (año_seleccionado)
+            inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
+            fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
+            df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
+            titulo_periodo = f"Fiscal {año_seleccionado}"
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        # Usar df_filtrado en lugar del df original
+        df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
+
+        #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
         # Agrupar monto total por cuenta y sucursal
-        df_cta = df_divisiones.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
+        df_cta = df_divisiones_filtrado.groupby(["codigo_normalizado", "sucursal", "division"], as_index=False)["monto"].sum()
 
         # Crear etiqueta tipo "1234 - Monterrey"
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
@@ -1825,7 +1850,7 @@ if authentication_status:
         df["mes_anio"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
         df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
-        tabla_compras = df.pivot_table(
+        tabla_compras = df_filtrado.pivot_table(
             index="cuenta_sucursal",
             columns="mes_anio",
             values="monto",
@@ -1966,7 +1991,7 @@ if authentication_status:
 
         #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
         # Asegúrate de que la columna mes_dt existe
-        if "mes_dt" not in df_divisiones.columns:
+        if "mes_dt" not in df_divisiones_filtrado.columns:
             df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["fecha"]).dt.to_period("M").dt.to_timestamp()
 
         # Crear columna mes_nombre y mes_anio en español
@@ -1990,10 +2015,10 @@ if authentication_status:
         )
 
         # Preparar datos para plotly (long-form)
-        df_grafico = df_divisiones.groupby(["mes_anio", "cuenta_sucursal", "abreviatura"], as_index=False)["monto"].sum()
+        df_grafico = df_divisiones_filtrado.groupby(["mes_anio", "cuenta_sucursal", "abreviatura"], as_index=False)["monto"].sum()
 
         # Definir el orden de los meses
-        orden_meses = df_divisiones.drop_duplicates("mes_anio").sort_values("mes_dt")["mes_anio"].tolist()
+        orden_meses = df_divisiones_filtrado.drop_duplicates("mes_anio").sort_values("mes_dt")["mes_anio"].tolist()
 
         # Obtener lista de cuentas únicas
         cuentas = df_grafico["cuenta_sucursal"].unique()
@@ -2065,7 +2090,7 @@ if authentication_status:
 
         #---------------- GRAFICAS DE BARRAS: COMPRA POR CUENTA POR MES POR SUCURSAL ------------------------------------------------------------------------------
         st.header("Evolución mensual de compras por cuenta")
-        if df_divisiones.empty:
+        if df_divisiones_filtrado.empty:
             st.warning("No hay datos disponibles.")
         else:
             # Crear columna abreviatura y cuenta_sucursal igual que en tabla
@@ -2090,17 +2115,17 @@ if authentication_status:
             df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
 
             # Agrupar
-            df_barras = df_divisiones.groupby(["mes_nombre", "cuenta_sucursal"], as_index=False)["monto"].sum()
+            df_barras = df_divisiones_filtrado.groupby(["mes_nombre", "cuenta_sucursal"], as_index=False)["monto"].sum()
 
             # Obtener cuentas y meses para completar combinaciones
             orden_meses = [m for m in orden_meses_desc if pd.notna(m)]
-            todas_cuentas = df_divisiones["cuenta_sucursal"].unique()
+            todas_cuentas = df_divisiones_filtrado["cuenta_sucursal"].unique()
 
             idx = pd.MultiIndex.from_product([orden_meses, todas_cuentas], names=["mes_nombre", "cuenta_sucursal"])
 
             df_barras = df_barras.set_index(["mes_nombre", "cuenta_sucursal"]).reindex(idx, fill_value=0).reset_index()
 
-            df_sucursales = df_divisiones.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
+            df_sucursales = df_divisiones_filtrado.drop_duplicates("cuenta_sucursal")[["cuenta_sucursal", "sucursal_nombre"]]
             df_barras = df_barras.merge(df_sucursales, on="cuenta_sucursal", how="left")
 
             df_barras["mes_nombre"] = pd.Categorical(df_barras["mes_nombre"], categories=orden_meses, ordered=True)
