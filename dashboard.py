@@ -1819,15 +1819,19 @@ if authentication_status:
 
         #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
        
-        df_cta = df_divisiones_filtrado.groupby(
-            ["codigo_normalizado", "sucursal", "division"], 
+        # Partimos de df_filtrado (ya trae el periodo aplicado)
+        df_cta = df_filtrado.groupby(
+            ["codigo_normalizado", "sucursal"], 
             as_index=False
         )["monto"].sum()
+
+        # Asignar división usando el mapa de códigos
+        df_cta["division"] = df_cta["codigo_normalizado"].map(mapa_codigos)
 
         # Crear etiqueta tipo "1234 - Monterrey"
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
 
-        # Ordenar
+        # Ordenar de mayor a menor
         df_cta = df_cta.sort_values("monto", ascending=False)
 
         # Gráfico de barras
@@ -1835,7 +1839,7 @@ if authentication_status:
             df_cta,
             x="monto",
             y="cuenta_sucursal",
-            color="division",   # ← ya viene del df filtrado
+            color="division",   # ahora viene directo del mapa
             color_discrete_map=colores_divisiones,
             orientation="h",
             labels={
