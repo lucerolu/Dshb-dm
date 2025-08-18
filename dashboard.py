@@ -1837,20 +1837,29 @@ if authentication_status:
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title("Compra mensual por Cuenta")
         st.markdown("<div style='margin-top:-5px'></div>", unsafe_allow_html=True)
-
+        
+        # ----------------- Función para obtener abreviatura -----------------
         def obtener_abreviatura(codigo):
             for division, info in divisiones.items():
                 if codigo in info["codigos"]:
                     return info["abreviatura"]
             return ""
 
+        # ----------------- Agregar columnas necesarias antes del filtro -----------------
         df["abreviatura"] = df["codigo_normalizado"].apply(obtener_abreviatura)
         df["cuenta_sucursal"] = df["codigo_normalizado"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
-
-        # Usar meses en español con tu diccionario meses_es para formatear mes_año
         df["mes_anio"] = df["mes_dt"].dt.month_name().map(meses_es) + " " + df["mes_dt"].dt.year.astype(str)
         df["orden_mes"] = df["mes_dt"].dt.to_period("M")
 
+        # ----------------- Filtrar por periodo -----------------
+        if periodo == "Año Natural":
+            df_filtrado = df[df["fecha"].dt.year == año_seleccionado]
+        elif periodo == "Año Fiscal":
+            inicio_fiscal = pd.Timestamp(año_seleccionado-1, 11, 1)
+            fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
+            df_filtrado = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
+
+        # ----------------- Pivot table -----------------
         tabla_compras = df_filtrado.pivot_table(
             index="cuenta_sucursal",
             columns="mes_anio",
