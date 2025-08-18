@@ -1824,7 +1824,7 @@ if authentication_status:
 
         # 2️⃣ Agrupar por cuenta y sucursal
         df_cta = df_filtrado.groupby(
-            ["codigo_normalizado", "sucursal", "division"],  # incluir division
+            ["codigo_normalizado", "sucursal", "division"],
             as_index=False
         )["monto"].sum()
 
@@ -1842,6 +1842,9 @@ if authentication_status:
             "Monto: $" + df_cta["monto"].map("{:,.2f}".format)
         )
 
+        # ⚡ Forzar que el eje Y respete el orden exacto de df_cta
+        y_order = df_cta["cuenta_sucursal"].tolist()
+
         # Gráfico de barras
         fig = px.bar(
             df_cta,
@@ -1857,13 +1860,13 @@ if authentication_status:
             },
             text="monto",
             hover_data={"hover_text": True},
-            category_orders={"cuenta_sucursal": df_cta["cuenta_sucursal"].tolist()}  # 🔑 fija el orden de las barras
+            category_orders={"cuenta_sucursal": y_order},  # 🔑 fijamos orden exacto
         )
 
         # Usar hovertemplate para mostrar la columna hover_text
         fig.update_traces(
-            hovertemplate="%{customdata[0]}<extra></extra>",
             customdata=df_cta[["hover_text"]],
+            hovertemplate="%{customdata[0]}<extra></extra>",
             texttemplate="$%{x:,.2f}",
             textposition="outside",
             cliponaxis=False
@@ -1875,7 +1878,7 @@ if authentication_status:
             yaxis_title="Cuenta - Sucursal",
             margin=dict(r=70),
             template="plotly_dark",
-            yaxis={'categoryorder': 'array', 'categoryarray': df_cta["cuenta_sucursal"].tolist()},  # 🔑 asegura coincidencia exacta
+            yaxis={'categoryorder': 'array', 'categoryarray': y_order},  # 🔑 asegura correspondencia exacta
             height=800,
             legend=dict(
                 orientation="h",
@@ -1890,6 +1893,7 @@ if authentication_status:
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
+
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
