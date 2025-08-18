@@ -2654,7 +2654,22 @@ if authentication_status:
         st.title("Evolución mensual de compras por sucursal")
         
         # --------------------------- GRÁFICA DE LÍNEAS (evolución mensual) ------------------------------------------------------------------------------------------------------------------------------
+        
+        # Crear pivot table solo con df_filtrado (periodo + sucursales)
+        df_pivot = df_filtrado.pivot_table(
+            index="mes_nombre",
+            columns="sucursal",
+            values="monto",
+            aggfunc="sum"
+        ).fillna(0)
+
+        # Reordenar los meses según orden_meses pero solo los que existen en df_pivot
+        meses_existentes = [m for m in orden_meses if m in df_pivot.index]
+        df_pivot = df_pivot.reindex(meses_existentes)
+
+        # Crear gráfico
         fig_lineas = go.Figure()
+
         for sucursal in sucursales_seleccionadas:
             if sucursal in df_pivot.columns:
                 # Crear customdata con mes y sucursal para cada punto
@@ -2674,12 +2689,16 @@ if authentication_status:
                     )
                 ))
 
+        # Layout
         fig_lineas.update_layout(
-            title="Evolución mensual por sucursal",
+            title=f"Evolución mensual por sucursal ({titulo_periodo})",
             xaxis_title="Mes",
-            yaxis_title="Total Comprado"
+            yaxis_title="Total Comprado",
+            height=600,
+            margin=dict(t=100)
         )
 
+        # Mostrar gráfico
         st.plotly_chart(
             fig_lineas,
             use_container_width=True,
@@ -2694,6 +2713,7 @@ if authentication_status:
                 "displaylogo": False
             }
         )
+
 
         #------------------------------ GRÁFICA DE BARRAS: COMPRAS ACUMULADAS POR CUENTA --------------------------------------------------------------------------------------
         # 1️⃣ Agregar abreviatura de la división
