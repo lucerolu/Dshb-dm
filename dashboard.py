@@ -1070,10 +1070,10 @@ if authentication_status:
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
         # Agrupar para el gráfico de pastel
-        df_agrupado = df_divisiones_filtrado.groupby("division")["monto"].sum().reset_index()
+        #df_agrupado = df_divisiones_filtrado.groupby("division")["monto"].sum().reset_index()
 
         #------------------------- GRÁFICO DE PASTEL ---------------------------------------------------------
-        df_agrupado = df_divisiones.groupby("division")["monto"].sum().reset_index()
+        df_agrupado = df_divisiones_filtrado.groupby("division")["monto"].sum().reset_index()
 
         fig_pie = px.pie(
             df_agrupado,
