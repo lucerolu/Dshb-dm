@@ -2928,7 +2928,7 @@ if authentication_status:
         # ============================== GRÁFICA DE BARRAS POR SUCURSAL ==============================================================================================
         if len(sucursales_seleccionadas) == 1:
             sucursal = sucursales_seleccionadas[0]
-            df_suc = df[df["sucursal"] == sucursal].copy()
+            df_suc = df_filtrado[df["sucursal"] == sucursal].copy()
             df_suc = df_suc.groupby(["mes_nombre", "mes_dt"], as_index=False).agg({"monto": "sum"})
             df_suc = df_suc.sort_values("mes_dt", ascending=False)  # orden descendente
             df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
@@ -2959,7 +2959,7 @@ if authentication_status:
         else:
             #st.markdown("### Compras por Sucursal, mes a mes")
             for mes in orden_meses_desc:  # <- aquí el cambio para orden descendente
-                df_mes = df[df["mes_nombre"] == mes]
+                df_mes = df_filtrado[df_filtrado["mes_nombre"] == mes].copy()
                 df_mes = df_mes[df_mes["sucursal"].isin(sucursales_seleccionadas)].copy()
                 df_mes = df_mes.groupby("sucursal", as_index=False).agg({"monto": "sum"})
                 total_mes = df_mes["monto"].sum()
