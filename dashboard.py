@@ -1900,9 +1900,13 @@ if authentication_status:
                 intensidad = 0
             else:
                 intensidad = val / fila_max
-            # Degradado azul claro -> azul intenso
-            return f"background-color: rgba(0, 102, 204, {intensidad}); color: white;" if intensidad > 0 else ""
-
+            # Degradado: 0 → azul muy clarito (rgba 204, 229, 255)
+            #            1 → azul intenso (rgba 0, 102, 204)
+            r = int(204 - 204 * intensidad)
+            g = int(229 - 127 * intensidad)
+            b = int(255 - 51 * intensidad)
+            return f"background-color: rgb({r},{g},{b}); color: black;"
+        
         # --- Función para generar HTML con degradado ---
         def generar_html_tabla_con_degradado(df):
             html = "<div class='tabla-scroll'><table>"
