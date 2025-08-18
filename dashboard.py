@@ -1851,12 +1851,12 @@ if authentication_status:
 
         # Hover y texto (separamos bien las columnas)
         fig.update_traces(
-            customdata=df_cta[["codigo_normalizado", "sucursal", "division", "monto"]],
+            customdata=df_cta[["codigo_normalizado", "sucursal", "division"]],
             hovertemplate=(
                 "<b>Código:</b> %{customdata[0]}<br>"
                 "<b>Sucursal:</b> %{customdata[1]}<br>"
                 "<b>División:</b> %{customdata[2]}<br>"
-                "<b>Monto:</b> $%{customdata[3]:,.2f}<extra></extra>"
+                "<b>Monto:</b> $%{x:,.2f}<extra></extra>"
             ),
             text=df_cta["monto"].apply(lambda x: f"${x:,.2f}"),
             textposition="outside",
