@@ -1917,83 +1917,170 @@ if authentication_status:
         tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
+        
+        # --- Preparar tabla en formato plano ---
         tabla_formateada = tabla_compras.reset_index()
 
-        # --- Función para formatear números ---
-        def formato_numero(x):
-            if isinstance(x, (int, float)):
-                return f"{x:,.2f}"
-            return x
+        # Separar fila total
+        mascara_total = tabla_formateada["Cuenta - Sucursal"].str.strip().str.lower() == "total general"
+        total_row = tabla_formateada[mascara_total].copy()
+        data_sin_total = tabla_formateada[~mascara_total].copy()
 
-        for col in tabla_formateada.columns[1:]:
-            tabla_formateada[col] = tabla_formateada[col].apply(formato_numero)
+        # Columnas numéricas excluyendo índice y columna Total
+        ultima_col = data_sin_total.columns[-1]
+        numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["Cuenta - Sucursal", ultima_col]]
 
-        # --- CSS base ---
-        estilo_css = """
-        <style>
-        .tabla-scroll { max-height: 500px; overflow: auto; margin: 0; padding: 0; border: 0; }
-        .spacer { height: 16px; }
-        table { border-collapse: collapse; width: 100%; min-width: 900px; }
-        th, td { border: 1px solid #ddd; padding: 8px 12px; white-space: nowrap; }
-        th { background-color: #0B083D; color: white; position: sticky; top: 0; z-index: 2; text-align: left; }
-        th:first-child { background-color: #0B083D; color: white; text-align: right; font-weight: bold; position: sticky; left: 0; top: 0; z-index: 5; }
-        td:first-child { background-color: #0B083D; color: white; text-align: right; font-weight: bold; position: sticky; left: 0; z-index: 4; }
-        tr:last-child td { background-color: #0B083D; color: white; font-weight: bold; }
-        td:last-child { background-color: #0B083D; color: white; font-weight: bold; }
-        tbody tr:not(:last-child) td:not(:first-child):not(:last-child) { background-color: white; color: black; }
-        </style>
-        """
+        # --- Formateador de valores ---
+        value_formatter = JsCode("""
+        function(params) { 
+            if (params.value == null) return '0.00';
+            return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        """)
 
-        # --- Función para degradado por fila ---
-        def color_degradado_fila(val, fila_max):
-            if fila_max == 0:
-                intensidad = 0
-            else:
-                intensidad = val / fila_max
-            # Degradado: 0 → azul muy clarito (rgba 204, 229, 255)
-            #            1 → azul intenso (rgba 0, 102, 204)
-            r = int(204 - 204 * intensidad)
-            g = int(229 - 127 * intensidad)
-            b = int(255 - 51 * intensidad)
-            return f"background-color: rgb({r},{g},{b}); color: black;"
-        
-        # --- Función para generar HTML con degradado ---
-        def generar_html_tabla_con_degradado(df):
-            html = "<div class='tabla-scroll'><table>"
-            # Encabezado
-            html += "<thead><tr>"
-            for col in df.columns:
-                html += f"<th>{col}</th>"
-            html += "</tr></thead>"
+        # --- Degradado dinámico (excepto fila Total y columna Total) ---
+        min_val = data_sin_total[numeric_cols_sin_total].min().min()
+        max_val = data_sin_total[numeric_cols_sin_total].max().max()
+        gradient_code = JsCode(f"""
+        function(params) {{
+            const totalCol = '{ultima_col}';
+            if (params.node.rowPinned || 
+                (params.data && typeof params.data["Cuenta - Sucursal"] === 'string' &&
+                params.data["Cuenta - Sucursal"].trim().toLowerCase() === 'total general')) {{
+                return {{
+                    backgroundColor: '#0B083D',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    textAlign: 'right'
+                }};
+            }}
+            if (params.colDef.field === totalCol) {{
+                return {{
+                    backgroundColor: '#0B083D',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    textAlign: 'right'
+                }};
+            }}
+            let val = params.value;
+            let min = {min_val};
+            let max = {max_val};
+            if (!isNaN(val) && max > min) {{
+                let ratio = (val - min) / (max - min);
+                let r,g,b;
+                if(ratio <= 0.5) {{
+                    let t = ratio/0.5;
+                    r = Math.round(204 + t*(0-204));
+                    g = Math.round(229 + t*(102-229));
+                    b = Math.round(255 + t*(204-255));
+                }} else {{
+                    let t = (ratio-0.5)/0.5;
+                    r = 0; g = Math.round(102 + t*(204-102)); b = 204;
+                }}
+                return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'right' }};
+            }}
+            return {{ textAlign:'right' }};
+        }}
+        """)
 
-            # Cuerpo
-            html += "<tbody>"
-            for i, row in df.iterrows():
-                html += "<tr>"
-                # Detectar fila total
-                es_fila_total = row["Cuenta - Sucursal"] == "Total General"
-                # Convertir valores numéricos de la fila (excluyendo primera y última columna)
-                fila_valores = []
-                if not es_fila_total:
-                    fila_valores = [float(str(row[c]).replace(",", "")) for c in df.columns[1:-1]]
-                    fila_max = max(fila_valores)
-                for j, col in enumerate(df.columns):
-                    val = row[col]
-                    # Primera columna o última columna o fila total: no degradado
-                    if j == 0 or j == len(df.columns)-1 or es_fila_total:
-                        html += f"<td>{val}</td>"
-                    else:
-                        estilo = color_degradado_fila(fila_valores[j-1], fila_max)
-                        html += f"<td style='{estilo}'>{val}</td>"
-                html += "</tr>"
-            html += "</tbody></table></div>"
-            return html
+        # --- Configuración del grid ---
+        gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+        gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-        # --- Generar HTML y mostrar en Streamlit ---
-        html_tabla = estilo_css + generar_html_tabla_con_degradado(tabla_formateada)
-        st.markdown(html_tabla, unsafe_allow_html=True)
+        # Columna índice anclada
+        gb.configure_column(
+            "Cuenta - Sucursal",
+            pinned="left",
+            minWidth=220,
+            width=250,
+            cellStyle={
+                'backgroundColor': '#0B083D',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'textAlign': 'right'
+            }
+        )
 
-        st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
+        # Columnas numéricas
+        for col in numeric_cols_sin_total:
+            gb.configure_column(
+                col,
+                cellStyle=gradient_code,
+                valueFormatter=value_formatter,
+                minWidth=100,
+                headerClass='header-left'
+            )
+
+        # Columna Total
+        gb.configure_column(
+            ultima_col,
+            cellStyle={
+                'backgroundColor': '#0B083D',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'textAlign': 'right'
+            },
+            valueFormatter=value_formatter,
+            minWidth=120,
+            headerClass='header-left'
+        )
+
+        # --- CSS para headers alineados a la izquierda ---
+        custom_css = {
+            ".header-left": {"text-align": "left"},
+            ".ag-center-cols-container .ag-row": {
+                "height": "20px",
+                "line-height": "16px",
+                "padding-top": "2px",
+                "padding-bottom": "2px"
+            },
+            ".ag-pinned-left-cols-container .ag-row": {
+                "height": "20px",
+                "line-height": "16px",
+                "padding-top": "2px",
+                "padding-bottom": "2px"
+            }
+        }
+
+        # --- Responsive en móviles ---
+        on_grid_ready = JsCode("""
+        function(params) {
+            function ajustarColumnas() {
+                if (window.innerWidth <= 768) {
+                    params.api.resetColumnState();
+                } else {
+                    params.api.sizeColumnsToFit();
+                }
+            }
+            ajustarColumnas();
+            setTimeout(ajustarColumnas, 300);
+            window.addEventListener('resize', ajustarColumnas);
+            const gridDiv = params.api.gridBodyCtrl.eGridBody;
+            if (window.ResizeObserver) {
+                const ro = new ResizeObserver(() => ajustarColumnas());
+                ro.observe(gridDiv);
+            }
+        }
+        """)
+
+        grid_options = gb.build()
+        grid_options["onGridReady"] = on_grid_ready
+
+        # --- Fila Total fija ---
+        grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+
+        # --- Render ---
+        AgGrid(
+            data_sin_total,
+            gridOptions=grid_options,
+            custom_css=custom_css,
+            height=800,
+            allow_unsafe_jscode=True,
+            theme=AgGridTheme.ALPINE,
+            fit_columns_on_grid_load=False,
+            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+            enable_enterprise_modules=False
+        )
 
         # --- Descargar Excel ---
         output = io.BytesIO()
