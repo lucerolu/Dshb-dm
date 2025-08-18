@@ -1834,7 +1834,10 @@ if authentication_status:
         # Ordenar de mayor a menor
         df_cta = df_cta.sort_values("monto", ascending=False)
 
-        # Gráfico de barras sin hover
+        # Crear columna formateada para hover
+        df_cta["monto_str"] = df_cta["monto"].map("${:,.2f}".format)
+
+        # Gráfico de barras
         fig = px.bar(
             df_cta,
             x="monto",
@@ -1848,12 +1851,12 @@ if authentication_status:
                 "division": "División"
             },
             text="monto",
+            hover_data={"monto": False, "monto_str": True}  # mostrar monto formateado en hover
         )
 
-        # Ajustar trazas para ocultar hover
+        # Ajustar trazas
         fig.update_traces(
-            hoverinfo="skip",  # ⚡ sin tooltip
-            texttemplate="$%{x:,.2f}",
+            texttemplate="$%{x:,.2f}",  # monto fuera de barra con comas
             textposition="outside",
             cliponaxis=False
         )
@@ -1879,7 +1882,6 @@ if authentication_status:
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br><br>", unsafe_allow_html=True)
-
 
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
