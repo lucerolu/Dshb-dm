@@ -1834,11 +1834,11 @@ if authentication_status:
         # Ordenar de mayor a menor
         df_cta = df_cta.sort_values("monto", ascending=False)
 
-        # Crear columna de hover con el formato que quieras
+        # ✅ Columna de hover con formato correcto
         df_cta["hover_text"] = (
             "División: " + df_cta["division"] + "<br>" +
             "Sucursal: " + df_cta["sucursal"] + "<br>" +
-            "Monto: " + df_cta["monto"].map("${:,.2f}".format)
+            "Monto: " + df_cta["monto"].apply(lambda x: f"${x:,.2f}")
         )
 
         # Gráfico de barras
@@ -1857,12 +1857,11 @@ if authentication_status:
             text="monto"
         )
 
-        # Ajustar trazas para usar hover_text pero SIN hovertemplate
+        # 🔑 Aquí quitamos hover_data y usamos solo hovertext
         fig.update_traces(
-            customdata=df_cta[["hover_text"]],
-            hoverinfo="text",
             hovertext=df_cta["hover_text"],
-            texttemplate="$%{x:,.2f}",  # texto afuera con comas
+            hoverinfo="text",  # muestra solo lo de hovertext
+            texttemplate="$%{x:,.2f}",  # texto arriba de la barra formateado
             textposition="outside",
             cliponaxis=False
         )
