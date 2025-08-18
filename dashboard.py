@@ -1291,7 +1291,7 @@ if authentication_status:
             df['Total'] = df[meses_validos].sum(axis=1)
 
             # Calcular totales por columna (meses + total)
-            totales_columna = df[orden_meses + ['Total']].sum()
+            totales_columna = df[meses_validos + ['Total']].sum()
 
             # Añadimos columna Total a orden_meses para pintar totales por columna
             columnas_completas = meses_validos + ['Total']
@@ -1317,7 +1317,7 @@ if authentication_status:
                 html += f"<td class='{clase_div}'>{division}</td>"
 
                 # Valores por fila (incluyendo total)
-                valores_fila = [row[col] for col in orden_meses]
+                valores_fila = [row[col] for col in meses_validos]
                 max_val = max(valores_fila)
                 min_val = min(valores_fila)
                 rango = max_val - min_val if max_val != min_val else 1
