@@ -1834,10 +1834,10 @@ if authentication_status:
         # Ordenar de mayor a menor
         df_cta = df_cta.sort_values("monto", ascending=False)
 
-        # ✅ Columnas formateadas
-        df_cta["Monto"] = df_cta["monto"].apply(lambda x: f"${x:,.2f}")
+        # ✅ Columna de texto formateada
+        df_cta["monto_fmt"] = df_cta["monto"].apply(lambda x: f"${x:,.2f}")
 
-        # Gráfico de barras con hover limpio
+        # Gráfico de barras usando la columna formateada
         fig = px.bar(
             df_cta,
             x="monto",
@@ -1850,18 +1850,12 @@ if authentication_status:
                 "cuenta_sucursal": "Cuenta - Sucursal",
                 "division": "División"
             },
-            text="monto",
-            hover_data={
-                "division": True,
-                "sucursal": True,
-                "Monto": True,   # ⚡ usa la columna ya formateada
-                "monto": False   # oculta la cruda
-            }
+            text="monto_fmt",          # ⚡ texto formateado afuera
+            hover_data={"monto_fmt": True, "monto": False}  # ⚡ hover con formato
         )
 
         # Ajustar trazas
         fig.update_traces(
-            texttemplate="$%{x:,.2f}",
             textposition="outside",
             cliponaxis=False
         )
