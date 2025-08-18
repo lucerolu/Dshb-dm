@@ -1837,12 +1837,14 @@ if authentication_status:
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
         st.markdown("<div style='margin-top:-5px'></div>", unsafe_allow_html=True)
 
+        # --- Función para obtener abreviatura ---
         def obtener_abreviatura(codigo):
             for division, info in divisiones.items():
                 if codigo in info["codigos"]:
                     return info["abreviatura"]
             return ""
 
+        # Preparar tabla
         df_filtrado["abreviatura"] = df_filtrado["codigo_normalizado"].apply(obtener_abreviatura)
         df_filtrado["cuenta_sucursal"] = df_filtrado["codigo_normalizado"] + " (" + df_filtrado["abreviatura"] + ") - " + df_filtrado["sucursal"]
 
@@ -1860,121 +1862,86 @@ if authentication_status:
         orden_columnas = df_filtrado.drop_duplicates("mes_anio").sort_values("orden_mes")["mes_anio"].tolist()
         tabla_compras = tabla_compras[orden_columnas]
 
+        # Agregar totales
         tabla_compras["Total Cuenta"] = tabla_compras.sum(axis=1)
         tabla_compras.loc["Total General"] = tabla_compras.sum(axis=0)
 
         tabla_compras = tabla_compras.rename_axis("Cuenta - Sucursal")
-        tabla_compras_reset = tabla_compras.reset_index()
+        tabla_formateada = tabla_compras.reset_index()
 
+        # --- Función para formatear números ---
         def formato_numero(x):
             if isinstance(x, (int, float)):
                 return f"{x:,.2f}"
             return x
 
-        tabla_formateada = tabla_compras_reset.copy()
         for col in tabla_formateada.columns[1:]:
             tabla_formateada[col] = tabla_formateada[col].apply(formato_numero)
 
+        # --- CSS base ---
         estilo_css = """
         <style>
-        .tabla-scroll {
-            max-height: 500px;
-            overflow: auto;
-            margin: 0; 
-            padding: 0;
-            border: 0;
-        }
-
-        /* Margen inferior para separar del botón */
-        .spacer {
-            height: 16px;
-        }
-
-        /* Tabla */
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            min-width: 900px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px 12px;
-            white-space: nowrap;
-        }
-        /* Encabezado */
-        th {
-            background-color: #0B083D;
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-            text-align: left;
-        }
-        /* Primera columna (cuenta) */
-        th:first-child {
-            background-color: #0B083D;
-            color: white;
-            text-align: right;
-            font-weight: bold;
-            position: sticky;
-            left: 0;
-            top: 0;
-            z-index: 5; /* más alto que el header normal */
-        }
-
-        td:first-child {
-            background-color: #0B083D;
-            color: white;
-            text-align: right;
-            font-weight: bold;
-            position: sticky;
-            left: 0;
-            z-index: 4;
-        }
-        /* Totales: última fila */
-        tr:last-child td {
-            background-color: #0B083D;
-            color: white;
-            font-weight: bold;
-        }
-        /* Totales: última columna */
-        td:last-child {
-            background-color: #0B083D;
-            color: white;
-            font-weight: bold;
-        }
-        /* Celdas normales (no totales, no primera columna) */
-        tbody tr:not(:last-child) td:not(:first-child):not(:last-child) {
-            background-color: white;
-            color: black;
-        }
+        .tabla-scroll { max-height: 500px; overflow: auto; margin: 0; padding: 0; border: 0; }
+        .spacer { height: 16px; }
+        table { border-collapse: collapse; width: 100%; min-width: 900px; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; white-space: nowrap; }
+        th { background-color: #0B083D; color: white; position: sticky; top: 0; z-index: 2; text-align: left; }
+        th:first-child { background-color: #0B083D; color: white; text-align: right; font-weight: bold; position: sticky; left: 0; top: 0; z-index: 5; }
+        td:first-child { background-color: #0B083D; color: white; text-align: right; font-weight: bold; position: sticky; left: 0; z-index: 4; }
+        tr:last-child td { background-color: #0B083D; color: white; font-weight: bold; }
+        td:last-child { background-color: #0B083D; color: white; font-weight: bold; }
+        tbody tr:not(:last-child) td:not(:first-child):not(:last-child) { background-color: white; color: black; }
         </style>
         """
 
-        def generar_html_tabla(df):
+        # --- Función para degradado por fila ---
+        def color_degradado_fila(val, fila_max):
+            if fila_max == 0:
+                intensidad = 0
+            else:
+                intensidad = val / fila_max
+            # Degradado azul claro -> azul intenso
+            return f"background-color: rgba(0, 102, 204, {intensidad}); color: white;" if intensidad > 0 else ""
+
+        # --- Función para generar HTML con degradado ---
+        def generar_html_tabla_con_degradado(df):
             html = "<div class='tabla-scroll'><table>"
             # Encabezado
             html += "<thead><tr>"
             for col in df.columns:
                 html += f"<th>{col}</th>"
             html += "</tr></thead>"
+
             # Cuerpo
             html += "<tbody>"
             for i, row in df.iterrows():
                 html += "<tr>"
-                for j, val in enumerate(row):
-                    html += f"<td>{val}</td>"
+                # Detectar fila total
+                es_fila_total = row["Cuenta - Sucursal"] == "Total General"
+                # Convertir valores numéricos de la fila (excluyendo primera y última columna)
+                fila_valores = []
+                if not es_fila_total:
+                    fila_valores = [float(str(row[c]).replace(",", "")) for c in df.columns[1:-1]]
+                    fila_max = max(fila_valores)
+                for j, col in enumerate(df.columns):
+                    val = row[col]
+                    # Primera columna o última columna o fila total: no degradado
+                    if j == 0 or j == len(df.columns)-1 or es_fila_total:
+                        html += f"<td>{val}</td>"
+                    else:
+                        estilo = color_degradado_fila(fila_valores[j-1], fila_max)
+                        html += f"<td style='{estilo}'>{val}</td>"
                 html += "</tr>"
             html += "</tbody></table></div>"
             return html
 
-        html_tabla = estilo_css + generar_html_tabla(tabla_formateada)
-
+        # --- Generar HTML y mostrar en Streamlit ---
+        html_tabla = estilo_css + generar_html_tabla_con_degradado(tabla_formateada)
         st.markdown(html_tabla, unsafe_allow_html=True)
 
-        # Aquí agregamos un div vacío con altura para separar visualmente
         st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
 
+        # --- Descargar Excel ---
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             tabla_compras.to_excel(writer, sheet_name='Compras')
@@ -1987,7 +1954,6 @@ if authentication_status:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         st.markdown("<br><br>", unsafe_allow_html=True)
-
 
         #-------------------- GRÁFICO DE LÍNEAS: COMPRAS MENSUALES POR CUENTA --------------------------------------------------------------------------
         # Asegúrate de que la columna mes_dt exista en df_divisiones_filtra
