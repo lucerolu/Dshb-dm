@@ -1818,35 +1818,27 @@ if authentication_status:
         df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
         #-------------------------------------- GRAFICO DE BARRAS HORIZONTAL ----------------------------------------------------------------
+        # Agrupar por cuenta y sucursal
         df_cta = df_divisiones_filtrado.groupby(
             ["codigo_normalizado", "sucursal"], 
             as_index=False
         )["monto"].sum()
 
-        # Asignar división correcta según config
-        def asignar_division(codigo):
-            for division, data in config["divisiones"].items():
-                if codigo in data["codigos"]:
-                    return division
-            return "Otras"
-
-        df_cta["division"] = df_cta["codigo_normalizado"].apply(asignar_division)
+        # Asignar división (según config)
+        df_cta["division"] = df_cta["codigo_normalizado"].map(mapa_codigos)
 
         # Crear etiqueta tipo "1234 - Monterrey"
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
 
-        # Ordenar de mayor a menor monto
+        # Ordenar
         df_cta = df_cta.sort_values("monto", ascending=False)
-
-        # Colores según división (definidos dentro del bloque)
-        colores_divisiones = {div: data["color"] for div, data in config["divisiones"].items()}
 
         # Gráfico de barras
         fig = px.bar(
             df_cta,
             x="monto",
             y="cuenta_sucursal",
-            color="division",
+            color="division",   # ← ahora se toma directo de config
             color_discrete_map=colores_divisiones,
             orientation="h",
             labels={
@@ -1856,7 +1848,7 @@ if authentication_status:
             },
         )
 
-        # Hover y texto en las barras
+        # Hover y texto
         fig.update_traces(
             customdata=df_cta[["cuenta_sucursal", "division", "monto"]],
             hovertemplate=(
