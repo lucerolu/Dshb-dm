@@ -176,7 +176,7 @@ if authentication_status:
 
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
-        # Mostrar bienvenida
+        # Bienvenida
         if "user_name" in st.session_state:
             st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
 
@@ -194,10 +194,7 @@ if authentication_status:
         authenticator.logout("Cerrar sesión", "sidebar")
         st.markdown("---")
 
-        # Crear columna fecha si no existe
-        if "fecha" not in df.columns:
-            df["fecha"] = pd.to_datetime(df["mes"])
-
+        # Totales
         ahora = datetime.now()
         ahora_pd = pd.Timestamp(ahora)
         mes_actual_period = ahora_pd.to_period("M")
@@ -214,14 +211,25 @@ if authentication_status:
         df_fiscal = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
         total_anual_fiscal = df_fiscal["monto"].sum()
 
-        # Mostrar métricas compactas
-        st.markdown("### Totales de Compras", unsafe_allow_html=True)
-        st.markdown(f"<small>Año Natural 2025: <b>${total_anual_natural:,.2f}</b></small>", unsafe_allow_html=True)
-        st.markdown(f"<small>Año Fiscal 2025: <b>${total_anual_fiscal:,.2f}</b></small>", unsafe_allow_html=True)
-        st.markdown(f"<small>Mes Actual ({mes_actual_esp}): <b>${total_mes_actual:,.2f}</b></small>", unsafe_allow_html=True)
+        # Mostrar métricas estilo 'st.metric' pero más compactas
+        st.markdown(f"""
+        <div style="margin-bottom:15px;">
+            <div style="font-size:12px; color:#555;">Año Natural 2025</div>
+            <div style="font-size:20px; font-weight:bold;">${total_anual_natural:,.2f}</div>
+        </div>
+        <div style="margin-bottom:15px;">
+            <div style="font-size:12px; color:#555;">Año Fiscal 2025</div>
+            <div style="font-size:20px; font-weight:bold;">${total_anual_fiscal:,.2f}</div>
+        </div>
+        <div style="margin-bottom:15px;">
+            <div style="font-size:12px; color:#555;">Mes Actual ({mes_actual_esp})</div>
+            <div style="font-size:20px; font-weight:bold;">${total_mes_actual:,.2f}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # Fecha actualización
         mostrar_fecha_actualizacion()
+
 
     # ==========================================================================================================
     # ============================= ESTADO DE CUENTA ============================================================
