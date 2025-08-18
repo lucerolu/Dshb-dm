@@ -1864,6 +1864,29 @@ if authentication_status:
             cliponaxis=False
         )
 
+        # Layout
+        fig.update_layout(
+            xaxis_title="Monto (MXN)",
+            yaxis_title="Cuenta - Sucursal",
+            margin=dict(r=70),
+            template="plotly_dark",
+            yaxis={'categoryorder': 'total ascending'},
+            height=800,
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.15,
+                xanchor="center",
+                x=0.5
+            )
+        )
+
+        st.markdown("### Monto Total Anual por Cuenta")
+        st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("<br><br>", unsafe_allow_html=True)
+
+
         #------------------------------ TABLA: COMPRA MENSUAL POR CUENTA: 2025 ---------------------------------------------------
         st.title(f"Compra mensual por Cuenta ({titulo_periodo})")
         st.markdown("<div style='margin-top:-5px'></div>", unsafe_allow_html=True)
