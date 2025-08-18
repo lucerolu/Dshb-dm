@@ -2222,7 +2222,7 @@ if authentication_status:
             xaxis=dict(title='Porcentaje', ticksuffix='%'),
             yaxis=dict(title='Mes'),
             legend=dict(orientation='h', yanchor='top', y=-0.25, xanchor='center', x=0.5),
-            height=650, margin=dict(t=100)
+            height=650, margin=dict(t=20)
         )
         # Configuración personalizada para scroll + barra de herramientas limpia
         config = {
