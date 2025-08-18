@@ -1824,7 +1824,7 @@ if authentication_status:
 
         # 2️⃣ Agrupar por cuenta y sucursal
         df_cta = df_filtrado.groupby(
-            ["codigo_normalizado", "sucursal", "division"],
+            ["codigo_normalizado", "sucursal", "division"],  # incluir division
             as_index=False
         )["monto"].sum()
 
@@ -1832,7 +1832,7 @@ if authentication_status:
         df_cta["cuenta_sucursal"] = df_cta["codigo_normalizado"] + " - " + df_cta["sucursal"]
 
         # Ordenar de mayor a menor
-        df_cta = df_cta.sort_values("monto", ascending=False).reset_index(drop=True)
+        df_cta = df_cta.sort_values("monto", ascending=False)
 
         # Crear columna para hover
         df_cta["hover_text"] = (
@@ -1842,42 +1842,49 @@ if authentication_status:
             "Monto: $" + df_cta["monto"].map("{:,.2f}".format)
         )
 
-        # Crear el gráfico usando go.Bar
-        fig = go.Figure()
+        # Gráfico de barras
+        fig = px.bar(
+            df_cta,
+            x="monto",
+            y="cuenta_sucursal",
+            color="division",
+            color_discrete_map=colores_divisiones,
+            orientation="h",
+            labels={
+                "monto": "Monto",
+                "cuenta_sucursal": "Cuenta - Sucursal",
+                "division": "División"
+            },
+            text="monto",
+            hover_data={"hover_text": True},
+        )
 
-        # Obtener lista de divisiones únicas para colorear
-        divisiones = df_cta["division"].unique()
-
-        for div in divisiones:
-            df_div = df_cta[df_cta["division"] == div]
-            fig.add_trace(go.Bar(
-                x=df_div["monto"],
-                y=df_div["cuenta_sucursal"],
-                orientation="h",
-                name=div,
-                marker_color=colores_divisiones.get(div, "#333333"),
-                text=df_div["monto"].map("${:,.2f}".format),
-                textposition="outside",
-                hovertemplate=df_div["hover_text"]
-            ))
+        # Usar hovertemplate para mostrar la columna hover_text
+        fig.update_traces(
+            hovertemplate="%{customdata[0]}<extra></extra>",
+            customdata=df_cta[["hover_text"]],
+            texttemplate="$%{x:,.2f}",
+            textposition="outside",
+            cliponaxis=False
+        )
 
         # Layout
         fig.update_layout(
             xaxis_title="Monto (MXN)",
             yaxis_title="Cuenta - Sucursal",
-            template="plotly_dark",
-            height=800,
             margin=dict(r=70),
+            template="plotly_dark",
+            yaxis={'categoryorder': 'total ascending'},
+            height=800,
             legend=dict(
                 orientation="h",
                 yanchor="top",
                 y=-0.15,
                 xanchor="center",
                 x=0.5
-            ),
+            )
         )
 
-        # Mostrar en Streamlit
         st.markdown("### Monto Total Anual por Cuenta")
         st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
