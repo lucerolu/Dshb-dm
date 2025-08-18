@@ -1176,8 +1176,10 @@ if authentication_status:
             fill_value=0
         )
 
-        # Reordenar columnas según el orden cronológico
-        tabla_pivot = tabla_pivot[orden_meses]
+        # Reordenar columnas según el orden cronológico (solo las que existan)
+        meses_validos = [m for m in orden_meses if m in tabla_pivot.columns]
+        tabla_pivot = tabla_pivot[meses_validos]
+
         tabla_pivot.index.name = "División"
         tabla_pivot = tabla_pivot.reset_index()
 
@@ -1286,13 +1288,13 @@ if authentication_status:
             """
 
             # Calcular totales por fila (división)
-            df['Total'] = df[orden_meses].sum(axis=1)
+            df['Total'] = df[meses_validos].sum(axis=1)
 
             # Calcular totales por columna (meses + total)
             totales_columna = df[orden_meses + ['Total']].sum()
 
             # Añadimos columna Total a orden_meses para pintar totales por columna
-            columnas_completas = orden_meses + ['Total']
+            columnas_completas = meses_validos + ['Total']
 
             html = estilos_css + "<div class='tabla-wrapper'><table class='tabla-divisiones'>"
             html += "<thead><tr>"
@@ -1321,7 +1323,7 @@ if authentication_status:
                 rango = max_val - min_val if max_val != min_val else 1
 
                 # Mostrar celdas de meses con degradado azul por fila
-                for col in orden_meses:
+                for col in meses_validos:
                     val = row[col]
                     ratio = (val - min_val) / rango
                     azul = int(255 - (ratio * 120))
