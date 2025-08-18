@@ -176,11 +176,11 @@ if authentication_status:
 
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
-        # Mostrar bienvenida solo si el usuario está autenticado
+        # Mostrar bienvenida
         if "user_name" in st.session_state:
             st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
 
-        # Menú para las vistas
+        # Menú
         opcion = st.selectbox("Selecciona una vista", [
             "Estado de cuenta",
             "Resumen General",
@@ -191,12 +191,15 @@ if authentication_status:
             "Estado de Ligado",
         ])
 
-        # Botón cerrar sesión
+        # Cerrar sesión
         authenticator.logout("Cerrar sesión", "sidebar")
 
-        st.markdown("---")  # separador
+        st.markdown("---")
 
-        # -------------------- Totales fijos --------------------
+        # Crear columna fecha si no existe
+        if "fecha" not in df.columns:
+            df["fecha"] = pd.to_datetime(df["mes"])
+
         ahora = datetime.now()
         ahora_pd = pd.Timestamp(ahora)
         mes_actual_period = ahora_pd.to_period("M")
@@ -222,9 +225,8 @@ if authentication_status:
         st.metric(label="Año Fiscal 2025", value=f"${total_anual_fiscal:,.2f}")
         st.metric(label=f"Mes actual ({mes_actual_esp})", value=f"${total_mes_fiscal:,.2f}")
 
-        # Fecha de última actualización al final del sidebar
+        # Fecha actualización
         mostrar_fecha_actualizacion()
-
 
     # ==========================================================================================================
     # ============================= ESTADO DE CUENTA ============================================================
