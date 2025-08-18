@@ -176,7 +176,7 @@ if authentication_status:
 
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
-        # Bienvenida
+        # Mostrar bienvenida
         if "user_name" in st.session_state:
             st.markdown(f"👋 **Bienvenido {st.session_state['user_name']}**")
 
@@ -194,7 +194,10 @@ if authentication_status:
         authenticator.logout("Cerrar sesión", "sidebar")
         st.markdown("---")
 
-        # Totales
+        # Crear columna fecha si no existe
+        if "fecha" not in df.columns:
+            df["fecha"] = pd.to_datetime(df["mes"])
+
         ahora = datetime.now()
         ahora_pd = pd.Timestamp(ahora)
         mes_actual_period = ahora_pd.to_period("M")
@@ -211,7 +214,7 @@ if authentication_status:
         df_fiscal = df[(df["fecha"] >= inicio_fiscal) & (df["fecha"] <= fin_fiscal)]
         total_anual_fiscal = df_fiscal["monto"].sum()
 
-        # Mostrar métricas estilo 'st.metric' pero más compactas
+       # Mostrar métricas estilo 'st.metric' pero más compactas
         st.markdown(f"""
         <div style="margin-bottom:15px;">
             <div style="font-size:12px; color:#555;">Año Natural 2025</div>
@@ -229,6 +232,7 @@ if authentication_status:
 
         # Fecha actualización
         mostrar_fecha_actualizacion()
+
 
 
     # ==========================================================================================================
