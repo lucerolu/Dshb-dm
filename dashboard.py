@@ -2798,7 +2798,7 @@ if authentication_status:
         else:
             st.markdown("### Compras por Sucursal, mes a mes")
             # Filtrar por sucursales seleccionadas
-            df_filtrado = df[df["sucursal"].isin(sucursales_seleccionadas)].copy()
+            df_filtrado = df_filtrado[df["sucursal"].isin(sucursales_seleccionadas)].copy()
 
             # Crear etiqueta cuenta_sucursal
             df_filtrado["cuenta_sucursal"] = df_filtrado["codigo_normalizado"] + " - " + df_filtrado["sucursal"]
