@@ -289,7 +289,6 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
-
             # ------------------ Cargar configuración de colores y divisiones ------------------
             with open("config_colores.json", "r", encoding="utf-8") as f:
                 config = json.load(f)
@@ -336,10 +335,10 @@ if authentication_status:
                     go.Scatter(
                         x=df_cuenta["fecha_exigibilidad_str"],
                         y=df_cuenta["total"],
-                        mode="lines+markers",  # líneas con puntos
+                        mode="lines+markers",          # línea con puntos
                         name=cuenta,
                         line=dict(color=color_cuentas.get(cuenta, "#808080"), width=2),
-                        marker=dict(size=6, opacity=0),  # ocultar puntos al inicio
+                        marker=dict(size=6, opacity=1),  # puntos siempre visibles
                         customdata=df_cuenta[["sucursal", "codigo", "abreviatura"]],
                         hovertemplate=(
                             "<b>Fecha:</b> %{x}<br>"
@@ -347,29 +346,17 @@ if authentication_status:
                             "<b>Sucursal:</b> %{customdata[0]}<br>"
                             "<b>División:</b> %{customdata[2]}<br>"
                             "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
-                        )
+                        ),
+                        hoveron="points+lines",         # hover sobre líneas y puntos
                     )
                 )
 
-            # --- Configurar selección y hover ---
-            fig.update_traces(
-                selected=dict(
-                    line=dict(width=4),                # más gruesa si está seleccionada
-                    marker=dict(opacity=1, size=8)     # mostrar puntos
-                ),
-                unselected=dict(
-                    line=dict(color="lightgray", width=1),  # otras líneas más apagadas
-                    marker=dict(opacity=0.2)
-                )
-            )
-
-            # --- Layout ---
+            # ------------------ Layout ------------------
             fig.update_layout(
                 xaxis_title="Fecha de exigibilidad",
                 yaxis_title="Monto",
                 hovermode="x unified",
-                template="plotly_white",
-                dragmode="select"   # permite seleccionar líneas
+                template="plotly_white"
             )
 
             # ------------------ Mostrar en Streamlit ------------------
@@ -382,9 +369,7 @@ if authentication_status:
                         "toImage",
                         "zoom2d",
                         "autoScale2d",
-                        "toggleFullscreen",
-                        "lasso2d",
-                        "select2d"
+                        "toggleFullscreen"
                     ],
                     "displaylogo": False
                 }
