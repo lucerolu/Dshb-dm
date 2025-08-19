@@ -289,7 +289,7 @@ if authentication_status:
             col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
-            # ------------------ Cargar configuración de colores y divisiones ------------------
+                        # ------------------ Cargar configuración de colores y divisiones ------------------
             with open("config_colores.json", "r", encoding="utf-8") as f:
                 config = json.load(f)
 
@@ -322,43 +322,37 @@ if authentication_status:
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
 
             # Ordenar las fechas para que aparezcan correctamente en el eje
-            fechas_ordenadas = sorted(
-                df_estado_cuenta["fecha_exigibilidad_str"].unique(),
-                key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
+            fechas_ordenadas = sorted(df_estado_cuenta["fecha_exigibilidad_str"].unique(),
+                                    key=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
+
+            # Crear gráfico usando eje X categórico
+            fig = px.line(
+                df_estado_cuenta,
+                x="fecha_exigibilidad_str",  # eje categórico
+                y="total",
+                color="cuenta_sucursal",
+                color_discrete_map=color_cuentas,
+                category_orders={"fecha_exigibilidad_str": fechas_ordenadas},  # asegura orden correcto
+                custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
-            # ------------------ Crear gráfico con interactividad ------------------
-            fig = go.Figure()
-
-            for cuenta, df_cuenta in df_estado_cuenta.groupby("cuenta_sucursal"):
-                fig.add_trace(
-                    go.Scatter(
-                        x=df_cuenta["fecha_exigibilidad_str"],
-                        y=df_cuenta["total"],
-                        mode="lines+markers",          # línea con puntos
-                        name=cuenta,
-                        line=dict(color=color_cuentas.get(cuenta, "#808080"), width=2),
-                        marker=dict(size=6, opacity=1),  # puntos siempre visibles
-                        customdata=df_cuenta[["sucursal", "codigo", "abreviatura"]],
-                        hovertemplate=(
-                            "<b>Fecha:</b> %{x}<br>"
-                            "<b>Código:</b> %{customdata[1]}<br>"
-                            "<b>Sucursal:</b> %{customdata[0]}<br>"
-                            "<b>División:</b> %{customdata[2]}<br>"
-                            "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
-                        )
-                    )
+            fig.update_traces(
+                hovertemplate=(
+                    "<b>Fecha:</b> %{x}<br>"
+                    "<b>Código:</b> %{customdata[1]}<br>"
+                    "<b>Sucursal:</b> %{customdata[0]}<br>"
+                    "<b>División:</b> %{customdata[2]}<br>"
+                    "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
                 )
+            )
 
-            # ------------------ Layout ------------------
             fig.update_layout(
                 xaxis_title="Fecha de exigibilidad",
                 yaxis_title="Monto",
-                hovermode="x unified",
+                hovermode="closest",  # <-- cambiar aquí
                 template="plotly_white"
             )
 
-            # ------------------ Mostrar en Streamlit ------------------
             st.plotly_chart(
                 fig,
                 use_container_width=True,
