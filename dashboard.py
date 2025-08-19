@@ -353,7 +353,6 @@ if authentication_status:
 
             # --- Configurar selección y hover ---
             fig.update_traces(
-                selector=dict(mode="lines+markers"),
                 selected=dict(
                     line=dict(width=4),                # más gruesa si está seleccionada
                     marker=dict(opacity=1, size=8)     # mostrar puntos
