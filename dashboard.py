@@ -336,7 +336,6 @@ if authentication_status:
                 custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
-            # Tooltip + hover
             fig.update_traces(
                 hovertemplate=(
                     "<b>Fecha:</b> %{x}<br>"
@@ -344,23 +343,13 @@ if authentication_status:
                     "<b>Sucursal:</b> %{customdata[0]}<br>"
                     "<b>División:</b> %{customdata[2]}<br>"
                     "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
-                ),
-                line=dict(width=2),
-                hoverinfo="all",
-                selector=dict(mode="lines")
+                )
             )
 
-            # Selección/des-selección
-            fig.update_traces(
-                selected=dict(line=dict(width=4)),
-                unselected=dict(line=dict(color="lightgray", width=1, opacity=0.3))
-            )
-
-            # Layout general
             fig.update_layout(
                 xaxis_title="Fecha de exigibilidad",
                 yaxis_title="Monto",
-                hovermode="x",
+                hovermode="closest",  # <-- cambiar aquí
                 template="plotly_white"
             )
 
