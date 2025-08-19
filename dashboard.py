@@ -336,7 +336,7 @@ if authentication_status:
                 custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
-            # Tooltip personalizado + estilos de línea
+            # Tooltip + hover
             fig.update_traces(
                 hovertemplate=(
                     "<b>Fecha:</b> %{x}<br>"
@@ -345,11 +345,15 @@ if authentication_status:
                     "<b>División:</b> %{customdata[2]}<br>"
                     "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
                 ),
-                line=dict(width=2),  # grosor base
+                line=dict(width=2),
                 hoverinfo="all",
-                selector=dict(mode="lines"),
-                selected=dict(line=dict(width=4)),  # cuando seleccionas una línea
-                unselected=dict(line=dict(color="lightgray", width=1, opacity=0.3))  # las demás
+                selector=dict(mode="lines")
+            )
+
+            # Selección/des-selección
+            fig.update_traces(
+                selected=dict(line=dict(width=4)),
+                unselected=dict(line=dict(color="lightgray", width=1, opacity=0.3))
             )
 
             # Layout general
