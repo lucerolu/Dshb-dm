@@ -346,8 +346,7 @@ if authentication_status:
                             "<b>Sucursal:</b> %{customdata[0]}<br>"
                             "<b>División:</b> %{customdata[2]}<br>"
                             "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
-                        ),
-                        hoveron="points+lines",         # hover sobre líneas y puntos
+                        )
                     )
                 )
 
