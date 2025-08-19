@@ -336,6 +336,7 @@ if authentication_status:
                 custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
+            # Tooltip personalizado
             fig.update_traces(
                 hovertemplate=(
                     "<b>Fecha:</b> %{x}<br>"
@@ -343,13 +344,28 @@ if authentication_status:
                     "<b>Sucursal:</b> %{customdata[0]}<br>"
                     "<b>División:</b> %{customdata[2]}<br>"
                     "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
-                )
+                ),
+                line=dict(width=2),  # grosor base
             )
 
+            # 🔹 Estilo de hover (línea más gruesa al pasar mouse)
+            fig.update_traces(
+                hoverinfo="all",
+                line=dict(width=3),  # aumenta grosor en hover
+                selector=dict(mode="lines")
+            )
+
+            # 🔹 Estilo de selección (clic en leyenda resalta solo esa línea)
+            fig.update_traces(
+                selected=dict(line=dict(width=4)),  # resaltada
+                unselected=dict(line=dict(color="lightgray", width=1, opacity=0.3))  # las demás
+            )
+
+            # Layout general
             fig.update_layout(
                 xaxis_title="Fecha de exigibilidad",
                 yaxis_title="Monto",
-                hovermode="closest",  # <-- cambiar aquí
+                hovermode="x",  # hover más preciso
                 template="plotly_white"
             )
 
@@ -367,6 +383,7 @@ if authentication_status:
                     "displaylogo": False
                 }
             )
+
 
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
             # --- Preparar datos ---
