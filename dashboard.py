@@ -249,37 +249,38 @@ if authentication_status:
             st.warning("No hay datos de estado de cuenta.")
         else:
             st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
-            #------------------------------------- TARJETAS DE CREDITO DISPONIBLE --------------------------------------------------
+            # ------------------------------------- TARJETAS DE CRÉDITO DISPONIBLE --------------------------------------------------
             # Límite de crédito
             CREDITO_MAX = 180_000_000
+
             # Obtener los datos
             df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
 
             if not df_estado_cuenta.empty:
                 total_estado_cuenta = df_estado_cuenta["total"].sum()
-
                 credito_disponible = CREDITO_MAX - total_estado_cuenta
                 porcentaje_disponible = (credito_disponible / CREDITO_MAX) * 100
                 porcentaje_usado = (total_estado_cuenta / CREDITO_MAX) * 100
 
                 # Crear las tarjetas de crédito centradas
-                col1, col2, col3 = st.columns(3)
+                col1, col2, col3 = st.columns([1, 1, 1])
+                valores_credito = [
+                    ("💰 Crédito disponible", f"${credito_disponible:,.2f}"),
+                    ("📊 % Crédito disponible", f"{porcentaje_disponible:.2f}%"),
+                    ("📈 % Crédito usado", f"{porcentaje_usado:.2f}%")
+                ]
 
-                with col1:
-                    st.markdown(f"<div style='text-align:center'>{st.metric('💰 Crédito disponible', f'${credito_disponible:,.2f}')}</div>", unsafe_allow_html=True)
-
-                with col2:
-                    st.markdown(f"<div style='text-align:center'>{st.metric('📊 % Crédito disponible', f'{porcentaje_disponible:.2f}%')}</div>", unsafe_allow_html=True)
-
-                with col3:
-                    st.markdown(f"<div style='text-align:center'>{st.metric('📈 % Crédito usado', f'{porcentaje_usado:.2f}%')}</div>", unsafe_allow_html=True)
+                for col, (titulo, valor) in zip([col1, col2, col3], valores_credito):
+                    col.metric(titulo, valor)
             else:
                 st.info("No hay datos disponibles para mostrar el crédito.")
+
             st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
-            #----------------------------------------- TARJETAS DE VENCIMIENTO -------------------------------------------------------------------
+
+            # ----------------------------------------- TARJETAS DE VENCIMIENTO -----------------------------------------------------
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             hoy = pd.to_datetime(datetime.today().date())
-            
+
             total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
             por_vencer_30 = df_estado_cuenta[
                 (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
@@ -288,16 +289,16 @@ if authentication_status:
             por_vencer_90 = df_estado_cuenta[
                 df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
             ]["total"].sum()
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.markdown(f"<div style='text-align:center'>{st.metric('🔴 Total vencido', f'${total_vencido:,.2f}')}</div>", unsafe_allow_html=True)
 
-            with col2:
-                st.markdown(f"<div style='text-align:center'>{st.metric('🟡 Por vencer en 30 días', f'${por_vencer_30:,.2f}')}</div>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([1, 1, 1])
+            valores_vencimiento = [
+                ("🔴 Total vencido", f"${total_vencido:,.2f}"),
+                ("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}"),
+                ("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
+            ]
 
-            with col3:
-                st.markdown(f"<div style='text-align:center'>{st.metric('🟢 Por vencer >90 días', f'${por_vencer_90:,.2f}')}</div>", unsafe_allow_html=True)
+            for col, (titulo, valor) in zip([col1, col2, col3], valores_vencimiento):
+                col.metric(titulo, valor)
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
                         # ------------------ Cargar configuración de colores y divisiones ------------------
