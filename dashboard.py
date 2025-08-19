@@ -262,11 +262,17 @@ if authentication_status:
                 porcentaje_disponible = (credito_disponible / CREDITO_MAX) * 100
                 porcentaje_usado = (total_estado_cuenta / CREDITO_MAX) * 100
 
-                # Crear las tarjetas
+                # Crear las tarjetas de crédito centradas
                 col1, col2, col3 = st.columns(3)
-                col1.metric("💰 Crédito disponible", f"${credito_disponible:,.2f}")
-                col2.metric("📊 % Crédito disponible", f"{porcentaje_disponible:.2f}%")
-                col3.metric("📈 % Crédito usado", f"{porcentaje_usado:.2f}%")
+
+                with col1:
+                    st.markdown(f"<div style='text-align:center'>{st.metric('💰 Crédito disponible', f'${credito_disponible:,.2f}')}</div>", unsafe_allow_html=True)
+
+                with col2:
+                    st.markdown(f"<div style='text-align:center'>{st.metric('📊 % Crédito disponible', f'{porcentaje_disponible:.2f}%')}</div>", unsafe_allow_html=True)
+
+                with col3:
+                    st.markdown(f"<div style='text-align:center'>{st.metric('📈 % Crédito usado', f'{porcentaje_usado:.2f}%')}</div>", unsafe_allow_html=True)
             else:
                 st.info("No hay datos disponibles para mostrar el crédito.")
             st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
@@ -284,9 +290,14 @@ if authentication_status:
             ]["total"].sum()
             
             col1, col2, col3 = st.columns(3)
-            col1.metric("🔴 Total vencido", f"${total_vencido:,.2f}")
-            col2.metric("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}")
-            col3.metric("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
+            with col1:
+                st.markdown(f"<div style='text-align:center'>{st.metric('🔴 Total vencido', f'${total_vencido:,.2f}')}</div>", unsafe_allow_html=True)
+
+            with col2:
+                st.markdown(f"<div style='text-align:center'>{st.metric('🟡 Por vencer en 30 días', f'${por_vencer_30:,.2f}')}</div>", unsafe_allow_html=True)
+
+            with col3:
+                st.markdown(f"<div style='text-align:center'>{st.metric('🟢 Por vencer >90 días', f'${por_vencer_90:,.2f}')}</div>", unsafe_allow_html=True)
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
                         # ------------------ Cargar configuración de colores y divisiones ------------------
