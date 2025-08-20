@@ -1956,7 +1956,9 @@ if authentication_status:
 
         # Columnas numéricas excluyendo índice y columna Total
         ultima_col = data_sin_total.columns[-1]
-        numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["Cuenta - Sucursal", ultima_col]]
+        # Columnas numéricas excluyendo la columna Total
+        numeric_cols_sin_total = data_sin_total.select_dtypes(include=["number"]).columns.tolist()
+        numeric_cols_sin_total = [c for c in numeric_cols_sin_total if c != ultima_col]
 
         # --- Formateador de valores ---
         value_formatter = JsCode("""
