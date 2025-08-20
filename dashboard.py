@@ -513,7 +513,7 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'}
             )
 
-            # --- Función JS para color de vencimiento en header con padding ---
+            # --- Función JS para color de vencimiento en header ---
             header_vencimiento = JsCode(f"""
             function(params) {{
                 const hoy = new Date('{hoy_str}');
@@ -526,30 +526,22 @@ if authentication_status:
                     else if(diffDias <= 30) color='orange';
                     else if(diffDias <= 60) color='yellow';
                     else color='green';
-                    return {{
-                        borderBottom: '4px solid ' + color,
-                        paddingLeft: '4px',   
-                        paddingRight: '4px'   
-                    }};
+                    return {{borderBottom: '4px solid ' + color}};
                 }}
-                return {{
-                    paddingLeft: '4px',
-                    paddingRight: '4px'
-                }};
+                return {{}};
             }}
             """)
 
-            # Columnas de fechas numéricas (barra vertical + línea)
+            # Columnas de fechas numéricas (barra vertical + línea y header horizontal)
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
                     minWidth=100,
                     headerClass='header-left',
-                    headerStyle=header_vencimiento,  # <-- barra horizontal en header
+                    headerStyle=header_vencimiento,   # <- aplica línea horizontal en header
                     cellStyle=gradient_y_line_renderer,
                     valueFormatter=value_formatter
                 )
-
 
             # Columna Total (solo estilo)
             gb.configure_column(
