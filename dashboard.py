@@ -471,7 +471,7 @@ if authentication_status:
                     bgColor = '#0B083D';
                 }
 
-                // Construir HTML como string (AgGrid interpreta esto correctamente)
+                // construir HTML como string
                 return '<div style="position:relative;height:100%;width:100%;background-color:' + bgColor + ';color:' + (params.node.rowPinned ? 'white':'black') + ';font-weight:' + (params.node.rowPinned ? 'bold':'normal') + ';text-align:left;padding:2px;">' +
                     '<span style="position:relative;z-index:2;">' + params.value + '</span>' +
                     '<div style="position:absolute;bottom:0;left:0;width:100%;height:4px;background-color:' + colorPie + ';z-index:1;border-radius:2px;"></div>' +
