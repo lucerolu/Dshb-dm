@@ -438,30 +438,43 @@ if authentication_status:
                 let style = {{
                     color: params.node.rowPinned ? 'white':'black',
                     fontWeight: params.node.rowPinned ? 'bold':'normal',
-                    textAlign: 'left',
-                    borderBottom: 'none',
-                    background: 'transparent'
+                    textAlign: 'left'
                 }};
 
                 if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {{
                     let val = params.value;
                     let min = {data_sin_total[numeric_cols_sin_total].min().min()};
                     let max = {data_sin_total[numeric_cols_sin_total].max().max()};
-                    if(!isNaN(val) && max>min){{
-                        let ratio = (val - min)/(max-min);
-                        let r = Math.round(117 + ratio*(232-117));
-                        let g = Math.round(222 + ratio*(229-222));
-                        let b = Math.round(84 + ratio*(70-84));
-                        // barra vertical izquierda usando concatenación
-                        style.background = 'linear-gradient(to right, rgb(' + r + ',' + g + ',' + b + ') ' + Math.round(ratio*100) + '%, transparent 0%)';
+
+                    // Degradado horizontal
+                    let bgColor = '#ffffff';
+                    if(!isNaN(val) && max > min){{
+                        let ratio = (val - min)/(max - min);
+                        let r,g,b;
+                        if(ratio<=0.5){{
+                            let t = ratio/0.5;
+                            r = Math.round(117 + t*(232-117));
+                            g = Math.round(222 + t*(229-222));
+                            b = Math.round(84 + t*(70-84));
+                        }} else {{
+                            let t=(ratio-0.5)/0.5;
+                            r = 232;
+                            g = Math.round(229 + t*(96-229));
+                            b = 70;
+                        }}
+                        bgColor = 'rgb('+r+','+g+','+b+')';
                     }}
 
-                    // Línea de vencimiento
+                    // Color de la línea vertical de vencimiento
+                    let colorPie = 'transparent';
                     let fecha_parts = params.colDef.field.split('/');
                     let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
-                    if(fecha_obj < hoy) style.borderBottom='4px solid red';
-                    else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)) style.borderBottom='4px solid yellow';
-                    else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)) style.borderBottom='4px solid green';
+                    if(fecha_obj < hoy) colorPie='red';
+                    else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)) colorPie='yellow';
+                    else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)) colorPie='green';
+
+                    // Fondo combinado: degradado + barra vertical a la izquierda
+                    style.background = 'linear-gradient(to right, ' + colorPie + ' 4px, ' + bgColor + ' 0%)';
                 }}
                 else {{
                     style.background = '#0B083D';
