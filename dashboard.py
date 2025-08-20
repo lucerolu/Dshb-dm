@@ -1938,13 +1938,20 @@ if authentication_status:
         data_sin_total = tabla_formateada[~mascara_total].copy()
 
         # --- Preparar columnas separadas ---
-        data_sin_total["Cuenta"] = data_sin_total["Cuenta - Sucursal"].str.split(" ").str[0]  # el código
-        data_sin_total["Sucursal"] = data_sin_total["Cuenta - Sucursal"].str.replace(
-            data_sin_total["Cuenta"], "", n=1
-        ).str.strip()  # lo demás (abreviatura + nombre)
+        # Asegurar que la columna sea string
+        data_sin_total["Cuenta - Sucursal"] = data_sin_total["Cuenta - Sucursal"].astype(str)
+
+        # Tomar el primer "token" como Cuenta
+        data_sin_total["Cuenta"] = data_sin_total["Cuenta - Sucursal"].str.split().str[0]
+
+        # Todo lo demás como Sucursal
+        data_sin_total["Sucursal"] = data_sin_total["Cuenta - Sucursal"].str[len(data_sin_total["Cuenta"]):].str.strip()
 
         # Reordenar columnas para que Cuenta y Sucursal vayan al inicio
-        cols = ["Cuenta", "Sucursal"] + [c for c in data_sin_total.columns if c not in ["Cuenta", "Sucursal", "Cuenta - Sucursal"]]
+        cols = ["Cuenta", "Sucursal"] + [
+            c for c in data_sin_total.columns 
+            if c not in ["Cuenta", "Sucursal", "Cuenta - Sucursal"]
+        ]
         data_sin_total = data_sin_total[cols]
 
         # Columnas numéricas excluyendo índice y columna Total
