@@ -1941,11 +1941,8 @@ if authentication_status:
         # Asegurar que la columna sea string
         data_sin_total["Cuenta - Sucursal"] = data_sin_total["Cuenta - Sucursal"].astype(str)
 
-        # Tomar el primer "token" como Cuenta
-        data_sin_total["Cuenta"] = data_sin_total["Cuenta - Sucursal"].str.split().str[0]
-
-        # Todo lo demás como Sucursal
-        data_sin_total["Sucursal"] = data_sin_total["Cuenta - Sucursal"].str[len(data_sin_total["Cuenta"]):].str.strip()
+        # Dividir en dos partes: antes y después de " - "
+        data_sin_total[["Cuenta", "Sucursal"]] = data_sin_total["Cuenta - Sucursal"].str.split(" - ", n=1, expand=True)
 
         # Reordenar columnas para que Cuenta y Sucursal vayan al inicio
         cols = ["Cuenta", "Sucursal"] + [
