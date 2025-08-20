@@ -1937,6 +1937,16 @@ if authentication_status:
         total_row = tabla_formateada[mascara_total].copy()
         data_sin_total = tabla_formateada[~mascara_total].copy()
 
+        # --- Preparar columnas separadas ---
+        data_sin_total["Cuenta"] = data_sin_total["Cuenta - Sucursal"].str.split(" ").str[0]  # el código
+        data_sin_total["Sucursal"] = data_sin_total["Cuenta - Sucursal"].str.replace(
+            data_sin_total["Cuenta"], "", n=1
+        ).str.strip()  # lo demás (abreviatura + nombre)
+
+        # Reordenar columnas para que Cuenta y Sucursal vayan al inicio
+        cols = ["Cuenta", "Sucursal"] + [c for c in data_sin_total.columns if c not in ["Cuenta", "Sucursal", "Cuenta - Sucursal"]]
+        data_sin_total = data_sin_total[cols]
+
         # Columnas numéricas excluyendo índice y columna Total
         ultima_col = data_sin_total.columns[-1]
         numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["Cuenta - Sucursal", ultima_col]]
@@ -1998,17 +2008,30 @@ if authentication_status:
         gb = GridOptionsBuilder.from_dataframe(data_sin_total)
         gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-        # Columna índice anclada
+        # Columna Cuenta anclada
         gb.configure_column(
-            "Cuenta - Sucursal",
+            "Cuenta",
             pinned="left",
-            minWidth=220,
-            width=250,
+            minWidth=80,
+            width=100,
             cellStyle={
                 'backgroundColor': '#0B083D',
                 'color': 'white',
                 'fontWeight': 'bold',
-                'textAlign': 'right'
+                'textAlign': 'center'
+            }
+        )
+
+        # Columna Sucursal (no fija)
+        gb.configure_column(
+            "Sucursal",
+            minWidth=160,
+            width=200,
+            cellStyle={
+                'backgroundColor': '#0B083D',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'textAlign': 'left'
             }
         )
 
