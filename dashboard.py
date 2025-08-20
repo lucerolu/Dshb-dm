@@ -429,53 +429,52 @@ if authentication_status:
             }
             """)
 
-            # --- Renderer combinando degradado + línea inferior según vencimiento ---
+            # --- Renderer con degradado + línea inferior usando cellStyle ---
             gradient_y_line_renderer = JsCode("""
             function(params) {
                 const totalCol = '""" + ultima_col + """';
                 const hoy = new Date('""" + hoy_str + """');
 
-                let colorPie = 'lightgray';
-                if(params.colDef.field !== totalCol && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal') {
-                    let fecha_parts = params.colDef.field.split('/');
-                    let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
-                    if(fecha_obj < hoy){
-                        colorPie = 'red';
-                    } else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)){
-                        colorPie = 'yellow';
-                    } else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)){
-                        colorPie = 'green';
-                    }
-                }
+                // Default styles
+                let style = {color: params.node.rowPinned ? 'white':'black', fontWeight: params.node.rowPinned ? 'bold':'normal', textAlign:'left', borderBottom:'none'};
 
-                let bgColor = '#ffffff';
-                if (!params.node.rowPinned && params.data && (params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol)) {
+                if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {
                     let val = params.value;
                     let min = """ + str(data_sin_total[numeric_cols_sin_total].min().min()) + """;
                     let max = """ + str(data_sin_total[numeric_cols_sin_total].max().max()) + """;
-                    if (!isNaN(val) && max > min) {
+
+                    // Degradado
+                    let bgColor = '#ffffff';
+                    if(!isNaN(val) && max > min){
                         let ratio = (val - min)/(max - min);
                         let r,g,b;
-                        if(ratio <= 0.5){
-                            let t = ratio/0.5;
-                            r = Math.round(117 + t*(232-117));
-                            g = Math.round(222 + t*(229-222));
-                            b = Math.round(84 + t*(70-84));
-                        } else {
-                            let t = (ratio-0.5)/0.5;
-                            r = 232; g = Math.round(229 + t*(96-229)); b = 70;
+                        if(ratio<=0.5){ 
+                            let t = ratio/0.5; 
+                            r = Math.round(117+t*(232-117)); 
+                            g = Math.round(222+t*(229-222)); 
+                            b = Math.round(84+t*(70-84));
+                        } else { 
+                            let t=(ratio-0.5)/0.5; 
+                            r = 232; 
+                            g = Math.round(229+t*(96-229)); 
+                            b = 70; 
                         }
                         bgColor = 'rgb('+r+','+g+','+b+')';
                     }
+                    style.backgroundColor = bgColor;
+
+                    // Línea inferior según vencimiento
+                    let fecha_parts = params.colDef.field.split('/');
+                    let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
+                    if(fecha_obj < hoy) style.borderBottom='4px solid red';
+                    else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)) style.borderBottom='4px solid yellow';
+                    else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)) style.borderBottom='4px solid green';
+
                 } else {
-                    bgColor = '#0B083D';
+                    style.backgroundColor = '#0B083D';
                 }
 
-                // construir HTML como string
-                return '<div style="position:relative;height:100%;width:100%;background-color:' + bgColor + ';color:' + (params.node.rowPinned ? 'white':'black') + ';font-weight:' + (params.node.rowPinned ? 'bold':'normal') + ';text-align:left;padding:2px;">' +
-                    '<span style="position:relative;z-index:2;">' + params.value + '</span>' +
-                    '<div style="position:absolute;bottom:0;left:0;width:100%;height:4px;background-color:' + colorPie + ';z-index:1;border-radius:2px;"></div>' +
-                    '</div>';
+                return style;
             }
             """)
 
@@ -511,7 +510,8 @@ if authentication_status:
                     col,
                     minWidth=100,
                     headerClass='header-left',
-                    cellRenderer=gradient_y_line_renderer
+                    cellStyle=gradient_y_line_renderer,
+                    valueFormatter=value_formatter
                 )
 
             # Columna Total (solo estilo, sin renderer)
