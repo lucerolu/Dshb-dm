@@ -2031,13 +2031,13 @@ if authentication_status:
         # Columna Sucursal (no fija)
         gb.configure_column(
             "Sucursal",
-            minWidth=140,
-            width=160,
+            minWidth=120,
+            width=140,
             cellStyle={
                 'backgroundColor': '#0B083D',
                 'color': 'white',
                 'fontWeight': 'bold',
-                'textAlign': 'left'
+                'textAlign': 'right'
             }
         )
 
@@ -2047,8 +2047,8 @@ if authentication_status:
                 col,
                 cellStyle=gradient_code,
                 valueFormatter=value_formatter,
+                headerClass='header-left',
                 minWidth=100,
-                headerClass='header-left'
             )
 
         # Columna Total
@@ -2058,10 +2058,10 @@ if authentication_status:
                 'backgroundColor': '#0B083D',
                 'color': 'white',
                 'fontWeight': 'bold',
-                'textAlign': 'right'
+                'textAlign': 'left'
             },
             valueFormatter=value_formatter,
-            minWidth=120,
+            minWidth=100,
             headerClass='header-left'
         )
 
