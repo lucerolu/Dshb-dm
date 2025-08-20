@@ -452,8 +452,8 @@ if authentication_status:
                         let r = Math.round(117 + ratio*(232-117));
                         let g = Math.round(222 + ratio*(229-222));
                         let b = Math.round(84 + ratio*(70-84));
-                        // barra vertical izquierda usando linear-gradient
-                        style.background = `linear-gradient(to right, rgb(${r},${g},${b}) ${Math.round(ratio*100)}%, transparent 0%)`;
+                        // barra vertical izquierda usando concatenación
+                        style.background = 'linear-gradient(to right, rgb(' + r + ',' + g + ',' + b + ') ' + Math.round(ratio*100) + '%, transparent 0%)';
                     }}
 
                     // Línea de vencimiento
