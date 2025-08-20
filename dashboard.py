@@ -471,35 +471,11 @@ if authentication_status:
                     bgColor = '#0B083D';
                 }
 
-                var cell = document.createElement('div');
-                cell.style.position = 'relative';
-                cell.style.height = '100%';
-                cell.style.width = '100%';
-                cell.style.backgroundColor = bgColor;
-                cell.style.color = params.node.rowPinned ? 'white' : 'black';
-                cell.style.fontWeight = params.node.rowPinned ? 'bold' : 'normal';
-                cell.style.textAlign = 'left';
-                cell.style.padding = '2px';
-
-                var span = document.createElement('span');
-                span.style.position = 'relative';
-                span.style.zIndex = '2';
-                span.innerText = params.value;
-
-                var pie = document.createElement('div');
-                pie.style.position = 'absolute';
-                pie.style.bottom = '0';
-                pie.style.left = '0';
-                pie.style.width = '100%';
-                pie.style.height = '4px';
-                pie.style.backgroundColor = colorPie;
-                pie.style.zIndex = '1';
-                pie.style.borderRadius = '2px';
-
-                cell.appendChild(span);
-                cell.appendChild(pie);
-
-                return cell;
+                // Construir HTML como string (AgGrid interpreta esto correctamente)
+                return '<div style="position:relative;height:100%;width:100%;background-color:' + bgColor + ';color:' + (params.node.rowPinned ? 'white':'black') + ';font-weight:' + (params.node.rowPinned ? 'bold':'normal') + ';text-align:left;padding:2px;">' +
+                    '<span style="position:relative;z-index:2;">' + params.value + '</span>' +
+                    '<div style="position:absolute;bottom:0;left:0;width:100%;height:4px;background-color:' + colorPie + ';z-index:1;border-radius:2px;"></div>' +
+                    '</div>';
             }
             """)
 
