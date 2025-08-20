@@ -430,53 +430,58 @@ if authentication_status:
             """)
 
             # --- Renderer combinando degradado + línea inferior según vencimiento ---
-            gradient_y_line_renderer = JsCode("""
-            function(params) {
-                const totalCol = '""" + ultima_col + """';
-                const hoy = new Date('""" + hoy_str + """');
-
+            gradient_y_line_renderer = JsCode(f"""
+            function(params) {{
+                const totalCol = '{ultima_col}';
+                const hoy = new Date('{hoy_str}');
+                
+                // colorPie según fecha
                 let colorPie = 'lightgray';
-                if(params.colDef.field !== totalCol && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal') {
+                if(params.colDef.field !== totalCol && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal') {{
                     let fecha_parts = params.colDef.field.split('/');
                     let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
-                    if(fecha_obj < hoy){
+                    if(fecha_obj < hoy){{
                         colorPie = 'red';
-                    } else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)){
+                    }} else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)){{
                         colorPie = 'yellow';
-                    } else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)){
+                    }} else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)){{
                         colorPie = 'green';
-                    }
-                }
+                    }}
+                }}
 
-                let bgColor = 'white';
-                if (!params.node.rowPinned && params.data && (params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol)) {
+                // degradado
+                let bgColor = '#ffffff';
+                if (!params.node.rowPinned && params.data && (params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol)) {{
                     let val = params.value;
-                    let min = """ + str(data_sin_total[numeric_cols_sin_total].min().min()) + """;
-                    let max = """ + str(data_sin_total[numeric_cols_sin_total].max().max()) + """;
-                    if (!isNaN(val) && max > min) {
-                        let ratio = (val - min) / (max - min);
+                    let min = {data_sin_total[numeric_cols_sin_total].min().min()};
+                    let max = {data_sin_total[numeric_cols_sin_total].max().max()};
+                    if (!isNaN(val) && max > min){{
+                        let ratio = (val - min)/(max - min);
                         let r,g,b;
-                        if(ratio <= 0.5){
+                        if(ratio <= 0.5){{
                             let t = ratio/0.5;
                             r = Math.round(117 + t*(232-117));
                             g = Math.round(222 + t*(229-222));
                             b = Math.round(84 + t*(70-84));
-                        } else {
+                        }} else {{
                             let t = (ratio-0.5)/0.5;
                             r = 232; g = Math.round(229 + t*(96-229)); b = 70;
-                        }
-                        bgColor = 'rgb('+r+','+g+','+b+')';
-                    }
-                } else {
+                        }}
+                        bgColor = `rgb(${r},${g},${b})`;
+                    }}
+                }} else {{
                     bgColor = '#0B083D';
-                }
+                }}
 
-                return '<div style="position: relative; height: 100%; width: 100%; background-color: '+bgColor+'; color:'+(params.node.rowPinned ? 'white':'black')+'; font-weight:'+(params.node.rowPinned ? 'bold':'normal')+'; text-align:left; padding:2px;">' +
-                    '<span style="position: relative; z-index: 2;">'+params.value+'</span>' +
-                    '<div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background-color: '+colorPie+'; z-index: 1; border-radius: 2px;"></div>' +
-                    '</div>';
-            }
+                return `
+                    <div style="position: relative; height: 100%; width: 100%; background-color: ${bgColor}; color:${params.node.rowPinned ? 'white':'black'}; font-weight:${params.node.rowPinned ? 'bold':'normal'}; text-align:left; padding:2px;">
+                        <span style="position: relative; z-index: 2;">${params.value}</span>
+                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background-color: ${colorPie}; z-index: 1; border-radius: 2px;"></div>
+                    </div>
+                `;
+            }}
             """)
+
 
             # --- Reordenar columnas ---
             columnas = list(data_sin_total.columns)
