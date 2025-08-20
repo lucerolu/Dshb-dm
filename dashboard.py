@@ -1978,7 +1978,7 @@ if authentication_status:
                     backgroundColor: '#0B083D',
                     color: 'white',
                     fontWeight: 'bold',
-                    textAlign: 'right'
+                    textAlign: 'left'
                 }};
             }}
             if (params.colDef.field === totalCol) {{
@@ -1986,7 +1986,7 @@ if authentication_status:
                     backgroundColor: '#0B083D',
                     color: 'white',
                     fontWeight: 'bold',
-                    textAlign: 'right'
+                    textAlign: 'left'
                 }};
             }}
             let val = params.value;
@@ -2004,9 +2004,9 @@ if authentication_status:
                     let t = (ratio-0.5)/0.5;
                     r = 0; g = Math.round(102 + t*(204-102)); b = 204;
                 }}
-                return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'right' }};
+                return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'left' }};
             }}
-            return {{ textAlign:'right' }};
+            return {{ textAlign:'left' }};
         }}
         """)
 
@@ -2014,18 +2014,29 @@ if authentication_status:
         gb = GridOptionsBuilder.from_dataframe(data_sin_total)
         gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-        # Columna Cuenta anclada
         gb.configure_column(
             "Cuenta",
             pinned="left",
             minWidth=100,
             width=100,
-            cellStyle={
-                'backgroundColor': '#0B083D',
-                'color': 'white',
-                'fontWeight': 'bold',
-                'textAlign': 'center'
-            }
+            cellStyle=JsCode("""
+                function(params) {
+                    if (params.node.rowPinned) {
+                        return {
+                            backgroundColor: '#0B083D',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            textAlign: 'center'
+                        };
+                    }
+                    return {
+                        backgroundColor: '#0B083D',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        textAlign: 'center'
+                    };
+                }
+            """)
         )
 
         # Columna Sucursal (no fija)
@@ -2108,6 +2119,10 @@ if authentication_status:
 
         # --- Fila Total fija ---
         grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+        # --- Ajustar fila de totales ---
+        total_row = total_row.copy()
+        total_row.loc[:, "Cuenta"] = "TOTAL"
+        total_row.loc[:, "Sucursal"] = ""
 
         # --- Render ---
         AgGrid(
