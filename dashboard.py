@@ -435,10 +435,12 @@ if authentication_status:
                 const totalCol = '{ultima_col}';
                 const hoy = new Date('{hoy_str}');
 
+                // Estilos base
                 let style = {{
                     color: params.node.rowPinned ? 'white':'black',
                     fontWeight: params.node.rowPinned ? 'bold':'normal',
-                    textAlign: 'left'
+                    textAlign:'left',
+                    paddingLeft:'4px'  // padding para la barra vertical
                 }};
 
                 if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {{
@@ -446,38 +448,39 @@ if authentication_status:
                     let min = {data_sin_total[numeric_cols_sin_total].min().min()};
                     let max = {data_sin_total[numeric_cols_sin_total].max().max()};
 
-                    // Degradado horizontal
+                    // Degradado de fondo
                     let bgColor = '#ffffff';
                     if(!isNaN(val) && max > min){{
                         let ratio = (val - min)/(max - min);
                         let r,g,b;
-                        if(ratio<=0.5){{
-                            let t = ratio/0.5;
-                            r = Math.round(117 + t*(232-117));
-                            g = Math.round(222 + t*(229-222));
-                            b = Math.round(84 + t*(70-84));
-                        }} else {{
-                            let t=(ratio-0.5)/0.5;
-                            r = 232;
-                            g = Math.round(229 + t*(96-229));
-                            b = 70;
+                        if(ratio<=0.5){{ 
+                            let t = ratio/0.5; 
+                            r = Math.round(117+t*(232-117)); 
+                            g = Math.round(222+t*(229-222)); 
+                            b = Math.round(84+t*(70-84));
+                        }} else {{ 
+                            let t=(ratio-0.5)/0.5; 
+                            r = 232; 
+                            g = Math.round(229+t*(96-229)); 
+                            b = 70; 
                         }}
                         bgColor = 'rgb('+r+','+g+','+b+')';
                     }}
+                    style.backgroundColor = bgColor;
 
-                    // Color de la línea vertical de vencimiento
-                    let colorPie = 'transparent';
+                    // Barra vertical según vencimiento
                     let fecha_parts = params.colDef.field.split('/');
                     let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
-                    if(fecha_obj < hoy) colorPie='red';
-                    else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)) colorPie='yellow';
-                    else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)) colorPie='green';
+                    let colorPie = 'transparent';
+                    let diffDias = Math.round((fecha_obj - hoy)/(1000*60*60*24));
+                    if(diffDias < 0) colorPie='red';
+                    else if(diffDias <= 30) colorPie='orange';
+                    else if(diffDias <= 60) colorPie='yellow';
+                    else if(diffDias <= 90) colorPie='green';
 
-                    // Fondo combinado: degradado + barra vertical a la izquierda
-                    style.background = 'linear-gradient(to right, ' + colorPie + ' 4px, ' + bgColor + ' 0%)';
-                }}
-                else {{
-                    style.background = '#0B083D';
+                    style.borderLeft = '4px solid ' + colorPie;
+                }} else {{
+                    style.backgroundColor = '#0B083D';
                 }}
 
                 return style;
