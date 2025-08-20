@@ -2018,7 +2018,7 @@ if authentication_status:
         gb.configure_column(
             "Cuenta",
             pinned="left",
-            minWidth=80,
+            minWidth=100,
             width=100,
             cellStyle={
                 'backgroundColor': '#0B083D',
@@ -2031,8 +2031,8 @@ if authentication_status:
         # Columna Sucursal (no fija)
         gb.configure_column(
             "Sucursal",
-            minWidth=160,
-            width=200,
+            minWidth=140,
+            width=160,
             cellStyle={
                 'backgroundColor': '#0B083D',
                 'color': 'white',
