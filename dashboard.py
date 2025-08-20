@@ -2117,12 +2117,13 @@ if authentication_status:
         grid_options = gb.build()
         grid_options["onGridReady"] = on_grid_ready
 
-        # --- Fila Total fija ---
-        grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
         # --- Ajustar fila de totales ---
         total_row = total_row.copy()
         total_row.loc[:, "Cuenta"] = "TOTAL"
         total_row.loc[:, "Sucursal"] = ""
+
+        # --- Fila Total fija ---
+        grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
         # --- Render ---
         AgGrid(
