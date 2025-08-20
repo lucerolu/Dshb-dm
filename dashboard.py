@@ -434,8 +434,7 @@ if authentication_status:
             function(params) {{
                 const totalCol = '{ultima_col}';
                 const hoy = new Date('{hoy_str}');
-                
-                // colorPie según fecha
+
                 let colorPie = 'lightgray';
                 if(params.colDef.field !== totalCol && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal') {{
                     let fecha_parts = params.colDef.field.split('/');
@@ -449,7 +448,6 @@ if authentication_status:
                     }}
                 }}
 
-                // degradado
                 let bgColor = '#ffffff';
                 if (!params.node.rowPinned && params.data && (params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol)) {{
                     let val = params.value;
@@ -467,21 +465,20 @@ if authentication_status:
                             let t = (ratio-0.5)/0.5;
                             r = 232; g = Math.round(229 + t*(96-229)); b = 70;
                         }}
-                        bgColor = `rgb(${r},${g},${b})`;
+                        bgColor = `rgb(${{r}},${{g}},${{b}})`;
                     }}
                 }} else {{
                     bgColor = '#0B083D';
                 }}
 
                 return `
-                    <div style="position: relative; height: 100%; width: 100%; background-color: ${bgColor}; color:${params.node.rowPinned ? 'white':'black'}; font-weight:${params.node.rowPinned ? 'bold':'normal'}; text-align:left; padding:2px;">
-                        <span style="position: relative; z-index: 2;">${params.value}</span>
-                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background-color: ${colorPie}; z-index: 1; border-radius: 2px;"></div>
+                    <div style="position: relative; height: 100%; width: 100%; background-color: ${{bgColor}}; color:${{params.node.rowPinned ? 'white':'black'}}; font-weight:${{params.node.rowPinned ? 'bold':'normal'}}; text-align:left; padding:2px;">
+                        <span style="position: relative; z-index: 2;">${{params.value}}</span>
+                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background-color: ${{colorPie}}; z-index: 1; border-radius: 2px;"></div>
                     </div>
                 `;
             }}
             """)
-
 
             # --- Reordenar columnas ---
             columnas = list(data_sin_total.columns)
