@@ -429,67 +429,59 @@ if authentication_status:
             }
             """)
 
-            # --- Renderer con degradado + línea inferior usando cellStyle ---
-            gradient_y_line_renderer = JsCode("""
-            function(params) {
-                const totalCol = '""" + ultima_col + """';
-                const hoy = new Date('""" + hoy_str + """');
+            # --- Renderer dinámico con barra izquierda y línea inferior ---
+            gradient_y_line_renderer = JsCode(f"""
+            function(params) {{
+                const totalCol = '{ultima_col}';
+                const hoy = new Date('{hoy_str}');
 
-                // Default styles
-                let style = {color: params.node.rowPinned ? 'white':'black', fontWeight: params.node.rowPinned ? 'bold':'normal', textAlign:'left', borderBottom:'none'};
+                let style = {{
+                    color: params.node.rowPinned ? 'white':'black',
+                    fontWeight: params.node.rowPinned ? 'bold':'normal',
+                    textAlign: 'left',
+                    borderBottom: 'none',
+                    background: 'transparent'
+                }};
 
-                if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {
+                if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {{
                     let val = params.value;
-                    let min = """ + str(data_sin_total[numeric_cols_sin_total].min().min()) + """;
-                    let max = """ + str(data_sin_total[numeric_cols_sin_total].max().max()) + """;
+                    let min = {data_sin_total[numeric_cols_sin_total].min().min()};
+                    let max = {data_sin_total[numeric_cols_sin_total].max().max()};
+                    if(!isNaN(val) && max>min){{
+                        let ratio = (val - min)/(max-min);
+                        let r = Math.round(117 + ratio*(232-117));
+                        let g = Math.round(222 + ratio*(229-222));
+                        let b = Math.round(84 + ratio*(70-84));
+                        // barra vertical izquierda usando linear-gradient
+                        style.background = `linear-gradient(to right, rgb(${r},${g},${b}) ${Math.round(ratio*100)}%, transparent 0%)`;
+                    }}
 
-                    // Degradado
-                    let bgColor = '#ffffff';
-                    if(!isNaN(val) && max > min){
-                        let ratio = (val - min)/(max - min);
-                        let r,g,b;
-                        if(ratio<=0.5){ 
-                            let t = ratio/0.5; 
-                            r = Math.round(117+t*(232-117)); 
-                            g = Math.round(222+t*(229-222)); 
-                            b = Math.round(84+t*(70-84));
-                        } else { 
-                            let t=(ratio-0.5)/0.5; 
-                            r = 232; 
-                            g = Math.round(229+t*(96-229)); 
-                            b = 70; 
-                        }
-                        bgColor = 'rgb('+r+','+g+','+b+')';
-                    }
-                    style.backgroundColor = bgColor;
-
-                    // Línea inferior según vencimiento
+                    // Línea de vencimiento
                     let fecha_parts = params.colDef.field.split('/');
                     let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
                     if(fecha_obj < hoy) style.borderBottom='4px solid red';
                     else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)) style.borderBottom='4px solid yellow';
                     else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)) style.borderBottom='4px solid green';
-
-                } else {
-                    style.backgroundColor = '#0B083D';
-                }
+                }}
+                else {{
+                    style.background = '#0B083D';
+                }}
 
                 return style;
-            }
+            }}
             """)
 
-            # --- Reordenar columnas ---
+            # --- Configuración inicial del grid ---
             columnas = list(data_sin_total.columns)
             if "codigo" in columnas and "sucursal" in columnas:
                 columnas.remove("codigo")
                 columnas.remove("sucursal")
                 data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
 
-            # --- Configuración inicial del grid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columnas "codigo" y "sucursal" (solo estilo, sin línea de pie)
+            # Columnas "codigo" y "sucursal" (solo estilo)
             gb.configure_column(
                 "codigo",
                 pinned="left",
@@ -504,7 +496,7 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'}
             )
 
-            # Columnas numéricas de fechas (con degradado y línea inferior)
+            # Columnas de fechas numéricas (barra vertical + línea)
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
@@ -514,7 +506,7 @@ if authentication_status:
                     valueFormatter=value_formatter
                 )
 
-            # Columna Total (solo estilo, sin renderer)
+            # Columna Total (solo estilo)
             gb.configure_column(
                 ultima_col,
                 minWidth=120,
@@ -553,8 +545,6 @@ if authentication_status:
 
             grid_options = gb.build()
             grid_options["onGridReady"] = on_grid_ready
-
-            # --- Fila Total fija ---
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
             # --- Renderizado final ---
