@@ -518,6 +518,21 @@ if authentication_status:
             }}
             """)
 
+            def color_por_vencimiento(fecha_str, hoy):
+                try:
+                    fecha = datetime.strptime(fecha_str, "%d/%m/%Y")
+                    diff = (fecha - hoy).days
+                    if diff < 0:
+                        return "red"
+                    elif diff <= 30:
+                        return "orange"
+                    elif diff <= 60:
+                        return "yellow"
+                    else:
+                        return "green"
+                except:
+                    return "transparent"
+
             # --- Configuración inicial del grid ---
             columnas = list(data_sin_total.columns)
             if "codigo" in columnas and "sucursal" in columnas:
@@ -569,7 +584,7 @@ if authentication_status:
                     headerClass='header-left',
                     headerStyle=header_vencimiento,   # línea en el header
                     cellStyle=gradient_y_line_renderer,  # degradado + barra vertical normal
-                    pinnedRowCellStyle=total_row_renderer,  # <- línea superior en fila total anclada
+                    #pinnedRowCellStyle=total_row_renderer,  # <- línea superior en fila total anclada
                     valueFormatter=value_formatter
                 )
 
@@ -611,8 +626,30 @@ if authentication_status:
             """)
 
             grid_options = gb.build()
+            hoy_py = datetime.today()
+            total_row_styles = {}
+
+            for col in numeric_cols_sin_total:
+                color = color_por_vencimiento(col, hoy_py)
+                total_row_styles[col] = {
+                    "color": "white",
+                    "fontWeight": "bold",
+                    "textAlign": "left",
+                    "backgroundColor": "#0B083D",
+                    "borderTop": f"4px solid {color}"
+                }
+
+            # Para la columna "Total"
+            total_row_styles[ultima_col] = {
+                "color": "white",
+                "fontWeight": "bold",
+                "textAlign": "left",
+                "backgroundColor": "#0B083D"
+            }
+
             grid_options["onGridReady"] = on_grid_ready
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+            grid_options['pinnedBottomRowDataStyles'] = total_row_styles
 
             # --- Renderizado final ---
             AgGrid(
