@@ -441,10 +441,8 @@ if authentication_status:
                     textAlign:'left',
                     paddingLeft:'4px',   
                     paddingRight:'4px',  
-                    // --- Comentar líneas verticales normales ---
-                    // borderLeftStyle: 'solid',
-                    // borderLeftWidth: '4px',
                     borderRadius: '2px'
+                    // borderLeftStyle y borderLeftWidth comentados, ya no habrá líneas
                 }};
 
                 if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {{
@@ -452,7 +450,7 @@ if authentication_status:
                     let min = {data_sin_total[numeric_cols_sin_total].min().min()};
                     let max = {data_sin_total[numeric_cols_sin_total].max().max()};
 
-                    // degradado de fondo
+                    // degradado de fondo (opcional, puedes dejarlo o quitarlo)
                     let bgColor = '#ffffff';
                     if(!isNaN(val) && max > min){{
                         let ratio = (val - min)/(max - min);
@@ -472,16 +470,10 @@ if authentication_status:
                     }}
                     style.backgroundColor = bgColor;
 
-                    // barra vertical según vencimiento (solo esta queda)
-                    let fecha_parts = params.colDef.field.split('/');
-                    let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
-                    let diffDias = Math.round((fecha_obj - hoy)/(1000*60*60*24));
-                    if(diffDias < 0) style.borderLeft = '4px solid red';
-                    else if(diffDias <= 30) style.borderLeft = '4px solid orange';
-                    // ya no dibujar líneas de 60/90 días
+                    // --- Se quitan todas las líneas verticales ---
                 }} else {{
                     style.backgroundColor = '#0B083D';
-                    style.borderLeft = 'transparent'; // evita línea vertical normal
+                    // style.borderLeft = 'transparent'; // ya no hace falta
                 }}
 
                 return style;
