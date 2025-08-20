@@ -381,9 +381,10 @@ if authentication_status:
             )
 
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
-            # --- Preparar datos ---
+            # --- Preparar fechas y pivote ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+            hoy_str = pd.Timestamp(datetime.today().date()).strftime("%Y-%m-%d")  # para JS
 
             df_pivot = df_estado_cuenta.pivot_table(
                 index=["sucursal", "codigo_6digitos"],
@@ -403,7 +404,6 @@ if authentication_status:
             if "Total" in df_pivot.columns:
                 cols_ordenadas.append("Total")
             df_pivot = df_pivot[cols_ordenadas]
-
             df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot.reset_index()
             df_reset["codigo"] = df_reset["codigo"].astype(str)
@@ -421,7 +421,7 @@ if authentication_status:
             ultima_col = data_sin_total.columns[-1]
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # --- Formateador de valores con comas y 2 decimales ---
+            # --- Formateador de valores ---
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -429,55 +429,73 @@ if authentication_status:
             }
             """)
 
-            # --- Degradado por celda (excluye la fila Total) ---
-            min_val = data_sin_total[numeric_cols_sin_total].min().min()
-            max_val = data_sin_total[numeric_cols_sin_total].max().max()
-            gradient_code = JsCode(f"""
+            # --- Renderer combinando degradado + línea inferior según vencimiento ---
+            gradient_y_line_renderer = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
-                if (params.node.rowPinned || 
-                    (params.data && (
-                        (typeof params.data.codigo === 'string' && params.data.codigo.trim().toLowerCase() === 'total') ||
-                        (typeof params.data.sucursal === 'string' && params.data.sucursal.trim().toLowerCase() === 'total')
-                    ))
-                ) {{
-                    return {{
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textAlign: 'left'  // fila Total alineada a la izquierda
-                    }};
-                }}
-                if (params.colDef.field === totalCol) {{
-                    return {{
-                        backgroundColor: '#0B083D',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textAlign: 'left'  // columna Total alineada a la izquierda
-                    }};
-                }}
-                let val = params.value;
-                let min = {min_val};
-                let max = {max_val};
-                if (!isNaN(val) && max > min) {{
-                    let ratio = (val - min) / (max - min);
-                    let r,g,b;
-                    if(ratio <= 0.5) {{
-                        let t = ratio/0.5;
-                        r = Math.round(117 + t*(232-117));
-                        g = Math.round(222 + t*(229-222));
-                        b = Math.round(84 + t*(70-84));
-                    }} else {{
-                        let t = (ratio-0.5)/0.5;
-                        r = 232; g = Math.round(229 + t*(96-229)); b = 70;
+                const col_fecha = params.colDef.field;
+                const hoy = new Date('{hoy_str}');
+                
+                // Determinar color pie según fecha de columna
+                let colorPie = 'lightgray';
+                if(col_fecha !== totalCol && col_fecha !== 'codigo' && col_fecha !== 'sucursal') {{
+                    let fecha_parts = col_fecha.split('/');
+                    let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
+                    if(fecha_obj < hoy){{
+                        colorPie = 'red';
+                    }} else if(fecha_obj <= new Date(hoy.getTime() + 30*24*60*60*1000)){{
+                        colorPie = 'yellow';
+                    }} else if(fecha_obj > new Date(hoy.getTime() + 90*24*60*60*1000)){{
+                        colorPie = 'green';
                     }}
-                    return {{ backgroundColor: `rgb(${{r}},${{g}},${{b}})`, textAlign:'left' }};
                 }}
-                return {{ textAlign:'left' }};
+
+                // Degradado solo si no es fila Total
+                let bgColor = 'white';
+                if (!params.node.rowPinned && 
+                    params.data && 
+                    (params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol)) {{
+                    let val = params.value;
+                    let min = {data_sin_total[numeric_cols_sin_total].min().min()};
+                    let max = {data_sin_total[numeric_cols_sin_total].max().max()};
+                    if (!isNaN(val) && max > min) {{
+                        let ratio = (val - min) / (max - min);
+                        let r,g,b;
+                        if(ratio <= 0.5) {{
+                            let t = ratio/0.5;
+                            r = Math.round(117 + t*(232-117));
+                            g = Math.round(222 + t*(229-222));
+                            b = Math.round(84 + t*(70-84));
+                        }} else {{
+                            let t = (ratio-0.5)/0.5;
+                            r = 232; g = Math.round(229 + t*(96-229)); b = 70;
+                        }}
+                        bgColor = `rgb(${{r}},${{g}},${{b}})`;
+                    }}
+                }} else {{
+                    bgColor = '#0B083D';  // fila Total
+                }}
+
+                // Render final con línea inferior
+                return `
+                    <div style="position: relative; height: 100%; width: 100%; background-color: ${bgColor}; color:${params.node.rowPinned ? 'white':'black'}; font-weight:${params.node.rowPinned ? 'bold':'normal'}; text-align:left; padding:2px;">
+                        <span style="position: relative; z-index: 2;">${params.value}</span>
+                        <div style="
+                            position: absolute;
+                            bottom: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 4px;
+                            background-color: ${colorPie};
+                            z-index: 1;
+                            border-radius: 2px;
+                        "></div>
+                    </div>
+                `;
             }}
             """)
 
-            # --- Reordenar columnas para que "codigo" sea la primera y "sucursal" la segunda ---
+            # --- Reordenar columnas ---
             columnas = list(data_sin_total.columns)
             if "codigo" in columnas and "sucursal" in columnas:
                 columnas.remove("codigo")
@@ -488,79 +506,22 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columna "codigo" anclada y alineada a la derecha
-            gb.configure_column(
-                "codigo",
-                pinned="left",
-                minWidth=90,
-                width=90,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign': 'right'
-                }
-            )
+            # Columnas "codigo" y "sucursal"
+            gb.configure_column("codigo", pinned="left", minWidth=90, width=90, cellRenderer=gradient_y_line_renderer)
+            gb.configure_column("sucursal", minWidth=130, width=130, cellRenderer=gradient_y_line_renderer)
 
-            # Columna "sucursal" sin anclar pero con mismo estilo
-            gb.configure_column(
-                "sucursal",
-                minWidth=130,
-                width=130,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign': 'right'
-                }
-            )
+            # Columnas numéricas y Total
+            for col in numeric_cols_sin_total + [ultima_col]:
+                gb.configure_column(col, minWidth=100, headerClass='header-left', cellRenderer=gradient_y_line_renderer)
 
-            # Columnas numéricas con degradado y header alineado a la izquierda
-            for col in numeric_cols_sin_total:
-                gb.configure_column(
-                    col,
-                    cellStyle=gradient_code,
-                    valueFormatter=value_formatter,
-                    minWidth=100,  # mínimo ancho para evitar aplastamiento en móviles
-                    headerClass='header-left'
-                )
-
-            # Columna Total con estilo y alineada a la izquierda
-            gb.configure_column(
-                ultima_col,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign': 'left'
-                },
-                sortable=True,  
-                valueFormatter=value_formatter,
-                minWidth=120,
-                headerClass='header-left'
-            )
-
-            # --- CSS para headers alineados a la izquierda ---
+            # --- CSS headers ---
             custom_css = {
-                ".header-left": {
-                    "text-align": "left"
-                },
-                ".ag-center-cols-container .ag-row": {
-                    "height": "20px",
-                    "line-height": "16px",
-                    "padding-top": "2px",
-                    "padding-bottom": "2px"
-                },
-                ".ag-pinned-left-cols-container .ag-row": {
-                    "height": "20px",
-                    "line-height": "16px",
-                    "padding-top": "2px",
-                    "padding-bottom": "2px"
-                }
+                ".header-left": {"text-align": "left"},
+                ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px", "padding-top": "2px", "padding-bottom": "2px"},
+                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px", "padding-top": "2px", "padding-bottom": "2px"}
             }
 
-
-            # --- Script para scroll horizontal en móviles y ajuste solo en pantallas grandes ---
+            # --- Script para scroll horizontal en móviles ---
             on_grid_ready = JsCode("""
             function(params) {
                 function ajustarColumnas() {
@@ -570,17 +531,9 @@ if authentication_status:
                         params.api.sizeColumnsToFit();
                     }
                 }
-
-                // Ejecutar de inmediato
                 ajustarColumnas();
-
-                // Ejecutar un poco después de que todo se cargue
                 setTimeout(ajustarColumnas, 300);
-
-                // Escuchar cambios de tamaño reales de ventana
                 window.addEventListener('resize', ajustarColumnas);
-
-                // Observador para detectar cambios de tamaño del contenedor
                 const gridDiv = params.api.gridBodyCtrl.eGridBody;
                 if (window.ResizeObserver) {
                     const ro = new ResizeObserver(() => ajustarColumnas());
@@ -588,16 +541,11 @@ if authentication_status:
                 }
             }
             """)
-
             grid_options = gb.build()
             grid_options["onGridReady"] = on_grid_ready
 
-            # --- Fila Total fija al final ---
-            pinned_total_row = total_row.copy()
-            for col in pinned_total_row.columns:
-                if col in numeric_cols_sin_total + [ultima_col]:
-                    pinned_total_row[col] = pinned_total_row[col]
-            grid_options['pinnedBottomRowData'] = pinned_total_row.to_dict('records')
+            # --- Fila Total fija ---
+            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
             # --- Renderizado final ---
             AgGrid(
@@ -607,7 +555,7 @@ if authentication_status:
                 height=800,
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=False,  # desactiva ajuste automático
+                fit_columns_on_grid_load=False,
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
                 enable_enterprise_modules=False
             )
