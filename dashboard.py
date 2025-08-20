@@ -439,7 +439,8 @@ if authentication_status:
                     color: params.node.rowPinned ? 'white':'black',
                     fontWeight: params.node.rowPinned ? 'bold':'normal',
                     textAlign:'left',
-                    paddingLeft:'4px',  // espacio para la barra
+                    paddingLeft:'4px',   // espacio para la barra vertical
+                    paddingRight:'4px',  // separación horizontal dentro de la celda
                     borderLeftStyle: 'solid',
                     borderLeftWidth: '4px',
                     borderRadius: '2px'
