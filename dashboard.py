@@ -488,6 +488,36 @@ if authentication_status:
             }}
             """)
 
+            # --- Renderer para fila total anclada (línea superior según vencimiento) ---
+            total_row_renderer = JsCode(f"""
+            function(params) {{
+                const hoy = new Date('{hoy_str}');
+                let style = {{
+                    color: 'white',
+                    fontWeight: 'bold',
+                    textAlign: 'left',
+                    backgroundColor: '#0B083D',
+                    borderTopStyle: 'solid',
+                    borderTopWidth: '4px'
+                }};
+                
+                if(params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.value != null) {{
+                    let fecha_parts = params.colDef.field.split('/');
+                    if(fecha_parts.length === 3){{
+                        let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
+                        let diffDias = Math.round((fecha_obj - hoy)/(1000*60*60*24));
+                        if(diffDias < 0) style.borderTopColor = 'red';
+                        else if(diffDias <= 30) style.borderTopColor = 'orange';
+                        else if(diffDias <= 60) style.borderTopColor = 'yellow';
+                        else style.borderTopColor = 'green';
+                    }}
+                }} else {{
+                    style.borderTopColor = 'transparent';
+                }}
+                return style;
+            }}
+            """)
+
             # --- Configuración inicial del grid ---
             columnas = list(data_sin_total.columns)
             if "codigo" in columnas and "sucursal" in columnas:
@@ -532,14 +562,14 @@ if authentication_status:
             }}
             """)
 
-            # Columnas de fechas numéricas (barra vertical + línea y header horizontal)
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
                     minWidth=100,
                     headerClass='header-left',
-                    headerStyle=header_vencimiento,   # <- aplica línea horizontal en header
-                    cellStyle=gradient_y_line_renderer,
+                    headerStyle=header_vencimiento,   # línea en el header
+                    cellStyle=gradient_y_line_renderer,  # degradado + barra vertical normal
+                    pinnedRowCellStyle=total_row_renderer,  # <- línea superior en fila total anclada
                     valueFormatter=value_formatter
                 )
 
