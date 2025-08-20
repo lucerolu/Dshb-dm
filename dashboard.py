@@ -490,14 +490,37 @@ if authentication_status:
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
             # Columnas "codigo" y "sucursal" (solo estilo, sin línea de pie)
-            gb.configure_column("codigo", pinned="left", minWidth=90, width=90,
-                                cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'})
-            gb.configure_column("sucursal", minWidth=130, width=130,
-                                cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'})
+            gb.configure_column(
+                "codigo",
+                pinned="left",
+                minWidth=90,
+                width=90,
+                cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'}
+            )
+            gb.configure_column(
+                "sucursal",
+                minWidth=130,
+                width=130,
+                cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'}
+            )
 
-            # Columnas numéricas y Total
-            for col in numeric_cols_sin_total + [ultima_col]:
-                gb.configure_column(col, minWidth=100, headerClass='header-left', cellRenderer=gradient_y_line_renderer)
+            # Columnas numéricas de fechas (con degradado y línea inferior)
+            for col in numeric_cols_sin_total:
+                gb.configure_column(
+                    col,
+                    minWidth=100,
+                    headerClass='header-left',
+                    cellRenderer=gradient_y_line_renderer
+                )
+
+            # Columna Total (solo estilo, sin renderer)
+            gb.configure_column(
+                ultima_col,
+                minWidth=120,
+                headerClass='header-left',
+                valueFormatter=value_formatter,
+                cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
+            )
 
             # --- CSS headers ---
             custom_css = {
@@ -526,6 +549,7 @@ if authentication_status:
                 }
             }
             """)
+
             grid_options = gb.build()
             grid_options["onGridReady"] = on_grid_ready
 
