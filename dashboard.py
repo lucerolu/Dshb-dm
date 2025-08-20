@@ -439,10 +439,11 @@ if authentication_status:
                     color: params.node.rowPinned ? 'white':'black',
                     fontWeight: params.node.rowPinned ? 'bold':'normal',
                     textAlign:'left',
-                    paddingLeft:'4px',   // espacio para la barra vertical
-                    paddingRight:'4px',  // separación horizontal dentro de la celda
-                    borderLeftStyle: 'solid',
-                    borderLeftWidth: '4px',
+                    paddingLeft:'4px',   
+                    paddingRight:'4px',  
+                    // --- Comentar líneas verticales normales ---
+                    // borderLeftStyle: 'solid',
+                    // borderLeftWidth: '4px',
                     borderRadius: '2px'
                 }};
 
@@ -471,17 +472,16 @@ if authentication_status:
                     }}
                     style.backgroundColor = bgColor;
 
-                    // barra vertical según vencimiento
+                    // barra vertical según vencimiento (solo esta queda)
                     let fecha_parts = params.colDef.field.split('/');
                     let fecha_obj = new Date(fecha_parts[2], fecha_parts[1]-1, fecha_parts[0]);
                     let diffDias = Math.round((fecha_obj - hoy)/(1000*60*60*24));
-                    if(diffDias < 0) style.borderLeftColor='red';
-                    else if(diffDias <= 30) style.borderLeftColor='orange';
-                    else if(diffDias <= 60) style.borderLeftColor='yellow';
-                    else style.borderLeftColor='green';  // incluye >90 días
+                    if(diffDias < 0) style.borderLeft = '4px solid red';
+                    else if(diffDias <= 30) style.borderLeft = '4px solid orange';
+                    // ya no dibujar líneas de 60/90 días
                 }} else {{
                     style.backgroundColor = '#0B083D';
-                    style.borderLeftColor = 'transparent';
+                    style.borderLeft = 'transparent'; // evita línea vertical normal
                 }}
 
                 return style;
@@ -649,7 +649,7 @@ if authentication_status:
 
             grid_options["onGridReady"] = on_grid_ready
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-            grid_options['pinnedBottomRowDataStyles'] = total_row_styles
+            
 
             # --- Renderizado final ---
             AgGrid(
