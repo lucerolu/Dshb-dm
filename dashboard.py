@@ -618,7 +618,7 @@ if authentication_status:
             df_pivot = df_pivot[cols_ordenadas]
             df_pivot.index = df_pivot.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot.reset_index()
-            df_reset["codigo"] = df_reset["codigo"].astype(str)
+            #df_reset["codigo"] = df_reset["codigo"].astype(str)
 
             # --- Separar fila total ---
             mascara_total = (
