@@ -593,9 +593,13 @@ if authentication_status:
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
             hoy_str = pd.Timestamp(datetime.today().date()).strftime("%Y-%m-%d")  # para JS
+            # --- Enriquecer código con abreviatura ---
+            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
+            df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
+            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo"] + " (" + df_estado_cuenta["abreviatura"] + ")"
 
             df_pivot = df_estado_cuenta.pivot_table(
-                index=["sucursal", "codigo_6digitos"],
+                index=["sucursal", "codigo"],  # 👈 aquí el cambio
                 columns="fecha_exigibilidad_str",
                 values="total",
                 aggfunc="sum",
