@@ -356,6 +356,13 @@ if authentication_status:
             # 4) Anexar meta (sucursal, código, abreviatura)
             df_completo = df_completo.merge(meta, on="cuenta_sucursal", how="left")
 
+            # Rellenar posibles NaN en las columnas que se usan en custom_data
+            df_completo[["sucursal","codigo","abreviatura"]] = df_completo[["sucursal","codigo","abreviatura"]].fillna({
+                "sucursal":"Desconocida",
+                "codigo":"Desconocido",
+                "abreviatura":""
+            })
+
             # 5) Cadena de fecha para eje categórico ordenado
             df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
             fechas_ordenadas = sorted(
