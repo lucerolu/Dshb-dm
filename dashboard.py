@@ -824,10 +824,22 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
             )
 
-            # --- CSS headers ---
             custom_css = {
-                ".header-left": {"text-align": "left"},
-                ".header-right": {"text-align": "right"},   # 👈 nuevo
+                # Alineación headers normales
+                ".header-left": {"justify-content": "flex-start !important"},
+                ".header-right": {"justify-content": "flex-end !important"},
+
+                # Forzar estilo de headers fijos a la izquierda
+                ".ag-header-cell[col-id='codigo'], .ag-header-cell[col-id='sucursal']": {
+                    "background-color": "#0B083D !important",
+                    "color": "white !important",
+                    "font-weight": "bold !important",
+                    "justify-content": "flex-end !important",   # 👈 alinear texto a la derecha
+                    "display": "flex",
+                    "align-items": "center"
+                },
+
+                # Filas (como ya lo tenías)
                 ".ag-center-cols-container .ag-row": {
                     "height": "20px",
                     "line-height": "16px",
