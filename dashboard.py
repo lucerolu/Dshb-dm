@@ -820,7 +820,7 @@ if authentication_status:
 
                 # Forzar estilo headers de codigo y sucursal
                 ".ag-header-cell[col-id='codigo'] .ag-header-cell-label, .ag-header-cell[col-id='sucursal'] .ag-header-cell-label": {
-                    "justify-content": "flex-end !important",
+                    "justify-content": "flex-end !important",   # alinea el contenedor
                     "display": "flex",
                     "align-items": "center"
                 },
@@ -828,16 +828,10 @@ if authentication_status:
                     "color": "white !important",
                     "font-weight": "bold !important",
                     "background-color": "#0B083D !important",
-                    "padding-right": "4px",
-                    "border-bottom": "none !important"   # 👈 esto quita el subrayado negro
+                    "padding-right": "4px"  # un pequeño margen si lo quieres pegado a la derecha
                 },
 
-                # Sobreescribir TODOS los headers (si quieres eliminar todas las líneas)
-                ".ag-header-cell": {
-                    "border-bottom": "none !important"   # 👈 elimina el borde en general
-                },
-
-                # Filas
+                # Filas (como ya lo tenías)
                 ".ag-center-cols-container .ag-row": {
                     "height": "20px",
                     "line-height": "16px",
