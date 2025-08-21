@@ -1,38 +1,86 @@
 {
   "sucursales": {
-    "Acayucan": "#ffbd33",
-    "Campeche": "#9FE2BF",
-    "Cancun": "#dbff33",
-    "Chetumal": "#c39bd3",
-    "Comitan": "#EC5800",
-    "Isla": "#967969",
-    "Merida": "#27ae60",
-    "Puebla": "#e59866",
-    "Tapachula": "#DAF7A6",
-    "Tierra blanca": "#FF0066",
-    "Tizimín": "#FFFF00",
-    "Tuxtepec": "#808000",
-    "Tuxtla GTZ": "#4CE669",
-    "Veracruz": "#154360",
-    "Villahermosa": "#A52A2A",
-    "Zapata": "#6a1b9a"
+    "Acayucan": {
+      "abreviatura": "ACA",
+      "color": "#ffbd33"
+    },
+    "Campeche": {
+      "abreviatura": "CAMP",
+      "color": "#9FE2BF"
+    },
+    "Cancun": {
+      "abreviatura": "CAN",
+      "color": "#dbff33"
+    },
+    "Chetumal": {
+      "abreviatura": "CHET",
+      "color": "#c39bd3"
+    },
+    "Comitan": {
+      "abreviatura": "COM",
+      "color": "#EC5800"
+    },
+    "Isla": {
+      "abreviatura": "ISL",
+      "color": "#967969"
+    },
+    "Merida": {
+      "abreviatura": "MER",
+      "color": "#27ae60"
+    },
+    "Puebla": {
+      "abreviatura": "PUE",
+      "color": "#e59866"
+    },
+    "Tapachula": {
+      "abreviatura": "TAP",
+      "color": "#DAF7A6"
+    },
+    "Tierra blanca": {
+      "abreviatura": "TBCA",
+      "color": "#FF0066"
+    },
+    "Tizimín": {
+      "abreviatura": "TIZ",
+      "color": "#FFFF00"
+    },
+    "Tuxtepec": {
+      "abreviatura": "TUX",
+      "color": "#808000"
+    },
+    "Tuxtla GTZ": {
+      "abreviatura": "TXG",
+      "color": "#4CE669"
+    },
+    "Veracruz": {
+      "abreviatura": "VER",
+      "color": "#154360"
+    },
+    "Villahermosa": {
+      "abreviatura": "VHS",
+      "color": "#A52A2A"
+    },
+    "Zapata": {
+      "abreviatura": "ZAP",
+      "color": "#6a1b9a"
+    }
   },
   "divisiones": {
-      "Agrícola": {
-        "abreviatura": "AG",
-        "color": "#367C2B",
-        "codigos": ["300594", "300412", "300356", "300601", "300602", "300255", "300598", "300606", "300427", "300564", "300596", "300563", "300417", "300456"]
-      },
-      "Construcción": {
-        "abreviatura": "CF",
-        "color": "#FFA500",
-        "codigos": ["300595", "300421", "300294", "300357", "300298", "300622", "300600", "300597", "300323", "300419"]
-      },
-      "Jardinería y Golf": {
-        "abreviatura": "JG",
-        "color": "#FFDE00",
-        "codigos": ["300288", "300424"]
-      }
+    "Agrícola": {
+      "abreviatura": "AG",
+      "color": "#367C2B",
+      "codigos": ["300594", "300412", "300356", "300601", "300602", "300255", "300598", "300606", "300427", "300564", "300596", "300563", "300417", "300456"]
+    },
+    "Construcción": {
+      "abreviatura": "CF",
+      "color": "#FFA500",
+      "codigos": ["300595", "300421", "300294", "300357", "300298", "300622", "300600", "300597", "300323", "300419"]
+    },
+    "Jardinería y Golf": {
+      "abreviatura": "JG",
+      "color": "#FFDE00",
+      "codigos": ["300288", "300424"]
+    }
   }
 }
 

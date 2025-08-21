@@ -419,6 +419,10 @@ if authentication_status:
 
             hoy = datetime.today()
 
+            # --- Cargar JSON de configuración ---
+            with open("config.json", "r") as f:
+                config = json.load(f)
+
             # --- Clasificar cada fila en bucket ---
             def bucket_vencimiento(fecha, hoy):
                 diff = (fecha - hoy).days
@@ -446,7 +450,7 @@ if authentication_status:
                 margins_name="Total"
             )
 
-            # Ordenar columnas (para que siempre aparezcan en orden lógico)
+            # Ordenar columnas
             orden_buckets = ["Vencido", "0-30 días", "31-60 días", "61-90 días", "91+ días"]
             cols_presentes = [c for c in orden_buckets if c in df_pivot_bucket.columns]
             if "Total" in df_pivot_bucket.columns:
@@ -456,6 +460,21 @@ if authentication_status:
             df_pivot_bucket.index = df_pivot_bucket.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot_bucket.reset_index()
             df_reset["codigo"] = df_reset["codigo"].astype(str)
+
+            # --- Aplicar abreviaturas ---
+            # Sucursal
+            df_reset["sucursal"] = df_reset["sucursal"].map(
+                lambda x: config["sucursales"].get(x, {}).get("abreviatura", x)
+            )
+
+            # Código con abreviatura de división
+            def agregar_abrev_division(codigo):
+                for div, info in config["divisiones"].items():
+                    if codigo in info["codigos"]:
+                        return f"{codigo} ({info['abreviatura']})"
+                return codigo
+
+            df_reset["codigo"] = df_reset["codigo"].apply(agregar_abrev_division)
 
             # --- Separar fila total ---
             mascara_total = (
@@ -469,7 +488,7 @@ if authentication_status:
             ultima_col = data_sin_total.columns[-1]
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # --- Reutilizar formatters ---
+            # --- Formatters ---
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -477,7 +496,6 @@ if authentication_status:
             }
             """)
 
-            # Misma lógica para degradado
             gradient_renderer = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
@@ -518,7 +536,6 @@ if authentication_status:
             }}
             """)
 
-            # --- Colorear header por bucket ---
             header_bucket = JsCode("""
             function(params) {
                 let color = 'transparent';
@@ -541,9 +558,11 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columnas fijas
-            gb.configure_column("codigo", pinned="left", minWidth=90, cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'})
-            gb.configure_column("sucursal", minWidth=130, cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'})
+            # Columnas fijas (alineadas a la derecha)
+            gb.configure_column("codigo", pinned="left", minWidth=90,
+                                cellStyle={'backgroundColor': '#0B083D','color': 'black','fontWeight': 'bold','textAlign':'right'})
+            gb.configure_column("sucursal", minWidth=130,
+                                cellStyle={'backgroundColor': '#ffffff','color': 'black','fontWeight': 'bold','textAlign':'right'})
 
             # Buckets con header y degradado
             for col in numeric_cols_sin_total:
