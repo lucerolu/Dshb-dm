@@ -828,19 +828,13 @@ if authentication_status:
                     "color": "white !important",
                     "font-weight": "bold !important",
                     "background-color": "#0B083D !important",
-                    "padding-right": "4px"
+                    "padding-right": "4px",
+                    "border-bottom": "none !important"   # 👈 esto quita el subrayado negro
                 },
 
-                # Quitar subrayado/linea negra (separadores de header)
+                # Sobreescribir TODOS los headers (si quieres eliminar todas las líneas)
                 ".ag-header-cell": {
-                    "border-bottom": "none !important"
-                },
-                ".ag-header-cell::after": {     # 👈 línea fantasma que pone AG Grid
-                    "border-bottom": "none !important"
-                },
-                ".ag-header-cell-resize": {     # 👈 separador vertical
-                    "border": "none !important",
-                    "background": "transparent !important"
+                    "border-bottom": "none !important"   # 👈 elimina el borde en general
                 },
 
                 # Filas
