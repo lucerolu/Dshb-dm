@@ -817,8 +817,19 @@ if authentication_status:
             # --- CSS headers ---
             custom_css = {
                 ".header-left": {"text-align": "left"},
-                ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px", "padding-top": "2px", "padding-bottom": "2px"},
-                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px", "padding-top": "2px", "padding-bottom": "2px"}
+                ".header-right": {"text-align": "right"},   # 👈 nuevo
+                ".ag-center-cols-container .ag-row": {
+                    "height": "20px",
+                    "line-height": "16px",
+                    "padding-top": "2px",
+                    "padding-bottom": "2px"
+                },
+                ".ag-pinned-left-cols-container .ag-row": {
+                    "height": "20px",
+                    "line-height": "16px",
+                    "padding-top": "2px",
+                    "padding-bottom": "2px"
+                }
             }
 
             # --- Script para scroll horizontal en móviles ---
