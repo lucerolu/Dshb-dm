@@ -818,17 +818,20 @@ if authentication_status:
                 ".header-left": {"justify-content": "flex-start !important"},
                 ".header-right": {"justify-content": "flex-end !important"},
 
-                # Forzar estilo headers de codigo y sucursal
+                # Headers de codigo y sucursal → como los normales, texto negro sobre blanco
+                ".ag-header-cell[col-id='codigo'] .ag-header-cell-text, .ag-header-cell[col-id='sucursal'] .ag-header-cell-text": {
+                    "color": "black !important",
+                    "font-weight": "bold !important",
+                    "background-color": "white !important",
+                    "padding-right": "4px",
+                    "border-bottom": "none !important"   # 👈 les quita el subrayado
+                },
+
+                # Para que sigan alineados a la derecha en el header
                 ".ag-header-cell[col-id='codigo'] .ag-header-cell-label, .ag-header-cell[col-id='sucursal'] .ag-header-cell-label": {
-                    "justify-content": "flex-end !important",   # alinea el contenedor
+                    "justify-content": "flex-end !important",
                     "display": "flex",
                     "align-items": "center"
-                },
-                ".ag-header-cell[col-id='codigo'] .ag-header-cell-text, .ag-header-cell[col-id='sucursal'] .ag-header-cell-text": {
-                    "color": "white !important",
-                    "font-weight": "bold !important",
-                    "background-color": "#0B083D !important",
-                    "padding-right": "4px"  # un pequeño margen si lo quieres pegado a la derecha
                 },
 
                 # Filas (como ya lo tenías)
