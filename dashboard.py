@@ -758,12 +758,6 @@ if authentication_status:
                     'color': 'white',
                     'fontWeight': 'bold',
                     'textAlign':'right'
-                },
-                headerStyle={
-                    'textAlign': 'right',   # 👈 aquí fuerza a la derecha
-                    'fontWeight': 'bold',
-                    'backgroundColor': '#0B083D',
-                    'color': 'white'
                 }
             )
 
@@ -776,12 +770,6 @@ if authentication_status:
                     'color': 'white',
                     'fontWeight': 'bold',
                     'textAlign':'right'
-                },
-                headerStyle={
-                    'textAlign': 'right',
-                    'fontWeight': 'bold',
-                    'backgroundColor': '#0B083D',
-                    'color': 'white'
                 }
             )
 
