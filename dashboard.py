@@ -426,7 +426,7 @@ if authentication_status:
             hoy = datetime.today()
 
             # --- Cargar JSON de configuración ---
-            with open("config.json", "r") as f:
+            with open("config_colores.json", "r") as f:
                 config = json.load(f)
 
             # --- Limpiar nombres de sucursal y códigos ---
