@@ -415,6 +415,179 @@ if authentication_status:
                 }
             )
 
+            #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
+
+            hoy = datetime.today()
+
+            # --- Clasificar cada fila en bucket ---
+            def bucket_vencimiento(fecha, hoy):
+                diff = (fecha - hoy).days
+                if diff < 0:
+                    return "Vencido"
+                elif diff <= 30:
+                    return "0-30 días"
+                elif diff <= 60:
+                    return "31-60 días"
+                elif diff <= 90:
+                    return "61-90 días"
+                else:
+                    return "91+ días"
+
+            df_estado_cuenta["bucket_venc"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: bucket_vencimiento(f, hoy))
+
+            # --- Pivot con buckets ---
+            df_pivot_bucket = df_estado_cuenta.pivot_table(
+                index=["sucursal", "codigo_6digitos"],
+                columns="bucket_venc",
+                values="total",
+                aggfunc="sum",
+                fill_value=0,
+                margins=True,
+                margins_name="Total"
+            )
+
+            # Ordenar columnas (para que siempre aparezcan en orden lógico)
+            orden_buckets = ["Vencido", "0-30 días", "31-60 días", "61-90 días", "91+ días"]
+            cols_presentes = [c for c in orden_buckets if c in df_pivot_bucket.columns]
+            if "Total" in df_pivot_bucket.columns:
+                cols_presentes.append("Total")
+
+            df_pivot_bucket = df_pivot_bucket[cols_presentes]
+            df_pivot_bucket.index = df_pivot_bucket.index.set_names(["sucursal", "codigo"])
+            df_reset = df_pivot_bucket.reset_index()
+            df_reset["codigo"] = df_reset["codigo"].astype(str)
+
+            # --- Separar fila total ---
+            mascara_total = (
+                df_reset["codigo"].str.strip().str.lower() == "total"
+            ) | (
+                df_reset["sucursal"].str.strip().str.lower() == "total"
+            )
+            total_row = df_reset[mascara_total].copy()
+            data_sin_total = df_reset[~mascara_total].copy()
+
+            ultima_col = data_sin_total.columns[-1]
+            numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
+
+            # --- Reutilizar formatters ---
+            value_formatter = JsCode("""
+            function(params) { 
+                if (params.value == null) return '0.00';
+                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            """)
+
+            # Misma lógica para degradado
+            gradient_renderer = JsCode(f"""
+            function(params) {{
+                const totalCol = '{ultima_col}';
+                let style = {{
+                    color: params.node.rowPinned ? 'white':'black',
+                    fontWeight: params.node.rowPinned ? 'bold':'normal',
+                    textAlign:'left',
+                    paddingLeft:'4px',
+                    paddingRight:'4px',
+                    borderRadius: '2px'
+                }};
+                if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {{
+                    let val = params.value;
+                    let min = {data_sin_total[numeric_cols_sin_total].min().min()};
+                    let max = {data_sin_total[numeric_cols_sin_total].max().max()};
+                    let bgColor = '#ffffff';
+                    if(!isNaN(val) && max > min){{
+                        let ratio = (val - min)/(max - min);
+                        let r,g,b;
+                        if(ratio<=0.5){{
+                            let t = ratio/0.5;
+                            r = Math.round(117+t*(232-117));
+                            g = Math.round(222+t*(229-222));
+                            b = Math.round(84+t*(70-84));
+                        }} else {{
+                            let t=(ratio-0.5)/0.5;
+                            r=232;
+                            g=Math.round(229+t*(96-229));
+                            b=70;
+                        }}
+                        bgColor = 'rgb('+r+','+g+','+b+')';
+                    }}
+                    style.backgroundColor = bgColor;
+                }} else {{
+                    style.backgroundColor = '#0B083D';
+                }}
+                return style;
+            }}
+            """)
+
+            # --- Colorear header por bucket ---
+            header_bucket = JsCode("""
+            function(params) {
+                let color = 'transparent';
+                if(params.colDef.field === 'Vencido') color='red';
+                else if(params.colDef.field === '0-30 días') color='orange';
+                else if(params.colDef.field === '31-60 días') color='yellow';
+                else if(params.colDef.field === '61-90 días') color='lightgreen';
+                else if(params.colDef.field === '91+ días') color='green';
+                return {borderBottom: '4px solid ' + color};
+            }
+            """)
+
+            # --- Configuración AgGrid ---
+            columnas = list(data_sin_total.columns)
+            if "codigo" in columnas and "sucursal" in columnas:
+                columnas.remove("codigo")
+                columnas.remove("sucursal")
+                data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
+
+            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+            gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
+
+            # Columnas fijas
+            gb.configure_column("codigo", pinned="left", minWidth=90, cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'})
+            gb.configure_column("sucursal", minWidth=130, cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'right'})
+
+            # Buckets con header y degradado
+            for col in numeric_cols_sin_total:
+                gb.configure_column(
+                    col,
+                    minWidth=110,
+                    headerClass='header-left',
+                    headerStyle=header_bucket,
+                    cellStyle=gradient_renderer,
+                    valueFormatter=value_formatter
+                )
+
+            # Columna Total
+            gb.configure_column(
+                ultima_col,
+                minWidth=120,
+                headerClass='header-left',
+                valueFormatter=value_formatter,
+                cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
+            )
+
+            # CSS
+            custom_css = {
+                ".header-left": {"text-align": "left"},
+                ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
+                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
+            }
+
+            grid_options = gb.build()
+            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+
+            # Render
+            AgGrid(
+                data_sin_total,
+                gridOptions=grid_options,
+                custom_css=custom_css,
+                height=500,
+                allow_unsafe_jscode=True,
+                theme=AgGridTheme.ALPINE,
+                fit_columns_on_grid_load=False,
+                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                enable_enterprise_modules=False
+            )
+
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
             # --- Preparar fechas y pivote ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
