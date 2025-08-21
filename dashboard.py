@@ -747,9 +747,9 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columnas "codigo" y "sucursal" (solo estilo)
             gb.configure_column(
                 "codigo",
+                headerName="Código",   # 👈 aquí
                 pinned="left",
                 minWidth=150,
                 width=180,
@@ -763,6 +763,7 @@ if authentication_status:
 
             gb.configure_column(
                 "sucursal",
+                headerName="Sucursal",   # 👈 aquí
                 minWidth=150,
                 width=180,
                 cellStyle={
@@ -819,7 +820,7 @@ if authentication_status:
 
                 # Forzar estilo headers de codigo y sucursal
                 ".ag-header-cell[col-id='codigo'] .ag-header-cell-label, .ag-header-cell[col-id='sucursal'] .ag-header-cell-label": {
-                    "justify-content": "flex-end !important",   # alinea el contenedor
+                    "justify-content": "flex-end !important",
                     "display": "flex",
                     "align-items": "center"
                 },
@@ -827,10 +828,16 @@ if authentication_status:
                     "color": "white !important",
                     "font-weight": "bold !important",
                     "background-color": "#0B083D !important",
-                    "padding-right": "4px"  # un pequeño margen si lo quieres pegado a la derecha
+                    "padding-right": "4px",
+                    "border-bottom": "none !important"   # 👈 esto quita el subrayado negro
                 },
 
-                # Filas (como ya lo tenías)
+                # Sobreescribir TODOS los headers (si quieres eliminar todas las líneas)
+                ".ag-header-cell": {
+                    "border-bottom": "none !important"   # 👈 elimina el borde en general
+                },
+
+                # Filas
                 ".ag-center-cols-container .ag-row": {
                     "height": "20px",
                     "line-height": "16px",
