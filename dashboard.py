@@ -301,7 +301,7 @@ if authentication_status:
                 col.metric(titulo, valor)
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
-                        # ------------------ Cargar configuración de colores y divisiones ------------------
+            # ------------------ Cargar configuración de colores y divisiones ------------------
             with open("config_colores.json", "r", encoding="utf-8") as f:
                 config = json.load(f)
 
@@ -330,25 +330,45 @@ if authentication_status:
                 for _, row in df_estado_cuenta.drop_duplicates("cuenta_sucursal").iterrows()
             }
 
-            # Convertir fechas a strings ordenadas para que se comporten como categorías
-            df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+            # ------------------ Forzar huecos a 0 ------------------
+            fechas = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"].unique())
+            cuentas = df_estado_cuenta["cuenta_sucursal"].unique()
+            multi_index = pd.MultiIndex.from_product([fechas, cuentas], names=["fecha_exigibilidad", "cuenta_sucursal"])
 
-            # Ordenar las fechas para que aparezcan correctamente en el eje
-            fechas_ordenadas = sorted(df_estado_cuenta["fecha_exigibilidad_str"].unique(),
-                                    key=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
+            df_completo = (
+                df_estado_cuenta.set_index(["fecha_exigibilidad", "cuenta_sucursal"])
+                .reindex(multi_index, fill_value=0)
+                .reset_index()
+            )
 
-            # Crear gráfico usando eje X categórico
+            # Restaurar columnas extra
+            df_completo = df_completo.merge(
+                df_estado_cuenta[["cuenta_sucursal", "codigo", "sucursal", "abreviatura"]].drop_duplicates(),
+                on="cuenta_sucursal",
+                how="left"
+            )
+
+            # Convertir fechas a string ordenada
+            df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+            fechas_ordenadas = sorted(
+                df_completo["fecha_exigibilidad_str"].unique(),
+                key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
+            )
+
+            # ------------------ Crear gráfico ------------------
             fig = px.line(
-                df_estado_cuenta,
-                x="fecha_exigibilidad_str",  # eje categórico
+                df_completo,
+                x="fecha_exigibilidad_str",
                 y="total",
                 color="cuenta_sucursal",
                 color_discrete_map=color_cuentas,
-                category_orders={"fecha_exigibilidad_str": fechas_ordenadas},  # asegura orden correcto
+                category_orders={"fecha_exigibilidad_str": fechas_ordenadas},
                 custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
             fig.update_traces(
+                mode="lines+markers",  # ← agrega puntos en cada fecha
+                marker=dict(size=6, symbol="circle"),
                 hovertemplate=(
                     "<b>Fecha:</b> %{x}<br>"
                     "<b>Código:</b> %{customdata[1]}<br>"
@@ -361,7 +381,7 @@ if authentication_status:
             fig.update_layout(
                 xaxis_title="Fecha de exigibilidad",
                 yaxis_title="Monto",
-                hovermode="closest",  # <-- cambiar aquí
+                hovermode="closest",
                 template="plotly_white"
             )
 
