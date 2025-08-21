@@ -372,7 +372,7 @@ if authentication_status:
 
             # ------------------ Colores por cuenta (usando color de la sucursal) ------------------
             color_cuentas = {
-                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], "#808080")
+                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
                 for _, row in meta.iterrows()
             }
 
