@@ -751,20 +751,7 @@ if authentication_status:
             gb.configure_column(
                 "codigo",
                 pinned="left",
-                minWidth=120,   # 👈 más ancho mínimo
-                width=150,      # 👈 ancho sugerido (puedes ajustar)
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign':'right'
-                },
-                headerClass='header-right'   # 👈 header alineado a la derecha
-            )
-
-            gb.configure_column(
-                "sucursal",
-                minWidth=150,   # 👈 un poco más ancho
+                minWidth=150,
                 width=180,
                 cellStyle={
                     'backgroundColor': '#0B083D',
@@ -772,7 +759,30 @@ if authentication_status:
                     'fontWeight': 'bold',
                     'textAlign':'right'
                 },
-                headerClass='header-right'
+                headerStyle={
+                    'textAlign': 'right',   # 👈 aquí fuerza a la derecha
+                    'fontWeight': 'bold',
+                    'backgroundColor': '#0B083D',
+                    'color': 'white'
+                }
+            )
+
+            gb.configure_column(
+                "sucursal",
+                minWidth=150,
+                width=180,
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign':'right'
+                },
+                headerStyle={
+                    'textAlign': 'right',
+                    'fontWeight': 'bold',
+                    'backgroundColor': '#0B083D',
+                    'color': 'white'
+                }
             )
 
             # --- Función JS para color de vencimiento en header ---
