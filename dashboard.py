@@ -728,7 +728,9 @@ if authentication_status:
 
                     fecha = fechas_ordenadas[i + j]
                     # --- dataset de esa fecha ---
-                    df_fecha_raw = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
+                    #df_fecha_raw = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad_str"] == fecha].copy()
+                    df_grafico_base = df_completo.copy()
+                    df_fecha_raw = df_completo[df_completo["fecha_exigibilidad_str"] == fecha].copy()
 
                     # MUY IMPORTANTE: agrupar por sucursal + cuenta para evitar duplicados
                     df_fecha = (
