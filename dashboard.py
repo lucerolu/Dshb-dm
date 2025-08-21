@@ -315,47 +315,61 @@ if authentication_status:
                         return info["abreviatura"]
                 return ""
 
-            # ------------------ Preparar DataFrame ------------------
-            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-            df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
+            # ------------------ Preparar DataFrame base ------------------
+            df = df_estado_cuenta.copy()
 
-            df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
-            df_estado_cuenta["cuenta_sucursal"] = (
-                df_estado_cuenta["codigo"] + " (" + df_estado_cuenta["abreviatura"] + ") - " + df_estado_cuenta["sucursal"]
+            # Tipos correctos
+            df["fecha_exigibilidad"] = pd.to_datetime(df["fecha_exigibilidad"], errors="coerce")
+            df["codigo"] = df["codigo_6digitos"].astype(str)
+
+            # Limpieza de total a numérico (por si viene como texto con comas)
+            df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
+
+            # Etiquetas
+            df["abreviatura"] = df["codigo"].apply(obtener_abreviatura)
+            df["cuenta_sucursal"] = (
+                df["codigo"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
             )
 
-            # Crear diccionario cuenta_sucursal -> color_sucursal
-            color_cuentas = {
-                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], "#808080")
-                for _, row in df_estado_cuenta.drop_duplicates("cuenta_sucursal").iterrows()
-            }
+            # Meta por cuenta (para merge posterior y mapa de color)
+            meta = df[["cuenta_sucursal", "codigo", "sucursal", "abreviatura"]].drop_duplicates()
 
-            # ------------------ Forzar huecos a 0 ------------------
-            fechas = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"].unique())
-            cuentas = df_estado_cuenta["cuenta_sucursal"].unique()
-            multi_index = pd.MultiIndex.from_product([fechas, cuentas], names=["fecha_exigibilidad", "cuenta_sucursal"])
-
-            df_completo = (
-                df_estado_cuenta.set_index(["fecha_exigibilidad", "cuenta_sucursal"])
-                .reindex(multi_index, fill_value=0)
-                .reset_index()
+            # ------------------ Construir universo de fechas y rellenar huecos a 0 ------------------
+            # 1) pivot sumando por si hay duplicados (fecha, cuenta)
+            tabla = (
+                df.pivot_table(
+                    index="fecha_exigibilidad",
+                    columns="cuenta_sucursal",
+                    values="total",
+                    aggfunc="sum",  # suma si hay varias filas por la misma fecha/cuenta
+                )
             )
 
-            # Restaurar columnas extra
-            df_completo = df_completo.merge(
-                df_estado_cuenta[["cuenta_sucursal", "codigo", "sucursal", "abreviatura"]].drop_duplicates(),
-                on="cuenta_sucursal",
-                how="left"
-            )
+            # 2) Reindexar al conjunto de fechas observadas (ordenado) y rellenar con 0
+            fechas = sorted(df["fecha_exigibilidad"].dropna().unique())
+            tabla = tabla.reindex(fechas).fillna(0)
 
-            # Convertir fechas a string ordenada
+            # 3) Volver a formato largo
+            df_completo = tabla.stack(dropna=False).reset_index(name="total")
+            df_completo = df_completo.rename(columns={"level_2": "cuenta_sucursal"})
+
+            # 4) Anexar meta (sucursal, código, abreviatura)
+            df_completo = df_completo.merge(meta, on="cuenta_sucursal", how="left")
+
+            # 5) Cadena de fecha para eje categórico ordenado
             df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
             fechas_ordenadas = sorted(
                 df_completo["fecha_exigibilidad_str"].unique(),
                 key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
             )
 
-            # ------------------ Crear gráfico ------------------
+            # ------------------ Colores por cuenta (usando color de la sucursal) ------------------
+            color_cuentas = {
+                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], "#808080")
+                for _, row in meta.iterrows()
+            }
+
+            # ------------------ Gráfico ------------------
             fig = px.line(
                 df_completo,
                 x="fecha_exigibilidad_str",
@@ -367,8 +381,9 @@ if authentication_status:
             )
 
             fig.update_traces(
-                mode="lines+markers",  # ← agrega puntos en cada fecha
+                mode="lines+markers",          # puntos en cada fecha
                 marker=dict(size=6, symbol="circle"),
+                connectgaps=False,             # no unir huecos (defensivo)
                 hovertemplate=(
                     "<b>Fecha:</b> %{x}<br>"
                     "<b>Código:</b> %{customdata[1]}<br>"
