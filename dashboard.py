@@ -416,12 +416,30 @@ if authentication_status:
             )
 
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
-
             hoy = datetime.today()
 
             # --- Cargar JSON de configuración ---
             with open("config.json", "r") as f:
                 config = json.load(f)
+
+            # --- Limpiar nombres de sucursal y códigos ---
+            df_estado_cuenta["sucursal"] = df_estado_cuenta["sucursal"].str.strip()
+            df_estado_cuenta["codigo_6digitos"] = df_estado_cuenta["codigo_6digitos"].astype(str).str.strip()
+
+            # --- Aplicar abreviaturas ---
+            # Sucursal
+            df_estado_cuenta["sucursal_abrev"] = df_estado_cuenta["sucursal"].apply(
+                lambda x: config["sucursales"].get(x, {}).get("abreviatura", x)
+            )
+
+            # Código con abreviatura de división
+            def agregar_abrev_division(codigo):
+                for div, info in config["divisiones"].items():
+                    if codigo in info["codigos"]:
+                        return f"{codigo} ({info['abreviatura']})"
+                return codigo
+
+            df_estado_cuenta["codigo_abrev"] = df_estado_cuenta["codigo_6digitos"].apply(agregar_abrev_division)
 
             # --- Clasificar cada fila en bucket ---
             def bucket_vencimiento(fecha, hoy):
@@ -439,9 +457,9 @@ if authentication_status:
 
             df_estado_cuenta["bucket_venc"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: bucket_vencimiento(f, hoy))
 
-            # --- Pivot con buckets ---
+            # --- Pivot con buckets usando abreviaturas ---
             df_pivot_bucket = df_estado_cuenta.pivot_table(
-                index=["sucursal", "codigo_6digitos"],
+                index=["sucursal_abrev", "codigo_abrev"],
                 columns="bucket_venc",
                 values="total",
                 aggfunc="sum",
@@ -459,22 +477,6 @@ if authentication_status:
             df_pivot_bucket = df_pivot_bucket[cols_presentes]
             df_pivot_bucket.index = df_pivot_bucket.index.set_names(["sucursal", "codigo"])
             df_reset = df_pivot_bucket.reset_index()
-            df_reset["codigo"] = df_reset["codigo"].astype(str)
-
-            # --- Aplicar abreviaturas ---
-            # Sucursal
-            df_reset["sucursal"] = df_reset["sucursal"].map(
-                lambda x: config["sucursales"].get(x, {}).get("abreviatura", x)
-            )
-
-            # Código con abreviatura de división
-            def agregar_abrev_division(codigo):
-                for div, info in config["divisiones"].items():
-                    if codigo in info["codigos"]:
-                        return f"{codigo} ({info['abreviatura']})"
-                return codigo
-
-            df_reset["codigo"] = df_reset["codigo"].apply(agregar_abrev_division)
 
             # --- Separar fila total ---
             mascara_total = (
@@ -488,7 +490,7 @@ if authentication_status:
             ultima_col = data_sin_total.columns[-1]
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
 
-            # --- Formatters ---
+            # --- Formatters y AgGrid (igual que antes) ---
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -558,13 +560,13 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columnas fijas (alineadas a la derecha)
+            # Columnas fijas
             gb.configure_column("codigo", pinned="left", minWidth=90,
                                 cellStyle={'backgroundColor': '#0B083D','color': 'black','fontWeight': 'bold','textAlign':'right'})
             gb.configure_column("sucursal", minWidth=130,
                                 cellStyle={'backgroundColor': '#ffffff','color': 'black','fontWeight': 'bold','textAlign':'right'})
 
-            # Buckets con header y degradado
+            # Buckets
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
@@ -584,7 +586,6 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
             )
 
-            # CSS
             custom_css = {
                 ".header-left": {"text-align": "left"},
                 ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
@@ -594,7 +595,6 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
-            # Render
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
