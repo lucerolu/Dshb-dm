@@ -998,7 +998,7 @@ if authentication_status:
                         parents.append("")                  # raíz implícita
                         values.append(t_suc)                # branchvalues='total' y valor del padre = suma cuentas
                         labels.append(suc)
-                        colors.append(colores_sucursales.get(suc, "#808080"))
+                        colors.append(colores_sucursales.get(suc, {}).get("color", "#808080"))
                         texts.append(fmt(t_suc))            # muestra total sucursal en el anillo interno
                         hovertexts.append(
                             f"<b>Fecha:</b> {fecha}<br>"
@@ -1022,7 +1022,7 @@ if authentication_status:
                         parents.append(f"S|{suc}")
                         values.append(monto)
                         labels.append(cuenta)                      # etiqueta externa = cuenta (como querías)
-                        colors.append(colores_sucursales.get(suc, "#808080"))   # color por sucursal
+                        colors.append(colores_sucursales.get(suc, {}).get("color", "#808080"))   # color por sucursal
                         texts.append(fmt(monto))                   # muestra monto cuenta en el anillo externo
                         hovertexts.append(
                             f"<b>Fecha:</b> {fecha}<br>"
