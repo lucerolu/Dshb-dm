@@ -817,14 +817,17 @@ if authentication_status:
                 ".header-left": {"justify-content": "flex-start !important"},
                 ".header-right": {"justify-content": "flex-end !important"},
 
-                # Forzar estilo de headers fijos a la izquierda
-                ".ag-header-cell[col-id='codigo'], .ag-header-cell[col-id='sucursal']": {
-                    "background-color": "#0B083D !important",
-                    "color": "white !important",
-                    "font-weight": "bold !important",
-                    "justify-content": "flex-end !important",   # 👈 alinear texto a la derecha
+                # Forzar estilo headers de codigo y sucursal
+                ".ag-header-cell[col-id='codigo'] .ag-header-cell-label, .ag-header-cell[col-id='sucursal'] .ag-header-cell-label": {
+                    "justify-content": "flex-end !important",   # alinea el contenedor
                     "display": "flex",
                     "align-items": "center"
+                },
+                ".ag-header-cell[col-id='codigo'] .ag-header-cell-text, .ag-header-cell[col-id='sucursal'] .ag-header-cell-text": {
+                    "color": "white !important",
+                    "font-weight": "bold !important",
+                    "background-color": "#0B083D !important",
+                    "padding-right": "4px"  # un pequeño margen si lo quieres pegado a la derecha
                 },
 
                 # Filas (como ya lo tenías)
