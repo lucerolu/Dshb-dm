@@ -436,7 +436,7 @@ if authentication_status:
             def agregar_abrev_division(codigo):
                 for div, info in config["divisiones"].items():
                     if codigo in info["codigos"]:
-                        return f"{codigo} ({info['abreviatura']})"
+                        return info['abreviatura']  # solo la abreviatura
                 return codigo
 
             df_estado_cuenta["codigo_abrev"] = df_estado_cuenta["codigo_6digitos"].apply(agregar_abrev_division)
