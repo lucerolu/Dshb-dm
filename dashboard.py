@@ -3197,6 +3197,8 @@ if authentication_status:
         # Crear gráfico
         fig_lineas = go.Figure()
 
+        colores_sucursales_map = {k: v["color"] for k, v in colores_sucursales.items()}
+
         for sucursal in sucursales_seleccionadas:
             if sucursal in df_pivot.columns:
                 # Crear customdata con mes y sucursal para cada punto
