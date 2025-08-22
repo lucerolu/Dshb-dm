@@ -441,7 +441,7 @@ if authentication_status:
             df_estado_cuenta['fecha_exigibilidad'] = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'])
 
             # Fecha actual
-            hoy = datetime.today()
+            hoy = pd.Timestamp(datetime.today())
 
             # Color según si la fecha ya pasó
             df_estado_cuenta['color'] = df_estado_cuenta['fecha_exigibilidad'].apply(lambda x: 'red' if x < hoy else 'green')
@@ -460,7 +460,6 @@ if authentication_status:
                     hovertemplate=f"Cuenta: {row['codigo_cuenta']}<br>Inicio: {row['fecha_inicio'].date()}<br>Exigibilidad: {row['fecha_exigibilidad'].date()}"
                 ))
 
-            # Línea vertical de hoy
             fig.add_vline(
                 x=hoy,
                 line_dash="dash",
