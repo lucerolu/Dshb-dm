@@ -584,11 +584,18 @@ if authentication_status:
             otras_columnas = [c for c in data_sin_total.columns if c not in columnas_iniciales]
             data_sin_total = data_sin_total[columnas_iniciales + otras_columnas]
 
+            # --- Seleccionar solo columnas necesarias para la tabla ---
+            columnas_finales = ["codigo_sucursal"] + [c for c in numeric_cols_sin_total if c != "codigo_original" and c != "codigo_abrev" and c != "sucursal_abrev"]
+            if ultima_col not in columnas_finales:
+                columnas_finales.append(ultima_col)
+
+            data_sin_total = data_sin_total[columnas_finales]
+
             # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columna combinada
+            # Columna combinada azul
             gb.configure_column(
                 "codigo_sucursal",
                 pinned="left",
@@ -598,14 +605,15 @@ if authentication_status:
 
             # Buckets numéricos
             for col in numeric_cols_sin_total:
-                gb.configure_column(
-                    col,
-                    minWidth=110,
-                    headerClass='header-left',
-                    headerStyle=header_bucket,
-                    cellStyle=gradient_renderer,
-                    valueFormatter=value_formatter
-                )
+                if col in data_sin_total.columns:
+                    gb.configure_column(
+                        col,
+                        minWidth=110,
+                        headerClass='header-left',
+                        headerStyle=header_bucket,
+                        cellStyle=gradient_renderer,
+                        valueFormatter=value_formatter
+                    )
 
             # Columna Total
             gb.configure_column(
