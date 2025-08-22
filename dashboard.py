@@ -467,10 +467,12 @@ if authentication_status:
                     return "91+ días"
 
             df_estado_cuenta["bucket_venc"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: bucket_vencimiento(f, hoy))
+            # Guardar código original en nueva columna
+            df_estado_cuenta["codigo_original"] = df_estado_cuenta["codigo_6digitos"]
 
-            # --- Pivot con buckets usando abreviaturas ---
+            # Pivot usando sucursal_abrev y codigo_abrev como antes
             df_pivot_bucket = df_estado_cuenta.pivot_table(
-                index=["sucursal_abrev", "codigo_abrev"],
+                index=["sucursal_abrev", "codigo_abrev", "codigo_original"],  # agregamos codigo_original
                 columns="bucket_venc",
                 values="total",
                 aggfunc="sum",
@@ -486,7 +488,7 @@ if authentication_status:
                 cols_presentes.append("Total")
 
             df_pivot_bucket = df_pivot_bucket[cols_presentes]
-            df_pivot_bucket.index = df_pivot_bucket.index.set_names(["sucursal", "codigo"])
+            df_pivot_bucket.index = df_pivot_bucket.index.set_names(["sucursal_abrev", "codigo_abrev", "codigo_original"])
             df_reset = df_pivot_bucket.reset_index()
 
             # --- Separar fila total ---
@@ -497,6 +499,11 @@ if authentication_status:
             )
             total_row = df_reset[mascara_total].copy()
             data_sin_total = df_reset[~mascara_total].copy()
+            data_sin_total["codigo_sucursal"] = (
+                data_sin_total["codigo_original"] + " - " +
+                data_sin_total["codigo_abrev"] + " - " +
+                data_sin_total["sucursal_abrev"]
+            )
 
             ultima_col = data_sin_total.columns[-1]
             numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
@@ -560,9 +567,6 @@ if authentication_status:
                 return {borderBottom: '4px solid ' + color};
             }
             """)
-
-            # Crear columna combinada
-            data_sin_total["codigo_sucursal"] = data_sin_total["codigo"] + " - " + data_sin_total["sucursal"]
 
             # Reordenar columnas: la combinada primero, luego los buckets, y eliminar las originales
             columnas_finales = ["codigo_sucursal"] + numeric_cols_sin_total + [ultima_col]
