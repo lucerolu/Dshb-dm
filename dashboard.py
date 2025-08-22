@@ -529,9 +529,12 @@ if authentication_status:
             }
             """)
 
+            # --- Crear lista JS de columnas con gradiente ---
+            buckets_cols_js_str = str(buckets_cols)  # ejemplo: ["Vencido","0-30 días",...]
+
             gradient_renderer = JsCode(f"""
             function(params) {{
-                const totalCol = '{ultima_col}';
+                let gradientCols = {buckets_cols_js_str};
                 let style = {{
                     color: params.node.rowPinned ? 'white':'black',
                     fontWeight: params.node.rowPinned ? 'bold':'normal',
@@ -540,7 +543,7 @@ if authentication_status:
                     paddingRight:'4px',
                     borderRadius: '2px'
                 }};
-                if(!params.node.rowPinned && params.data && ![totalCol].includes(params.colDef.field)) {{
+                if(!params.node.rowPinned && params.data && gradientCols.includes(params.colDef.field)) {{
                     let val = params.value;
                     let min = {min_val};
                     let max = {max_val};
@@ -563,22 +566,10 @@ if authentication_status:
                     }}
                     style.backgroundColor = bgColor;
                 }} else {{
-                    style.backgroundColor = '#0B083D';
+                    style.backgroundColor = '#0B083D';  // azul para Total y filas pinned
                 }}
                 return style;
             }}
-            """)
-
-            header_bucket = JsCode("""
-            function(params) {
-                let color = 'transparent';
-                if(params.colDef.field === 'Vencido') color='red';
-                else if(params.colDef.field === '0-30 días') color='orange';
-                else if(params.colDef.field === '31-60 días') color='yellow';
-                else if(params.colDef.field === '61-90 días') color='lightgreen';
-                else if(params.colDef.field === '91+ días') color='green';
-                return {borderBottom: '4px solid ' + color};
-            }
             """)
 
             # --- Reordenar columnas para AgGrid ---
