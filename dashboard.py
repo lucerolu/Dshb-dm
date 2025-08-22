@@ -429,62 +429,6 @@ if authentication_status:
 
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
-            # --- Datos de ejemplo ---
-            # df_estado_cuenta debe tener la columna 'fecha_exigibilidad' en formato datetime o string "YYYY-MM-DD"
-            df_estado_cuenta = pd.DataFrame({
-                "fecha_exigibilidad": ["2025-08-13", "2025-08-20", "2025-09-05", "2025-09-20"]
-            })
-            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-            df_estado_cuenta = df_estado_cuenta.sort_values("fecha_exigibilidad")
-
-            # --- Calcular días hasta cada fecha ---
-            hoy = datetime.today()
-            fechas_exigibilidad = df_estado_cuenta["fecha_exigibilidad"].tolist()
-            dias_desde_hoy = [(f - hoy).days for f in fechas_exigibilidad]
-
-            # Próxima fecha no vencida
-            dias_restantes = min([d for d in dias_desde_hoy if d > 0], default=0)
-
-            # Crear colores degradados (rojo -> naranja -> amarillo -> verde)
-            colors = []
-            max_dia = max(max(dias_desde_hoy),1)
-            for d in dias_desde_hoy:
-                if d < 0:
-                    colors.append("red")
-                else:
-                    ratio = d / max_dia
-                    r = int(255*(1-ratio))
-                    g = int(255*ratio)
-                    b = 0
-                    colors.append(f"rgb({r},{g},{b})")
-
-            # --- Configurar valores del gauge ---
-            # La aguja marcará la posición de "hoy" relativa al rango de fechas
-            min_val = 0
-            max_val = max_dia
-            # Valor del gauge: número de días hasta la próxima fecha no vencida
-            valor_gauge = dias_restantes
-
-            # --- Construir gauge ---
-            fig = go.Figure(go.Indicator(
-                mode = "gauge+number",
-                value = valor_gauge,
-                number = {'suffix': " días"},
-                gauge = {
-                    'axis': {'range': [min_val, max_val]},
-                    'bar': {'color': "black"},  # aguja
-                    'steps': [{'range': [dias_desde_hoy[i-1] if i>0 else 0, dias_desde_hoy[i]], 'color': colors[i]} 
-                            for i in range(len(fechas_exigibilidad))],
-                },
-                title = {'text': "Días hasta la próxima fecha de exigibilidad"}
-            ))
-
-            fig.update_layout(height=400, margin=dict(t=50,b=50,l=50,r=50))
-
-            # --- Mostrar en Streamlit ---
-            st.plotly_chart(fig, use_container_width=True)
-            st.markdown(f"**Días restantes hasta la próxima fecha no vencida:** {dias_restantes}")
-
 
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
