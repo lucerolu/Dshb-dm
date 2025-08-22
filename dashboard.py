@@ -3277,18 +3277,19 @@ if authentication_status:
 
         # Abreviar sucursal para leyenda
         df_cta["sucursal_abrev"] = df_cta["sucursal"].apply(lambda x: x[:3].capitalize())
+        color_discrete_map = {k[:3].capitalize(): v for k, v in colores_sucursales_map.items()}
 
         # 2️⃣ Crear gráfico con hovertemplate personalizado
         if not df_cta.empty:
             st.markdown("### Compras acumuladas por cuenta (anual)")
-
+            
             fig = px.bar(
                 df_cta,
                 x="monto",
                 y="cuenta_sucursal",
                 orientation="h",
                 color="sucursal_abrev",
-                color_discrete_map = {k[:3].capitalize(): v for k, v in colores_sucursales_map.items()},
+                color_discrete_map=color_discrete_map,
                 labels={
                     "monto": "Monto (MXN)",
                     "cuenta_sucursal": "Cuenta - Sucursal",
