@@ -516,6 +516,18 @@ if authentication_status:
             }
             """)
 
+            numeric_cols_sin_total = [
+                c for c in data_sin_total.select_dtypes(include='number').columns
+            ]
+
+            if numeric_cols_sin_total:
+                min_val = data_sin_total[numeric_cols_sin_total].min().min()
+                max_val = data_sin_total[numeric_cols_sin_total].max().max()
+            else:
+                min_val = 0
+                max_val = 1  # evita división por cero
+
+
             gradient_renderer = JsCode(f"""
             function(params) {{
                 const totalCol = '{ultima_col}';
@@ -529,8 +541,8 @@ if authentication_status:
                 }};
                 if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {{
                     let val = params.value;
-                    let min = {data_sin_total[numeric_cols_sin_total].min().min()};
-                    let max = {data_sin_total[numeric_cols_sin_total].max().max()};
+                    let min = {min_val};
+                    let max = {max_val};
                     let bgColor = '#ffffff';
                     if(!isNaN(val) && max > min){{
                         let ratio = (val - min)/(max - min);
