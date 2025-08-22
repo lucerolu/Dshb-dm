@@ -3011,7 +3011,7 @@ if authentication_status:
                 y=df_pivot[sucursal],
                 mode='lines+markers',
                 name=sucursal,
-                line=dict(color=colores_sucursales.get(sucursal)),
+                line=dict(color=colores_sucursales.get(sucursal, {}).get("color", "#CCCCCC")),
                 customdata=customdata,
                 hovertemplate=(
                     "<b>Sucursal:</b> %{customdata[1]}<br>" +
