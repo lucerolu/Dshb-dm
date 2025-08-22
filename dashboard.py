@@ -428,34 +428,70 @@ if authentication_status:
 
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
+            # --- Datos de ejemplo ---
             hoy = datetime.today()
-            # Suponiendo que tienes un DataFrame df_estado_cuenta con 'fecha_exigibilidad'
-            prox_fecha = df_estado_cuenta['fecha_exigibilidad'].min()  # la más próxima
-            dias_restantes = (prox_fecha - hoy).days
+            fechas_exigibilidad = df_estado_cuenta['fecha_exigibilidad'].sort_values().unique()
 
-            # --- Configuración del gauge ---
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=dias_restantes,
-                title={'text': f"Días para próxima exigibilidad ({prox_fecha.date()})"},
-                gauge={
-                    'axis': {'range': [0, 90]},  # máximo 90 días
-                    'bar': {'color': "darkblue"},
-                    'steps': [
-                        {'range': [0, 0], 'color': "red"},       # vencido
-                        {'range': [0, 30], 'color': "orange"},   # 0-30 días
-                        {'range': [31, 60], 'color': "yellow"},  # 31-60 días
-                        {'range': [61, 90], 'color': "lightgreen"}  # 61-90 días
-                    ],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 0
-                    }
-                }
+            # Convertimos a días desde hoy
+            dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
+            dias_desde_hoy_clipped = np.clip(dias_desde_hoy, 0, None)  # no negativos para la aguja
+
+            # Determinar próxima fecha no vencida
+            dias_restantes = min([d for d in dias_desde_hoy if d > 0], default=0)
+
+            # Crear degradado de colores (rojo -> naranja -> amarillo -> verde)
+            colors = []
+            for d in dias_desde_hoy:
+                if d < 0:
+                    colors.append('red')
+                else:
+                    ratio = d / max(dias_desde_hoy_clipped.max(),1)
+                    # degradado de naranja a verde
+                    r = int(255*(1-ratio))
+                    g = int(255*ratio)
+                    b = 0
+                    colors.append(f'rgb({r},{g},{b})')
+
+            # --- Construcción del Gauge como semicircular con sectores ---
+            fig = go.Figure()
+
+            fig.add_trace(go.Pie(
+                values=[1]*len(fechas_exigibilidad),
+                rotation=90,
+                hole=0.6,
+                marker_colors=colors,
+                text=[f"{f.date()}" for f in fechas_exigibilidad],
+                textinfo='text',
+                direction='clockwise',
+                showlegend=False
             ))
 
+            # --- Agregar aguja ---
+            angulo_total = 180  # semicircular
+            # posición de la aguja según hoy
+            posicion_aguja = 0
+            for i, d in enumerate(dias_desde_hoy):
+                if d >= 0:
+                    posicion_aguja = i
+                    break
+
+            angulo_aguja = 180 * (posicion_aguja / (len(fechas_exigibilidad)-1))  # entre 0 y 180
+            fig.add_shape(type="line",
+                x0=0.5, y0=0.5,
+                x1=0.5 + 0.4*np.cos(np.radians(180-angulo_aguja)),
+                y1=0.5 + 0.4*np.sin(np.radians(180-angulo_aguja)),
+                line=dict(color="black", width=4)
+            )
+
+            fig.update_layout(
+                width=500,
+                height=300,
+                margin=dict(t=20,b=20,l=20,r=20),
+                showlegend=False
+            )
+
             st.plotly_chart(fig, use_container_width=True)
+            st.markdown(f"**Días restantes hasta la próxima fecha de exigibilidad:** {dias_restantes}")
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
             hoy = datetime.today()
