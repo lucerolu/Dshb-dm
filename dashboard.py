@@ -426,6 +426,36 @@ if authentication_status:
                 }
             )
 
+
+            #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
+            hoy = datetime.today()
+            # Suponiendo que tienes un DataFrame df_estado_cuenta con 'fecha_exigibilidad'
+            prox_fecha = df_estado_cuenta['fecha_exigibilidad'].min()  # la más próxima
+            dias_restantes = (prox_fecha - hoy).days
+
+            # --- Configuración del gauge ---
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=dias_restantes,
+                title={'text': f"Días para próxima exigibilidad ({prox_fecha.date()})"},
+                gauge={
+                    'axis': {'range': [0, 90]},  # máximo 90 días
+                    'bar': {'color': "darkblue"},
+                    'steps': [
+                        {'range': [0, 0], 'color': "red"},       # vencido
+                        {'range': [0, 30], 'color': "orange"},   # 0-30 días
+                        {'range': [31, 60], 'color': "yellow"},  # 31-60 días
+                        {'range': [61, 90], 'color': "lightgreen"}  # 61-90 días
+                    ],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 0
+                    }
+                }
+            ))
+
+            st.plotly_chart(fig, use_container_width=True)
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
             hoy = datetime.today()
