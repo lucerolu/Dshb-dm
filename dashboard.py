@@ -3419,7 +3419,6 @@ if authentication_status:
                 )
             )
 
-
             if mostrar_texto:
                 colores_barras = df_mes_cta[color_columna].map(color_mapa).fillna("#666666")
                 colores_texto = colores_barras.apply(lambda c: "black" if es_color_claro(c) else "white")
@@ -3501,6 +3500,8 @@ if authentication_status:
                 df_mes["texto"] = df_mes.apply(lambda row: f"${row['monto']:,.0f}<br>({row['porcentaje']:.1f}%)", axis=1)
                 df_mes = df_mes.sort_values("monto", ascending=False)
                 df_mes["sucursal"] = pd.Categorical(df_mes["sucursal"], categories=df_mes["sucursal"], ordered=True)
+                # Plano para plotly
+                colores_sucursales_map = {k: v["color"] for k, v in colores_sucursales.items()}
 
                 fig_mes = px.bar(
                     df_mes,
@@ -3508,7 +3509,7 @@ if authentication_status:
                     y="monto",
                     text="texto",
                     color="sucursal",
-                    color_discrete_map=colores_sucursales,
+                    color_discrete_map=colores_sucursales_map,
                     title=f"Compras en {mes}"
                 )
 
