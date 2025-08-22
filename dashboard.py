@@ -3288,7 +3288,7 @@ if authentication_status:
                 y="cuenta_sucursal",
                 orientation="h",
                 color="sucursal_abrev",
-                color_discrete_map = {k[:3].capitalize(): v for k, v in colores_sucursales_map.items()}
+                color_discrete_map = {k[:3].capitalize(): v for k, v in colores_sucursales_map.items()},
                 labels={
                     "monto": "Monto (MXN)",
                     "cuenta_sucursal": "Cuenta - Sucursal",
