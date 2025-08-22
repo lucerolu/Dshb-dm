@@ -430,9 +430,11 @@ if authentication_status:
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
             # --- Datos de ejemplo ---
             hoy = datetime.today()
-            fechas_exigibilidad = df_estado_cuenta['fecha_exigibilidad'].sort_values().unique()
+            # Asegurarnos de que 'fecha_exigibilidad' sea datetime
+            fechas_exigibilidad = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'].sort_values())
 
-            # Convertimos a días desde hoy
+            # Ahora sí podemos calcular la diferencia en días
+            hoy = datetime.today()
             dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
             dias_desde_hoy_clipped = np.clip(dias_desde_hoy, 0, None)  # no negativos para la aguja
 
