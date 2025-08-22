@@ -441,7 +441,7 @@ if authentication_status:
             df_estado_cuenta['fecha_exigibilidad'] = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'])
 
             # Fecha actual
-            hoy = pd.Timestamp(datetime.today())
+            hoy = datetime.today()
 
             # Color según si la fecha ya pasó
             df_estado_cuenta['color'] = df_estado_cuenta['fecha_exigibilidad'].apply(lambda x: 'red' if x < hoy else 'green')
