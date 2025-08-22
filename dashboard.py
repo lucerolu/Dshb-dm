@@ -19,6 +19,7 @@ import io
 import requests
 import itertools
 import calendar
+import calplot
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from st_aggrid import ColumnsAutoSizeMode, AgGridTheme
 from babel.dates import format_datetime
@@ -430,78 +431,86 @@ if authentication_status:
 
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
-            # --- Parámetros ---
+            # --- Fecha actual ---
             hoy = datetime.today().date()
-            fecha_exigibilidad = hoy + timedelta(days=7)  # Ejemplo
-            fechas_vencidas = [hoy - timedelta(days=2), hoy - timedelta(days=10)]  # Ejemplo
 
-            # --- Generar calendario del mes actual ---
-            año, mes = hoy.year, hoy.month
-            cal = calendar.Calendar(firstweekday=0)
-            dias_mes = [d for d in cal.itermonthdates(año, mes)]
+            # --- Obtener fechas de exigibilidad reales ---
+            # 👇 aquí df_estado_cuenta ya existe de tu código previo
+            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"]).dt.date
 
-            # Crear DataFrame para grid
-            df = pd.DataFrame({
-                "dia": dias_mes,
-                "semana": [d.isocalendar()[1] for d in dias_mes],
-                "weekday": [d.weekday() for d in dias_mes]
-            })
+            # Fechas vencidas y próxima exigibilidad
+            fechas_vencidas = [f for f in df_estado_cuenta["fecha_exigibilidad"] if f < hoy]
+            proxima_fecha = min([f for f in df_estado_cuenta["fecha_exigibilidad"] if f >= hoy], default=None)
 
-            # Normalizar semanas (para que el grid quede ordenado)
-            df["semana"] = df["semana"] - df["semana"].min()
+            # --- Rango de meses a mostrar ---
+            fecha_min = min(fechas_vencidas) if fechas_vencidas else hoy
+            fecha_max = proxima_fecha if proxima_fecha else hoy
+            meses = pd.date_range(fecha_min.replace(day=1), fecha_max, freq="MS").to_pydatetime()
 
-            # Colorear días
-            colores = []
-            for d in df["dia"]:
-                if d in fechas_vencidas:
-                    colores.append("red")
-                elif d == fecha_exigibilidad:
-                    colores.append("green")
-                elif d == hoy:
-                    colores.append("blue")
-                elif d.month != mes:
-                    colores.append("lightgray")  # días fuera del mes
-                else:
-                    colores.append("white")
+            # --- Generar calendario mes a mes ---
+            for fecha in meses:
+                año, mes = fecha.year, fecha.month
+                cal = calendar.Calendar(firstweekday=0)
+                dias_mes = [d for d in cal.itermonthdates(año, mes)]
 
-            df["color"] = colores
+                df = pd.DataFrame({
+                    "dia": dias_mes,
+                    "semana": [d.isocalendar()[1] for d in dias_mes],
+                    "weekday": [d.weekday() for d in dias_mes]
+                })
+                df["semana"] = df["semana"] - df["semana"].min()
 
-            # --- Crear figura ---
-            fig = go.Figure()
+                # Colorear días
+                colores = []
+                for d in df["dia"]:
+                    if d in fechas_vencidas:
+                        colores.append("red")        # 🔴 vencido
+                    elif proxima_fecha and d == proxima_fecha:
+                        colores.append("green")      # 🟢 próxima exigibilidad
+                    elif d == hoy:
+                        colores.append("blue")       # 🔵 hoy
+                    elif d.month != mes:
+                        colores.append("lightgray")  # ⚪ fuera del mes
+                    else:
+                        colores.append("white")      # normal
+                df["color"] = colores
 
-            for _, row in df.iterrows():
-                fig.add_shape(
-                    type="rect",
-                    x0=row["weekday"], x1=row["weekday"]+1,
-                    y0=row["semana"], y1=row["semana"]+1,
-                    line=dict(color="black", width=1),
-                    fillcolor=row["color"]
+                # --- Construir gráfico ---
+                fig = go.Figure()
+
+                for _, row in df.iterrows():
+                    fig.add_shape(
+                        type="rect",
+                        x0=row["weekday"], x1=row["weekday"]+1,
+                        y0=row["semana"], y1=row["semana"]+1,
+                        line=dict(color="black", width=1),
+                        fillcolor=row["color"]
+                    )
+                    fig.add_annotation(
+                        x=row["weekday"]+0.5,
+                        y=row["semana"]+0.5,
+                        text=str(row["dia"].day),
+                        showarrow=False,
+                        font=dict(color="black" if row["color"]=="white" else "white")
+                    )
+
+                fig.update_xaxes(
+                    tickmode="array",
+                    tickvals=list(range(7)),
+                    ticktext=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"],
+                    showgrid=False,
+                    zeroline=False
                 )
-                fig.add_annotation(
-                    x=row["weekday"]+0.5,
-                    y=row["semana"]+0.5,
-                    text=str(row["dia"].day),
-                    showarrow=False,
-                    font=dict(color="black" if row["color"]=="white" else "white")
+                fig.update_yaxes(visible=False)
+
+                fig.update_layout(
+                    title=f"Calendario {calendar.month_name[mes]} {año}",
+                    plot_bgcolor="white",
+                    margin=dict(l=10,r=10,t=50,b=10),
+                    height=300
                 )
 
-            fig.update_xaxes(
-                tickmode="array",
-                tickvals=list(range(7)),
-                ticktext=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"],
-                showgrid=False,
-                zeroline=False
-            )
-            fig.update_yaxes(visible=False)
-
-            fig.update_layout(
-                title=f"Calendario {calendar.month_name[mes]} {año}",
-                plot_bgcolor="white",
-                margin=dict(l=10,r=10,t=50,b=10),
-                height=300
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True)
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
             hoy = datetime.today()
