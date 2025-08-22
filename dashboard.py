@@ -3361,11 +3361,11 @@ if authentication_status:
             if len(sucursales_seleccionadas) == 1:
                 # Colorear según división
                 color_columna = "division"
-                color_mapa = colores_divisiones  # asumo que tienes este dict definido con colores por división
+                color_mapa = colores_divisiones  # ← este sí debería ser plano {division: "#hex"}
             else:
                 # Colorear según sucursal
                 color_columna = "sucursal"
-                color_mapa = colores_sucursales
+                color_mapa = colores_sucursales_map  # ← usa el plano, no el anidado
 
             def es_color_claro(hex_color):
                 """Devuelve True si el color es claro, False si es oscuro."""
