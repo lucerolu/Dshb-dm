@@ -591,7 +591,7 @@ if authentication_status:
             gb.configure_column(
                 "codigo_sucursal",
                 pinned="left",
-                minWidth=170,
+                minWidth=140,
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
 
@@ -601,7 +601,7 @@ if authentication_status:
                     header_class = f"header-{col.replace(' ', '').replace('+','')}"
                     gb.configure_column(
                         col,
-                        minWidth=80,
+                        minWidth=70,
                         headerClass=header_class,
                         cellStyle=gradient_renderer,
                         valueFormatter=value_formatter
@@ -610,7 +610,7 @@ if authentication_status:
             # Columna Total (solo azul)
             gb.configure_column(
                 "Total",
-                minWidth=80,
+                minWidth=70,
                 headerClass='header-total',
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
