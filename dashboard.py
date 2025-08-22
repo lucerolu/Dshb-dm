@@ -3088,6 +3088,7 @@ if authentication_status:
                 lambda row: f"${row['monto']:,.2f}<br>({row['porcentaje']:.1f}%)", axis=1
             )
             df_mes["custom_data"] = list(zip(df_mes["sucursal"], df_mes["monto"], df_mes["porcentaje"]))
+            color_map = {k: v["color"] for k, v in colores_sucursales.items()}
 
             fig_mes = px.bar(
                 df_mes,
@@ -3096,7 +3097,7 @@ if authentication_status:
                 title=f"Compras en {mes}",
                 labels={"monto": "Total Comprado", "sucursal": "Sucursal"},
                 color="sucursal",
-                color_discrete_map=colores_sucursales,
+                color_discrete_map=color_map,
                 text="texto",
                 custom_data=["sucursal", "monto", "porcentaje"]
             )
