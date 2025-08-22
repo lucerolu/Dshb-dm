@@ -429,6 +429,66 @@ if authentication_status:
 
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
+            # --- Datos dinámicos desde tu df_estado_cuenta ---
+            hoy = pd.Timestamp(datetime.today())
+            fechas_exigibilidad = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'].sort_values())
+            dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
+
+            # Próxima fecha no vencida
+            dias_restantes = min([d for d in dias_desde_hoy if d > 0], default=0)
+
+            # --- Colores degradados rojo -> verde ---
+            max_dia = max(dias_desde_hoy.max(), 1)
+            colors = []
+            for d in dias_desde_hoy:
+                if d < 0:
+                    colors.append("red")
+                else:
+                    ratio = d / max_dia
+                    r = int(255*(1-ratio))
+                    g = int(255*ratio)
+                    b = 0
+                    colors.append(f"rgb({r},{g},{b})")
+
+            # --- Crear gauge semicircular ---
+            fig = go.Figure()
+
+            # Dibujar sectores (cada fecha como un sector)
+            for i, f in enumerate(fechas_exigibilidad):
+                fig.add_trace(go.Pie(
+                    values=[1],
+                    hole=0.6,
+                    rotation=180,
+                    marker_colors=[colors[i]],
+                    text=[f.strftime("%Y-%m-%d")],
+                    textinfo="text",
+                    direction="clockwise",
+                    showlegend=False
+                ))
+
+            # --- Posición de la aguja (apunta al índice de la fecha actual o próxima no vencida) ---
+            posicion_aguja = 0
+            for i, d in enumerate(dias_desde_hoy):
+                if d >= 0:
+                    posicion_aguja = i
+                    break
+
+            angulo_aguja = 180 * (posicion_aguja / (len(fechas_exigibilidad)-1 if len(fechas_exigibilidad)>1 else 1))
+
+            fig.add_shape(type="line",
+                        x0=0.5, y0=0.5,
+                        x1=0.5 + 0.4*np.cos(np.radians(180-angulo_aguja)),
+                        y1=0.5 + 0.4*np.sin(np.radians(180-angulo_aguja)),
+                        line=dict(color="black", width=4))
+
+            # --- Layout ---
+            fig.update_layout(width=600, height=350,
+                            margin=dict(t=50,b=50,l=50,r=50),
+                            showlegend=False)
+
+            # --- Mostrar en Streamlit ---
+            st.plotly_chart(fig, use_container_width=True)
+            st.markdown(f"**Días restantes hasta la próxima fecha no vencida:** {dias_restantes}")
 
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
