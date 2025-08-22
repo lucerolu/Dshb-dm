@@ -2539,6 +2539,13 @@ if authentication_status:
         # Filtrar el DataFrame según selección
         df_filtrado = df_grafico[df_grafico["cuenta_sucursal"].isin(cuentas_seleccionadas)]
 
+        # Construir un mapa de colores basado en el JSON de sucursales
+        color_map = {}
+        for cuenta in df_filtrado["cuenta_sucursal"].unique():
+            # extraer el nombre de sucursal desde la cadena (después del " - ")
+            sucursal = cuenta.split(" - ")[-1]
+            color_map[cuenta] = colores_sucursales.get(sucursal, {}).get("color", "#CCCCCC")
+
         # Mostrar advertencia si no hay datos
         if df_filtrado.empty:
             st.warning("No hay datos para mostrar con las cuentas seleccionadas.")
@@ -2551,7 +2558,8 @@ if authentication_status:
                 y="monto",
                 color="cuenta_sucursal",
                 markers=True,
-                custom_data=["mes_anio", "cuenta_sucursal", "monto", "abreviatura"]
+                custom_data=["mes_anio", "cuenta_sucursal", "monto", "abreviatura"],
+                color_discrete_map=color_map  # <-- aquí el truco
             )
 
             # Formato de hovertemplate mostrando abreviatura
