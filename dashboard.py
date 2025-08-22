@@ -2647,7 +2647,7 @@ if authentication_status:
                         x=[row["monto"]],
                         orientation='h',
                         name=row["sucursal_nombre"],
-                        marker_color=colores_sucursales.get(row["sucursal_nombre"], "#CCCCCC"),
+                        marker_color=colores_sucursales.get(row["sucursal_nombre"], {}).get("color", "#CCCCCC"),
                         text=row["texto_monto"],
                         textposition="outside",
                         cliponaxis=False,
