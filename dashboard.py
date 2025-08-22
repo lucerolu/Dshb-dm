@@ -493,9 +493,9 @@ if authentication_status:
 
             # --- Separar fila total ---
             mascara_total = (
-                df_reset["codigo"].str.strip().str.lower() == "total"
+                df_reset["codigo_original"].str.strip().str.lower() == "total"
             ) | (
-                df_reset["sucursal"].str.strip().str.lower() == "total"
+                df_reset["sucursal_abrev"].str.strip().str.lower() == "total"
             )
             total_row = df_reset[mascara_total].copy()
             data_sin_total = df_reset[~mascara_total].copy()
