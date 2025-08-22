@@ -430,57 +430,50 @@ if authentication_status:
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
 
-            # --- Datos ---
+            # --- Datos de ejemplo ---
+            df_estado_cuenta = pd.DataFrame({
+                'codigo_cuenta': ['C101', 'C102', 'C103', 'C104'],
+                'fecha_inicio': ['2025-08-01', '2025-08-05', '2025-08-10', '2025-08-15'],
+                'fecha_exigibilidad': ['2025-08-13', '2025-08-20', '2025-08-25', '2025-08-30']
+            })
+
+            # Convertimos a datetime
+            df_estado_cuenta['fecha_inicio'] = pd.to_datetime(df_estado_cuenta['fecha_inicio'])
+            df_estado_cuenta['fecha_exigibilidad'] = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'])
+
+            # Fecha actual
             hoy = pd.Timestamp(datetime.today())
-            fechas_exigibilidad = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'].sort_values())
-            dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
-            dias_restantes = min([d for d in dias_desde_hoy if d > 0], default=0)
 
-            # --- Coordenadas semicirculo ---
-            n = len(fechas_exigibilidad)
-            angulos = np.linspace(np.pi, 0, n)  # 180° izquierda → 0° derecha
-            radio_in = 0.7
-            radio_out = 1.0
+            # Color según si la fecha ya pasó
+            df_estado_cuenta['color'] = df_estado_cuenta['fecha_exigibilidad'].apply(lambda x: 'red' if x < hoy else 'green')
 
-            # --- Crear sectores ---
-            fig = go.Figure()
-            for i, ang in enumerate(angulos):
-                x0, y0 = radio_in*np.cos(ang), radio_in*np.sin(ang)
-                x1, y1 = radio_out*np.cos(ang), radio_out*np.sin(ang)
-                # Dibujamos cada sector como línea gruesa
-                fig.add_trace(go.Scatter(
-                    x=[x0, x1], y=[y0, y1],
-                    mode='lines',
-                    line=dict(color='red' if dias_desde_hoy[i]<0 else f'rgb({int(255*(1-(dias_desde_hoy[i]/max(dias_desde_hoy.max(),1))))},{int(255*(dias_desde_hoy[i]/max(dias_desde_hoy.max(),1)))},0)', width=15),
-                    showlegend=False
-                ))
+            # Crear timeline horizontal
+            fig = px.timeline(
+                df_estado_cuenta, 
+                x_start='fecha_inicio', 
+                x_end='fecha_exigibilidad', 
+                y='codigo_cuenta', 
+                color='color'
+            )
 
-            # --- Aguja ---
-            if len(fechas_exigibilidad) > 1:
-                ratio_hoy = (hoy - fechas_exigibilidad.min()) / (fechas_exigibilidad.max() - fechas_exigibilidad.min())
-                ang_aguja = np.pi * (1 - ratio_hoy)
-            else:
-                ang_aguja = np.pi
-            x_aguja, y_aguja = 0.0 + 0.0*np.cos(ang_aguja), 0.0 + 1.0*np.sin(ang_aguja)
-            fig.add_trace(go.Scatter(
-                x=[0, np.cos(ang_aguja)],
-                y=[0, np.sin(ang_aguja)],
-                mode='lines',
-                line=dict(color='black', width=4),
-                showlegend=False
-            ))
-
-            # --- Layout ---
+            fig.update_yaxes(autorange="reversed")  # Para que la primera cuenta quede arriba
             fig.update_layout(
-                xaxis=dict(visible=False, range=[-1.1,1.1]),
-                yaxis=dict(visible=False, range=[0,1.1]),
-                width=600,
-                height=350,
-                margin=dict(t=50,b=50,l=50,r=50)
+                showlegend=False,
+                height=400,
+                title="Timeline de Fechas de Exigibilidad por Cuenta"
+            )
+
+            # Línea vertical que indica hoy
+            fig.add_vline(x=hoy, line_dash="dash", line_color="blue", annotation_text="Hoy", annotation_position="top right")
+
+            # Mostrar días restantes hasta la próxima fecha no vencida
+            dias_restantes = min(
+                [(f - hoy).days for f in df_estado_cuenta['fecha_exigibilidad'] if f > hoy],
+                default=0
             )
 
             st.plotly_chart(fig, use_container_width=True)
-            st.markdown(f"**Días restantes hasta la próxima fecha no vencida:** {dias_restantes}")
+            st.markdown(f"**Días restantes hasta la próxima fecha de exigibilidad:** {dias_restantes}")
 
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
