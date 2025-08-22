@@ -464,7 +464,7 @@ if authentication_status:
                 x=hoy,
                 line_dash="dash",
                 line_color="blue",
-                annotation_text="Hoy",
+                annotation_text=f"Hoy ({hoy.strftime('%Y-%m-%d')})",  # texto legible
                 annotation_position="top right"
             )
 
