@@ -2732,7 +2732,7 @@ if authentication_status:
                 x=df_percent[sucursal],
                 orientation='h',
                 name=sucursal,
-                marker=dict(color=colores_sucursales.get(sucursal)),
+                marker=dict(color=colores_sucursales.get(sucursal, {}).get("color", "#CCCCCC")),
                 customdata=df_pivot[sucursal],
                 text=[
                     f"{df_percent.loc[mes, sucursal]:.1f}%<br>${df_pivot.loc[mes, sucursal]:,.0f}"
