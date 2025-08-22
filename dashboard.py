@@ -518,6 +518,8 @@ if authentication_status:
                 max_val = 1
 
             ultima_col = data_sin_total.columns[-1]
+            # Excluir columna Total de los buckets de gradiente
+            buckets_cols = [c for c in numeric_cols_sin_total if c != ultima_col]
 
             # --- Formatters y renderers ---
             value_formatter = JsCode("""
@@ -599,26 +601,27 @@ if authentication_status:
             gb.configure_column(
                 "codigo_sucursal",
                 pinned="left",
-                minWidth=200,
+                minWidth=170,
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
 
             # Buckets numéricos
-            for col in numeric_cols_sin_total:
+            # Buckets numéricos (solo columnas con gradiente)
+            for col in buckets_cols:
                 if col in data_sin_total.columns:
                     gb.configure_column(
                         col,
-                        minWidth=110,
+                        minWidth=80,
                         headerClass='header-left',
                         headerStyle=header_bucket,
                         cellStyle=gradient_renderer,
                         valueFormatter=value_formatter
                     )
 
-            # Columna Total
+            # Columna Total (solo azul)
             gb.configure_column(
                 ultima_col,
-                minWidth=120,
+                minWidth=80,
                 headerClass='header-left',
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
