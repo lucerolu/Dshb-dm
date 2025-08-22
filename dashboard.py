@@ -427,6 +427,7 @@ if authentication_status:
             )
 
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
+        
             hoy = datetime.today()
 
             # --- Cargar JSON de configuración ---
@@ -438,16 +439,14 @@ if authentication_status:
             df_estado_cuenta["codigo_6digitos"] = df_estado_cuenta["codigo_6digitos"].astype(str).str.strip()
 
             # --- Aplicar abreviaturas ---
-            # Sucursal
             df_estado_cuenta["sucursal_abrev"] = df_estado_cuenta["sucursal"].apply(
                 lambda x: config["sucursales"].get(x, {}).get("abreviatura", x)
             )
 
-            # Código con abreviatura de división
             def agregar_abrev_division(codigo):
                 for div, info in config["divisiones"].items():
                     if codigo in info["codigos"]:
-                        return info['abreviatura']  # solo la abreviatura
+                        return info['abreviatura']
                 return codigo
 
             df_estado_cuenta["codigo_abrev"] = df_estado_cuenta["codigo_6digitos"].apply(agregar_abrev_division)
@@ -467,12 +466,11 @@ if authentication_status:
                     return "91+ días"
 
             df_estado_cuenta["bucket_venc"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: bucket_vencimiento(f, hoy))
-            # Guardar código original en nueva columna
             df_estado_cuenta["codigo_original"] = df_estado_cuenta["codigo_6digitos"]
 
-            # Pivot usando sucursal_abrev y codigo_abrev como antes
+            # --- Pivot usando sucursal_abrev y codigo_abrev ---
             df_pivot_bucket = df_estado_cuenta.pivot_table(
-                index=["sucursal_abrev", "codigo_abrev", "codigo_original"],  # agregamos codigo_original
+                index=["sucursal_abrev", "codigo_abrev", "codigo_original"],
                 columns="bucket_venc",
                 values="total",
                 aggfunc="sum",
@@ -481,12 +479,11 @@ if authentication_status:
                 margins_name="Total"
             )
 
-            # Ordenar columnas
+            # --- Ordenar columnas ---
             orden_buckets = ["Vencido", "0-30 días", "31-60 días", "61-90 días", "91+ días"]
             cols_presentes = [c for c in orden_buckets if c in df_pivot_bucket.columns]
             if "Total" in df_pivot_bucket.columns:
                 cols_presentes.append("Total")
-
             df_pivot_bucket = df_pivot_bucket[cols_presentes]
             df_pivot_bucket.index = df_pivot_bucket.index.set_names(["sucursal_abrev", "codigo_abrev", "codigo_original"])
             df_reset = df_pivot_bucket.reset_index()
@@ -499,34 +496,36 @@ if authentication_status:
             )
             total_row = df_reset[mascara_total].copy()
             data_sin_total = df_reset[~mascara_total].copy()
+
+            # --- Crear columna combinada ---
             data_sin_total["codigo_sucursal"] = (
                 data_sin_total["codigo_original"] + " - " +
                 data_sin_total["codigo_abrev"] + " - " +
                 data_sin_total["sucursal_abrev"]
             )
 
-            ultima_col = data_sin_total.columns[-1]
-            numeric_cols_sin_total = [c for c in data_sin_total.columns if c not in ["sucursal", "codigo", ultima_col]]
+            # --- Asegurarse de no tener columnas duplicadas ---
+            data_sin_total = data_sin_total.loc[:, ~data_sin_total.columns.duplicated()]
 
-            # --- Formatters y AgGrid (igual que antes) ---
-            value_formatter = JsCode("""
-            function(params) { 
-                if (params.value == null) return '0.00';
-                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            }
-            """)
-
-            numeric_cols_sin_total = [
-                c for c in data_sin_total.select_dtypes(include='number').columns
-            ]
+            # --- Columnas numéricas para gradient ---
+            numeric_cols_sin_total = list(data_sin_total.select_dtypes(include='number').columns)
 
             if numeric_cols_sin_total:
                 min_val = data_sin_total[numeric_cols_sin_total].min().min()
                 max_val = data_sin_total[numeric_cols_sin_total].max().max()
             else:
                 min_val = 0
-                max_val = 1  # evita división por cero
+                max_val = 1
 
+            ultima_col = data_sin_total.columns[-1]
+
+            # --- Formatters y renderers ---
+            value_formatter = JsCode("""
+            function(params) { 
+                if (params.value == null) return '0.00';
+                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            """)
 
             gradient_renderer = JsCode(f"""
             function(params) {{
@@ -539,7 +538,7 @@ if authentication_status:
                     paddingRight:'4px',
                     borderRadius: '2px'
                 }};
-                if(!params.node.rowPinned && params.data && params.colDef.field !== 'codigo' && params.colDef.field !== 'sucursal' && params.colDef.field !== totalCol) {{
+                if(!params.node.rowPinned && params.data && ![totalCol].includes(params.colDef.field)) {{
                     let val = params.value;
                     let min = {min_val};
                     let max = {max_val};
@@ -580,21 +579,16 @@ if authentication_status:
             }
             """)
 
-            # Reordenar columnas: la combinada primero, luego los buckets, y eliminar las originales
-            columnas_finales = ["codigo_sucursal"] + numeric_cols_sin_total + [ultima_col]
-            data_sin_total = data_sin_total[columnas_finales]
+            # --- Reordenar columnas para AgGrid ---
+            columnas_iniciales = ["codigo_sucursal"]
+            otras_columnas = [c for c in data_sin_total.columns if c not in columnas_iniciales]
+            data_sin_total = data_sin_total[columnas_iniciales + otras_columnas]
 
             # --- Configuración AgGrid ---
-            columnas = list(data_sin_total.columns)
-            if "codigo" in columnas and "sucursal" in columnas:
-                columnas.remove("codigo")
-                columnas.remove("sucursal")
-                data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
-
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columna combinada con estilo azul
+            # Columna combinada
             gb.configure_column(
                 "codigo_sucursal",
                 pinned="left",
@@ -602,7 +596,7 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
 
-            # Buckets
+            # Buckets numéricos
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
