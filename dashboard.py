@@ -429,68 +429,66 @@ if authentication_status:
 
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
-            # --- Datos de ejemplo ---
-            hoy = pd.Timestamp(datetime.today())  # ahora es compatible con Timestamp de pandas
+
+            # --- Datos ---
+            hoy = pd.Timestamp(datetime.today())
             fechas_exigibilidad = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'].sort_values())
             dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
-            dias_desde_hoy_clipped = np.clip(dias_desde_hoy, 0, None)  # no negativos para la aguja
 
-            # Determinar próxima fecha no vencida
+            # próxima fecha no vencida
             dias_restantes = min([d for d in dias_desde_hoy if d > 0], default=0)
 
-            # Crear degradado de colores (rojo -> naranja -> amarillo -> verde)
+            # colores degradados rojo -> verde
             colors = []
             for d in dias_desde_hoy:
                 if d < 0:
                     colors.append('red')
                 else:
-                    ratio = d / max(dias_desde_hoy_clipped.max(),1)
-                    # degradado de naranja a verde
+                    ratio = d / max(dias_desde_hoy.max(),1)
                     r = int(255*(1-ratio))
                     g = int(255*ratio)
                     b = 0
                     colors.append(f'rgb({r},{g},{b})')
 
-            # --- Construcción del Gauge como semicircular con sectores ---
+            # --- Crear posiciones angulares para semicirculo ---
+            num_fechas = len(fechas_exigibilidad)
+            angles = np.linspace(-90, 90, num_fechas)  # -90° a 90° para semicirculo
+
             fig = go.Figure()
 
-            fig.add_trace(go.Pie(
-                values=[1]*len(fechas_exigibilidad),
-                rotation=90,
-                hole=0.6,
-                marker_colors=colors,
-                text=[f"{f.date()}" for f in fechas_exigibilidad],
-                textinfo='text',
-                direction='clockwise',
-                showlegend=False
-            ))
+            # --- Dibujar segmentos como líneas en semicirculo ---
+            for i, angle in enumerate(angles):
+                rad = np.radians(angle)
+                x = [0, np.cos(rad)]
+                y = [0, np.sin(rad)]
+                fig.add_trace(go.Scatter(x=x, y=y, mode='lines',
+                                        line=dict(color=colors[i], width=10),
+                                        showlegend=False,
+                                        hoverinfo='skip'))
 
-            # --- Agregar aguja ---
-            angulo_total = 180  # semicircular
-            # posición de la aguja según hoy
-            posicion_aguja = 0
-            for i, d in enumerate(dias_desde_hoy):
-                if d >= 0:
-                    posicion_aguja = i
-                    break
+            # --- Aguja ---
+            # posición de la aguja según la primera fecha no vencida
+            posicion_aguja = np.where(dias_desde_hoy >= 0)[0][0] if any(dias_desde_hoy>=0) else 0
+            angulo_aguja = angles[posicion_aguja]
+            rad = np.radians(angulo_aguja)
+            fig.add_trace(go.Scatter(x=[0, 0.9*np.cos(rad)],
+                                    y=[0, 0.9*np.sin(rad)],
+                                    mode='lines',
+                                    line=dict(color='black', width=4),
+                                    showlegend=False))
 
-            angulo_aguja = 180 * (posicion_aguja / (len(fechas_exigibilidad)-1))  # entre 0 y 180
-            fig.add_shape(type="line",
-                x0=0.5, y0=0.5,
-                x1=0.5 + 0.4*np.cos(np.radians(180-angulo_aguja)),
-                y1=0.5 + 0.4*np.sin(np.radians(180-angulo_aguja)),
-                line=dict(color="black", width=4)
-            )
-
+            # --- Config layout ---
             fig.update_layout(
                 width=500,
                 height=300,
-                margin=dict(t=20,b=20,l=20,r=20),
-                showlegend=False
+                xaxis=dict(showgrid=False, zeroline=False, visible=False),
+                yaxis=dict(showgrid=False, zeroline=False, visible=False),
+                margin=dict(t=20,b=20,l=20,r=20)
             )
 
             st.plotly_chart(fig, use_container_width=True)
             st.markdown(f"**Días restantes hasta la próxima fecha de exigibilidad:** {dias_restantes}")
+
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
             hoy = datetime.today()
