@@ -507,8 +507,8 @@ if authentication_status:
             # --- Asegurarse de no tener columnas duplicadas ---
             data_sin_total = data_sin_total.loc[:, ~data_sin_total.columns.duplicated()]
 
-            # --- Columnas numéricas para gradient ---
-            numeric_cols_sin_total = list(data_sin_total.select_dtypes(include='number').columns)
+            # --- Columnas numéricas para gradient, excluyendo Total explícitamente ---
+            numeric_cols_sin_total = [c for c in data_sin_total.select_dtypes(include='number').columns if c != "Total"]
 
             if numeric_cols_sin_total:
                 min_val = data_sin_total[numeric_cols_sin_total].min().min()
@@ -517,11 +517,10 @@ if authentication_status:
                 min_val = 0
                 max_val = 1
 
-            ultima_col = data_sin_total.columns[-1]
-            # Excluir columna Total de los buckets de gradiente
-            buckets_cols = [c for c in numeric_cols_sin_total if c != ultima_col]
+            # --- Buckets para gradiente ---
+            buckets_cols = numeric_cols_sin_total.copy()  # no incluye Total
 
-            # --- Formatters y renderers ---
+            # --- Formatter JS para números ---
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -529,11 +528,8 @@ if authentication_status:
             }
             """)
 
-            # Excluir Total explícitamente
-            buckets_cols = [c for c in numeric_cols_sin_total if c != ultima_col and c != "Total"]
-
             # --- Crear lista JS de columnas con gradiente ---
-            buckets_cols_js_str = str(buckets_cols)  # ejemplo: ["Vencido","0-30 días",...]
+            buckets_cols_js_str = str(buckets_cols)
 
             gradient_renderer = JsCode(f"""
             function(params) {{
@@ -575,15 +571,15 @@ if authentication_status:
             }}
             """)
 
-            # --- Reordenar columnas para AgGrid ---
+            # --- Reordenar columnas ---
             columnas_iniciales = ["codigo_sucursal"]
             otras_columnas = [c for c in data_sin_total.columns if c not in columnas_iniciales]
             data_sin_total = data_sin_total[columnas_iniciales + otras_columnas]
 
-            # --- Seleccionar solo columnas necesarias para la tabla ---
-            columnas_finales = ["codigo_sucursal"] + [c for c in numeric_cols_sin_total if c != "codigo_original" and c != "codigo_abrev" and c != "sucursal_abrev"]
-            if ultima_col not in columnas_finales:
-                columnas_finales.append(ultima_col)
+            # --- Columnas finales ---
+            columnas_finales = ["codigo_sucursal"] + [c for c in numeric_cols_sin_total if c not in ["codigo_original","codigo_abrev","sucursal_abrev"]]
+            if "Total" in data_sin_total.columns:
+                columnas_finales.append("Total")
 
             data_sin_total = data_sin_total[columnas_finales]
 
@@ -599,12 +595,10 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
 
-            # --- Buckets numéricos (gradiente) ---
-            # Solo columnas que no sean Total
+            # Buckets numéricos (gradiente)
             for col in buckets_cols:
                 if col in data_sin_total.columns:
-                    # Asignar headerClass según el bucket para colorear borde
-                    header_class = f"header-{col.replace(' ', '').replace('+','')}"  # genera header-Vencido, header-0310días, etc.
+                    header_class = f"header-{col.replace(' ', '').replace('+','')}"
                     gb.configure_column(
                         col,
                         minWidth=80,
@@ -615,20 +609,20 @@ if authentication_status:
 
             # Columna Total (solo azul)
             gb.configure_column(
-                ultima_col,
+                "Total",
                 minWidth=80,
                 headerClass='header-total',
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
             )
 
-            # CSS actualizado para +91 días
+            # --- Custom CSS para headers ---
             custom_css = {
                 ".header-Vencido": {"border-bottom": "4px solid red", "text-align": "left"},
                 ".header-0-30días": {"border-bottom": "4px solid orange", "text-align": "left"},
                 ".header-31-60días": {"border-bottom": "4px solid yellow", "text-align": "left"},
                 ".header-61-90días": {"border-bottom": "4px solid lightgreen", "text-align": "left"},
-                ".header-91días": {"border-bottom": "4px solid green", "text-align": "left"},
+                ".header-91+días": {"border-bottom": "4px solid green", "text-align": "left"},
                 ".header-total": {"border-bottom": "4px solid #0B083D", "text-align": "left"},
                 ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
                 ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
