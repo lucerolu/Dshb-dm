@@ -176,6 +176,10 @@ if authentication_status:
                 "division": division
             }
 
+    # Diccionario plano solo con colores
+    colores_sucursales_map = {
+        suc: data["color"] for suc, data in colores_sucursales.items()
+    }
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
         # Mostrar bienvenida
