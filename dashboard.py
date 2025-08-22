@@ -460,12 +460,23 @@ if authentication_status:
                     hovertemplate=f"Cuenta: {row['codigo_cuenta']}<br>Inicio: {row['fecha_inicio'].date()}<br>Exigibilidad: {row['fecha_exigibilidad'].date()}"
                 ))
 
-            fig.add_vline(
+            fig.add_shape(
+                type="line",
+                x0=hoy, x1=hoy,
+                y0=0, y1=1,
+                xref="x", yref="paper",
+                line=dict(color="blue", dash="dash")
+            )
+
+            # Agregamos un texto manualmente
+            fig.add_annotation(
                 x=hoy,
-                line_dash="dash",
-                line_color="blue",
-                annotation_text=f"Hoy ({hoy.strftime('%Y-%m-%d')})",  # texto legible
-                annotation_position="top right"
+                y=1,
+                xref="x",
+                yref="paper",
+                text=f"Hoy ({hoy.strftime('%Y-%m-%d')})",
+                showarrow=False,
+                font=dict(color="blue")
             )
 
             fig.update_layout(
