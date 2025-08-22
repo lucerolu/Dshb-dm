@@ -590,7 +590,8 @@ if authentication_status:
             # Columna combinada azul
             gb.configure_column(
                 "codigo_sucursal",
-                pinned="left",
+                headerName="Codigo - Sucursal",
+                pinned="right",
                 minWidth=140,
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
