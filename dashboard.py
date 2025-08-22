@@ -591,7 +591,7 @@ if authentication_status:
             gb.configure_column(
                 "codigo_sucursal",
                 headerName="Codigo - Sucursal",
-                pinned="right",
+                pinned="left",
                 minWidth=140,
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
