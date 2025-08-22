@@ -596,15 +596,16 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
 
-            # Buckets numéricos
-            # Buckets numéricos (solo columnas con gradiente)
+            # --- Buckets numéricos (gradiente) ---
+            # Solo columnas que no sean Total
             for col in buckets_cols:
                 if col in data_sin_total.columns:
+                    # Asignar headerClass según el bucket para colorear borde
+                    header_class = f"header-{col.replace(' ', '').replace('+','')}"  # genera header-Vencido, header-0310días, etc.
                     gb.configure_column(
                         col,
                         minWidth=80,
-                        headerClass='header-left',
-                        headerStyle=header_bucket,
+                        headerClass=header_class,
                         cellStyle=gradient_renderer,
                         valueFormatter=value_formatter
                     )
@@ -613,13 +614,19 @@ if authentication_status:
             gb.configure_column(
                 ultima_col,
                 minWidth=80,
-                headerClass='header-left',
+                headerClass='header-total',
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
             )
 
+            # --- Custom CSS para los headers ---
             custom_css = {
-                ".header-left": {"text-align": "left"},
+                ".header-Vencido": {"border-bottom": "4px solid red", "text-align": "left"},
+                ".header-0-30días": {"border-bottom": "4px solid orange", "text-align": "left"},
+                ".header-31-60días": {"border-bottom": "4px solid yellow", "text-align": "left"},
+                ".header-61-90días": {"border-bottom": "4px solid lightgreen", "text-align": "left"},
+                ".header-91+días": {"border-bottom": "4px solid green", "text-align": "left"},
+                ".header-total": {"border-bottom": "4px solid #0B083D", "text-align": "left"},
                 ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
                 ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
             }
