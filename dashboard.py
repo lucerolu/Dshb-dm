@@ -429,7 +429,8 @@ if authentication_status:
 
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
-            # --- Datos dinámicos desde tu df_estado_cuenta ---
+
+            # --- Datos de ejemplo: reemplaza con df_estado_cuenta ---
             hoy = pd.Timestamp(datetime.today())
             fechas_exigibilidad = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'].sort_values())
             dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
@@ -437,56 +438,61 @@ if authentication_status:
             # Próxima fecha no vencida
             dias_restantes = min([d for d in dias_desde_hoy if d > 0], default=0)
 
-            # --- Colores degradados rojo -> verde ---
-            max_dia = max(dias_desde_hoy.max(), 1)
+            # --- Configuración del semicírculo ---
+            n = len(fechas_exigibilidad)
+            angulos = np.linspace(0, 180, n)  # 0° izquierda, 180° derecha
+
+            # --- Colores degradados rojo -> amarillo -> verde ---
             colors = []
             for d in dias_desde_hoy:
                 if d < 0:
                     colors.append("red")
                 else:
-                    ratio = d / max_dia
+                    ratio = d / max(dias_desde_hoy.max(),1)
                     r = int(255*(1-ratio))
                     g = int(255*ratio)
                     b = 0
                     colors.append(f"rgb({r},{g},{b})")
 
-            # --- Crear gauge semicircular ---
+            # --- Crear scatter semicircular para sectores ---
             fig = go.Figure()
-
-            # Dibujar sectores (cada fecha como un sector)
-            for i, f in enumerate(fechas_exigibilidad):
-                fig.add_trace(go.Pie(
-                    values=[1],
-                    hole=0.6,
-                    rotation=180,
-                    marker_colors=[colors[i]],
-                    text=[f.strftime("%Y-%m-%d")],
-                    textinfo="text",
-                    direction="clockwise",
+            for i, ang in enumerate(angulos):
+                fig.add_trace(go.Scatterpolar(
+                    r=[1,1.05],  # radio
+                    theta=[ang, ang],
+                    mode='lines',
+                    line=dict(color=colors[i], width=15),
                     showlegend=False
                 ))
 
-            # --- Posición de la aguja (apunta al índice de la fecha actual o próxima no vencida) ---
-            posicion_aguja = 0
-            for i, d in enumerate(dias_desde_hoy):
-                if d >= 0:
-                    posicion_aguja = i
-                    break
+            # --- Agregar aguja ---
+            # Normalizamos la posición de hoy dentro del rango de fechas
+            if len(fechas_exigibilidad) > 1:
+                ratio_hoy = (hoy - fechas_exigibilidad.min()) / (fechas_exigibilidad.max() - fechas_exigibilidad.min())
+                angulo_aguja = ratio_hoy * 180
+            else:
+                angulo_aguja = 0
 
-            angulo_aguja = 180 * (posicion_aguja / (len(fechas_exigibilidad)-1 if len(fechas_exigibilidad)>1 else 1))
-
-            fig.add_shape(type="line",
-                        x0=0.5, y0=0.5,
-                        x1=0.5 + 0.4*np.cos(np.radians(180-angulo_aguja)),
-                        y1=0.5 + 0.4*np.sin(np.radians(180-angulo_aguja)),
-                        line=dict(color="black", width=4))
+            fig.add_trace(go.Scatterpolar(
+                r=[0, 1.1],
+                theta=[angulo_aguja, angulo_aguja],
+                mode='lines',
+                line=dict(color='black', width=4),
+                showlegend=False
+            ))
 
             # --- Layout ---
-            fig.update_layout(width=600, height=350,
-                            margin=dict(t=50,b=50,l=50,r=50),
-                            showlegend=False)
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(visible=False, range=[0,1.2]),
+                    angularaxis=dict(visible=False, rotation=90, direction="clockwise")
+                ),
+                showlegend=False,
+                width=600,
+                height=350,
+                margin=dict(t=50,b=50,l=50,r=50)
+            )
 
-            # --- Mostrar en Streamlit ---
             st.plotly_chart(fig, use_container_width=True)
             st.markdown(f"**Días restantes hasta la próxima fecha no vencida:** {dias_restantes}")
 
