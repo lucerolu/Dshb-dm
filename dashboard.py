@@ -6,6 +6,7 @@ import plotly.express as px
 import json
 import os
 import math
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -429,12 +430,8 @@ if authentication_status:
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
             # --- Datos de ejemplo ---
-            hoy = datetime.today()
-            # Asegurarnos de que 'fecha_exigibilidad' sea datetime
+            hoy = pd.Timestamp(datetime.today())  # ahora es compatible con Timestamp de pandas
             fechas_exigibilidad = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'].sort_values())
-
-            # Ahora sí podemos calcular la diferencia en días
-            hoy = datetime.today()
             dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
             dias_desde_hoy_clipped = np.clip(dias_desde_hoy, 0, None)  # no negativos para la aguja
 
