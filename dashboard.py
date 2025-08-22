@@ -3201,8 +3201,6 @@ if authentication_status:
         # Crear gráfico
         fig_lineas = go.Figure()
 
-        colores_sucursales_map = {k: v["color"] for k, v in colores_sucursales.items()}
-
         for sucursal in sucursales_seleccionadas:
             if sucursal in df_pivot.columns:
                 # Crear customdata con mes y sucursal para cada punto
@@ -3213,7 +3211,7 @@ if authentication_status:
                     y=df_pivot[sucursal],
                     mode='lines+markers',
                     name=sucursal,
-                    line=dict(color=colores_sucursales[sucursal]["color"]),
+                    line=dict(color=colores_sucursales_map.get(sucursal, "#CCC")),
                     customdata=customdata,
                     hovertemplate=(
                         "<b>Sucursal:</b> %{customdata[1]}<br>" +
