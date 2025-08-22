@@ -430,52 +430,41 @@ if authentication_status:
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
 
-            # --- Datos de ejemplo: reemplaza con df_estado_cuenta ---
+            # --- Datos ---
             hoy = pd.Timestamp(datetime.today())
             fechas_exigibilidad = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'].sort_values())
             dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
-
-            # Próxima fecha no vencida
             dias_restantes = min([d for d in dias_desde_hoy if d > 0], default=0)
 
-            # --- Configuración del semicírculo ---
+            # --- Coordenadas semicirculo ---
             n = len(fechas_exigibilidad)
-            angulos = np.linspace(0, 180, n)  # 0° izquierda, 180° derecha
+            angulos = np.linspace(np.pi, 0, n)  # 180° izquierda → 0° derecha
+            radio_in = 0.7
+            radio_out = 1.0
 
-            # --- Colores degradados rojo -> amarillo -> verde ---
-            colors = []
-            for d in dias_desde_hoy:
-                if d < 0:
-                    colors.append("red")
-                else:
-                    ratio = d / max(dias_desde_hoy.max(),1)
-                    r = int(255*(1-ratio))
-                    g = int(255*ratio)
-                    b = 0
-                    colors.append(f"rgb({r},{g},{b})")
-
-            # --- Crear scatter semicircular para sectores ---
+            # --- Crear sectores ---
             fig = go.Figure()
             for i, ang in enumerate(angulos):
-                fig.add_trace(go.Scatterpolar(
-                    r=[1,1.05],  # radio
-                    theta=[ang, ang],
+                x0, y0 = radio_in*np.cos(ang), radio_in*np.sin(ang)
+                x1, y1 = radio_out*np.cos(ang), radio_out*np.sin(ang)
+                # Dibujamos cada sector como línea gruesa
+                fig.add_trace(go.Scatter(
+                    x=[x0, x1], y=[y0, y1],
                     mode='lines',
-                    line=dict(color=colors[i], width=15),
+                    line=dict(color='red' if dias_desde_hoy[i]<0 else f'rgb({int(255*(1-(dias_desde_hoy[i]/max(dias_desde_hoy.max(),1))))},{int(255*(dias_desde_hoy[i]/max(dias_desde_hoy.max(),1)))},0)', width=15),
                     showlegend=False
                 ))
 
-            # --- Agregar aguja ---
-            # Normalizamos la posición de hoy dentro del rango de fechas
+            # --- Aguja ---
             if len(fechas_exigibilidad) > 1:
                 ratio_hoy = (hoy - fechas_exigibilidad.min()) / (fechas_exigibilidad.max() - fechas_exigibilidad.min())
-                angulo_aguja = ratio_hoy * 180
+                ang_aguja = np.pi * (1 - ratio_hoy)
             else:
-                angulo_aguja = 0
-
-            fig.add_trace(go.Scatterpolar(
-                r=[0, 1.1],
-                theta=[angulo_aguja, angulo_aguja],
+                ang_aguja = np.pi
+            x_aguja, y_aguja = 0.0 + 0.0*np.cos(ang_aguja), 0.0 + 1.0*np.sin(ang_aguja)
+            fig.add_trace(go.Scatter(
+                x=[0, np.cos(ang_aguja)],
+                y=[0, np.sin(ang_aguja)],
                 mode='lines',
                 line=dict(color='black', width=4),
                 showlegend=False
@@ -483,11 +472,8 @@ if authentication_status:
 
             # --- Layout ---
             fig.update_layout(
-                polar=dict(
-                    radialaxis=dict(visible=False, range=[0,1.2]),
-                    angularaxis=dict(visible=False, rotation=90, direction="clockwise")
-                ),
-                showlegend=False,
+                xaxis=dict(visible=False, range=[-1.1,1.1]),
+                yaxis=dict(visible=False, range=[0,1.1]),
                 width=600,
                 height=350,
                 margin=dict(t=50,b=50,l=50,r=50)
