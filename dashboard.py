@@ -429,71 +429,7 @@ if authentication_status:
 
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
-            # --- Datos ---
-            df_estado_cuenta = pd.DataFrame({
-                'codigo_cuenta': ['C101', 'C102', 'C103', 'C104'],
-                'fecha_inicio': ['2025-08-01', '2025-08-05', '2025-08-10', '2025-08-15'],
-                'fecha_exigibilidad': ['2025-08-13', '2025-08-20', '2025-08-25', '2025-08-30']
-            })
 
-            # Convertimos a datetime
-            df_estado_cuenta['fecha_inicio'] = pd.to_datetime(df_estado_cuenta['fecha_inicio'])
-            df_estado_cuenta['fecha_exigibilidad'] = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'])
-
-            # Fecha actual
-            hoy = datetime.today()
-
-            # Color según si la fecha ya pasó
-            df_estado_cuenta['color'] = df_estado_cuenta['fecha_exigibilidad'].apply(lambda x: 'red' if x < hoy else 'green')
-
-            # Crear figura
-            fig = go.Figure()
-
-            for i, row in df_estado_cuenta.iterrows():
-                fig.add_trace(go.Bar(
-                    x=[(row['fecha_exigibilidad'] - row['fecha_inicio']).days],
-                    y=[row['codigo_cuenta']],
-                    base=row['fecha_inicio'],
-                    orientation='h',
-                    marker_color=row['color'],
-                    name=row['codigo_cuenta'],
-                    hovertemplate=f"Cuenta: {row['codigo_cuenta']}<br>Inicio: {row['fecha_inicio'].date()}<br>Exigibilidad: {row['fecha_exigibilidad'].date()}"
-                ))
-
-            fig.add_shape(
-                type="line",
-                x0=hoy, x1=hoy,
-                y0=0, y1=1,
-                xref="x", yref="paper",
-                line=dict(color="blue", dash="dash")
-            )
-
-            # Agregamos un texto manualmente
-            fig.add_annotation(
-                x=hoy,
-                y=1,
-                xref="x",
-                yref="paper",
-                text=f"Hoy ({hoy.strftime('%Y-%m-%d')})",
-                showarrow=False,
-                font=dict(color="blue")
-            )
-
-            fig.update_layout(
-                barmode='stack',
-                height=400,
-                title="Timeline de Fechas de Exigibilidad por Cuenta",
-                yaxis=dict(autorange="reversed")  # primera cuenta arriba
-            )
-
-            # Días restantes hasta la próxima fecha no vencida
-            dias_restantes = min(
-                [(f - hoy).days for f in df_estado_cuenta['fecha_exigibilidad'] if f > hoy],
-                default=0
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
-            st.markdown(f"**Días restantes hasta la próxima fecha de exigibilidad:** {dias_restantes}")
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
             hoy = datetime.today()
