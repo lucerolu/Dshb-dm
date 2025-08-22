@@ -429,65 +429,62 @@ if authentication_status:
 
 
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
+            # --- Datos de ejemplo ---
+            # df_estado_cuenta debe tener la columna 'fecha_exigibilidad' en formato datetime o string "YYYY-MM-DD"
+            df_estado_cuenta = pd.DataFrame({
+                "fecha_exigibilidad": ["2025-08-13", "2025-08-20", "2025-09-05", "2025-09-20"]
+            })
+            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+            df_estado_cuenta = df_estado_cuenta.sort_values("fecha_exigibilidad")
 
-            # --- Datos ---
-            hoy = pd.Timestamp(datetime.today())
-            fechas_exigibilidad = pd.to_datetime(df_estado_cuenta['fecha_exigibilidad'].sort_values())
-            dias_desde_hoy = np.array([(f - hoy).days for f in fechas_exigibilidad])
+            # --- Calcular días hasta cada fecha ---
+            hoy = datetime.today()
+            fechas_exigibilidad = df_estado_cuenta["fecha_exigibilidad"].tolist()
+            dias_desde_hoy = [(f - hoy).days for f in fechas_exigibilidad]
 
-            # próxima fecha no vencida
+            # Próxima fecha no vencida
             dias_restantes = min([d for d in dias_desde_hoy if d > 0], default=0)
 
-            # colores degradados rojo -> verde
+            # Crear colores degradados (rojo -> naranja -> amarillo -> verde)
             colors = []
+            max_dia = max(max(dias_desde_hoy),1)
             for d in dias_desde_hoy:
                 if d < 0:
-                    colors.append('red')
+                    colors.append("red")
                 else:
-                    ratio = d / max(dias_desde_hoy.max(),1)
+                    ratio = d / max_dia
                     r = int(255*(1-ratio))
                     g = int(255*ratio)
                     b = 0
-                    colors.append(f'rgb({r},{g},{b})')
+                    colors.append(f"rgb({r},{g},{b})")
 
-            # --- Crear posiciones angulares para semicirculo ---
-            num_fechas = len(fechas_exigibilidad)
-            angles = np.linspace(-90, 90, num_fechas)  # -90° a 90° para semicirculo
+            # --- Configurar valores del gauge ---
+            # La aguja marcará la posición de "hoy" relativa al rango de fechas
+            min_val = 0
+            max_val = max_dia
+            # Valor del gauge: número de días hasta la próxima fecha no vencida
+            valor_gauge = dias_restantes
 
-            fig = go.Figure()
+            # --- Construir gauge ---
+            fig = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = valor_gauge,
+                number = {'suffix': " días"},
+                gauge = {
+                    'axis': {'range': [min_val, max_val]},
+                    'bar': {'color': "black"},  # aguja
+                    'steps': [{'range': [dias_desde_hoy[i-1] if i>0 else 0, dias_desde_hoy[i]], 'color': colors[i]} 
+                            for i in range(len(fechas_exigibilidad))],
+                },
+                title = {'text': "Días hasta la próxima fecha de exigibilidad"}
+            ))
 
-            # --- Dibujar segmentos como líneas en semicirculo ---
-            for i, angle in enumerate(angles):
-                rad = np.radians(angle)
-                x = [0, np.cos(rad)]
-                y = [0, np.sin(rad)]
-                fig.add_trace(go.Scatter(x=x, y=y, mode='lines',
-                                        line=dict(color=colors[i], width=10),
-                                        showlegend=False,
-                                        hoverinfo='skip'))
+            fig.update_layout(height=400, margin=dict(t=50,b=50,l=50,r=50))
 
-            # --- Aguja ---
-            # posición de la aguja según la primera fecha no vencida
-            posicion_aguja = np.where(dias_desde_hoy >= 0)[0][0] if any(dias_desde_hoy>=0) else 0
-            angulo_aguja = angles[posicion_aguja]
-            rad = np.radians(angulo_aguja)
-            fig.add_trace(go.Scatter(x=[0, 0.9*np.cos(rad)],
-                                    y=[0, 0.9*np.sin(rad)],
-                                    mode='lines',
-                                    line=dict(color='black', width=4),
-                                    showlegend=False))
-
-            # --- Config layout ---
-            fig.update_layout(
-                width=500,
-                height=300,
-                xaxis=dict(showgrid=False, zeroline=False, visible=False),
-                yaxis=dict(showgrid=False, zeroline=False, visible=False),
-                margin=dict(t=20,b=20,l=20,r=20)
-            )
-
+            # --- Mostrar en Streamlit ---
             st.plotly_chart(fig, use_container_width=True)
-            st.markdown(f"**Días restantes hasta la próxima fecha de exigibilidad:** {dias_restantes}")
+            st.markdown(f"**Días restantes hasta la próxima fecha no vencida:** {dias_restantes}")
+
 
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
         
