@@ -529,6 +529,9 @@ if authentication_status:
             }
             """)
 
+            # Excluir Total explícitamente
+            buckets_cols = [c for c in numeric_cols_sin_total if c != ultima_col and c != "Total"]
+
             # --- Crear lista JS de columnas con gradiente ---
             buckets_cols_js_str = str(buckets_cols)  # ejemplo: ["Vencido","0-30 días",...]
 
@@ -619,13 +622,13 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
             )
 
-            # --- Custom CSS para los headers ---
+            # CSS actualizado para +91 días
             custom_css = {
                 ".header-Vencido": {"border-bottom": "4px solid red", "text-align": "left"},
                 ".header-0-30días": {"border-bottom": "4px solid orange", "text-align": "left"},
                 ".header-31-60días": {"border-bottom": "4px solid yellow", "text-align": "left"},
                 ".header-61-90días": {"border-bottom": "4px solid lightgreen", "text-align": "left"},
-                ".header-91+días": {"border-bottom": "4px solid green", "text-align": "left"},
+                ".header-91días": {"border-bottom": "4px solid green", "text-align": "left"},
                 ".header-total": {"border-bottom": "4px solid #0B083D", "text-align": "left"},
                 ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
                 ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
