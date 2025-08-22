@@ -561,6 +561,13 @@ if authentication_status:
             }
             """)
 
+            # Crear columna combinada
+            data_sin_total["codigo_sucursal"] = data_sin_total["codigo"] + " - " + data_sin_total["sucursal"]
+
+            # Reordenar columnas: la combinada primero, luego los buckets, y eliminar las originales
+            columnas_finales = ["codigo_sucursal"] + numeric_cols_sin_total + [ultima_col]
+            data_sin_total = data_sin_total[columnas_finales]
+
             # --- Configuración AgGrid ---
             columnas = list(data_sin_total.columns)
             if "codigo" in columnas and "sucursal" in columnas:
@@ -571,11 +578,13 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columnas fijas
-            gb.configure_column("codigo", pinned="left", minWidth=90,
-                                cellStyle={'backgroundColor': '#0B083D','color': 'black','fontWeight': 'bold','textAlign':'right'})
-            gb.configure_column("sucursal", minWidth=130,
-                                cellStyle={'backgroundColor': '#ffffff','color': 'black','fontWeight': 'bold','textAlign':'right'})
+            # Columna combinada con estilo azul
+            gb.configure_column(
+                "codigo_sucursal",
+                pinned="left",
+                minWidth=200,
+                cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
+            )
 
             # Buckets
             for col in numeric_cols_sin_total:
