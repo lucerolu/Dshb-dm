@@ -833,7 +833,7 @@ if authentication_status:
                 "codigo",
                 headerName="Código",
                 flex=1,           # Se expande proporcionalmente
-                minWidth=120,     # Nunca menor a 120px
+                minWidth=90,     # Nunca menor a 120px
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -846,7 +846,7 @@ if authentication_status:
                 "sucursal",
                 headerName="Sucursal",
                 flex=1,
-                minWidth=120,
+                minWidth=100,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -860,7 +860,7 @@ if authentication_status:
                 gb.configure_column(
                     col,
                     flex=1,                # Se expande proporcionalmente
-                    minWidth=80,           # Ancho mínimo
+                    minWidth=90,           # Ancho mínimo
                     headerClass='header-left',
                     headerStyle=header_vencimiento,   # línea de vencimiento en header
                     cellStyle=gradient_y_line_renderer,
@@ -871,7 +871,7 @@ if authentication_status:
             gb.configure_column(
                 ultima_col,
                 flex=1,
-                minWidth=120,
+                minWidth=130,
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
             )
