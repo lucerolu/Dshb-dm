@@ -914,40 +914,33 @@ if authentication_status:
             on_grid_ready = JsCode(f"""
             function(params) {{
                 console.log("✅ onGridReady ejecutado");
+
                 function ajustarColumnas() {{
-                    // --- Todas las columnas (incluye pinned) ---
                     let allColumnIds = [];
                     params.columnApi.getAllColumns().forEach(function(col) {{
                         allColumnIds.push(col.getColId());
                     }});
 
-                    // Autoajuste individual de cada columna
-                    allColumnIds.forEach(function(colId) {{
-                        params.columnApi.autoSizeColumn(colId, false);
-                    }});
+                    // Paso 1 → Ajustar cada columna al contenido mínimo
+                    params.columnApi.autoSizeColumns(allColumnIds, false);
 
-                    // --- Ajuste especial para pinned (para garantizar ancho mínimo) ---
-                    ['codigo', 'sucursal', '{ultima_col}'].forEach(function(colKey) {{
-                        if (params.columnApi.getColumn(colKey)) {{
-                            params.columnApi.autoSizeColumn(colKey, false);
-                        }}
-                    }});
+                    // Paso 2 → Expandir al ancho de la pantalla si sobra espacio
+                    params.api.sizeColumnsToFit();
                 }}
 
-                // Primera ejecución
+                // Ejecutar al inicio
                 ajustarColumnas();
 
-                // Reajustar tras 300ms por si tarda el renderizado
+                // Reajustar tras un pequeño delay (por si tarda el renderizado)
                 setTimeout(ajustarColumnas, 300);
 
-                // Reajustar al cambiar tamaño de ventana
+                // Reajustar al redimensionar ventana
                 window.addEventListener('resize', ajustarColumnas);
 
-                // ResizeObserver para asegurar redibujo
-                const gridDiv = params.api.gridBodyCtrl.eGridBody;
+                // ResizeObserver para asegurar redibujo cuando cambia el grid
                 if (window.ResizeObserver) {{
                     const ro = new ResizeObserver(() => ajustarColumnas());
-                    ro.observe(gridDiv);
+                    ro.observe(params.api.getGridBodyElement());
                 }}
             }}
             """)
