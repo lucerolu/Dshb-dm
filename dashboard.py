@@ -920,26 +920,28 @@ if authentication_status:
                     params.columnApi.getAllColumns().forEach(function(col) {{
                         allColumnIds.push(col.getColId());
                     }});
+
+                    // 👇 Autoajustar columnas al contenido
                     params.columnApi.autoSizeColumns(allColumnIds, false);
 
-                    // 👇 Ajuste manual de columnas pinned
+                    // 👇 Asegurarse de ajustar columnas pinned y Total también
                     ['codigo', 'sucursal', '{ultima_col}'].forEach(function(colKey) {{
                         if (params.columnApi.getColumn(colKey)) {{
                             params.columnApi.autoSizeColumn(colKey, false);
                         }}
                     }});
-
-                    // 👇 Modo escritorio: ocupa todo el ancho si sobra espacio
-                    if (window.innerWidth > 768) {{
-                        params.api.sizeColumnsToFit();
-                    }}
                 }}
 
+                // Ajuste inicial
                 ajustarColumnas();
+
+                // Ajuste tras un pequeño delay
                 setTimeout(ajustarColumnas, 300);
+
+                // Reajustar al cambiar tamaño de ventana
                 window.addEventListener('resize', ajustarColumnas);
 
-                // 👇 ResizeObserver para asegurar redibujo
+                // Reajustar con ResizeObserver para asegurar que todo se vea bien
                 const gridDiv = params.api.gridBodyCtrl.eGridBody;
                 if (window.ResizeObserver) {{
                     const ro = new ResizeObserver(() => ajustarColumnas());
