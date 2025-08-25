@@ -814,7 +814,7 @@ if authentication_status:
                 headerName="Código",   # 👈 aquí
                 pinned="left",
                 minWidth=110,
-                width=180,
+                width=150,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -827,7 +827,7 @@ if authentication_status:
                 "sucursal",
                 headerName="Sucursal",   # 👈 aquí
                 minWidth=110,
-                width=180,
+                width=150,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
