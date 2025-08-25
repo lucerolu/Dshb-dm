@@ -915,33 +915,35 @@ if authentication_status:
             on_grid_ready = JsCode(f"""
             function(params) {{
                 function ajustarColumnas() {{
-                    // 👇 Todas las columnas
+                    // --- Todas las columnas (incluye pinned) ---
                     let allColumnIds = [];
                     params.columnApi.getAllColumns().forEach(function(col) {{
                         allColumnIds.push(col.getColId());
+                    }}}});  // <-- todas las llaves JS dobladas
+
+                    // Autoajuste individual de cada columna
+                    allColumnIds.forEach(function(colId){{
+                        params.columnApi.autoSizeColumn(colId, false);
                     }});
 
-                    // 👇 Autoajustar columnas al contenido
-                    params.columnApi.autoSizeColumns(allColumnIds, false);
-
-                    // 👇 Asegurarse de ajustar columnas pinned y Total también
+                    // --- Ajuste especial para pinned (para garantizar ancho mínimo) ---
                     ['codigo', 'sucursal', '{ultima_col}'].forEach(function(colKey) {{
                         if (params.columnApi.getColumn(colKey)) {{
                             params.columnApi.autoSizeColumn(colKey, false);
                         }}
                     }});
-                }}
+                }}  // cerrar ajustarColumnas
 
-                // Ajuste inicial
+                // Primera ejecución
                 ajustarColumnas();
 
-                // Ajuste tras un pequeño delay
+                // Reajustar tras 300ms por si tarda el renderizado
                 setTimeout(ajustarColumnas, 300);
 
                 // Reajustar al cambiar tamaño de ventana
                 window.addEventListener('resize', ajustarColumnas);
 
-                // Reajustar con ResizeObserver para asegurar que todo se vea bien
+                // ResizeObserver para asegurar redibujo
                 const gridDiv = params.api.gridBodyCtrl.eGridBody;
                 if (window.ResizeObserver) {{
                     const ro = new ResizeObserver(() => ajustarColumnas());
