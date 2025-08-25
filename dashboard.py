@@ -912,33 +912,40 @@ if authentication_status:
             }
 
             # --- Script para scroll horizontal en móviles ---
-            on_grid_ready = JsCode("""
-            function(params) {
-                function ajustarColumnas() {
-                    if (window.innerWidth <= 768) {
-                        // 👇 Modo móvil: ajusta al contenido
-                        let allColumnIds = [];
-                        params.columnApi.getAllColumns().forEach(function(col) {
-                            allColumnIds.push(col.getId());
-                        });
-                        params.columnApi.autoSizeColumns(allColumnIds, false); 
-                    } else {
-                        // 👇 Modo escritorio: ocupa todo el ancho
+            on_grid_ready = JsCode(f"""
+            function(params) {{
+                function ajustarColumnas() {{
+                    // 👇 Todas las columnas
+                    let allColumnIds = [];
+                    params.columnApi.getAllColumns().forEach(function(col) {{
+                        allColumnIds.push(col.getColId());
+                    }});
+                    params.columnApi.autoSizeColumns(allColumnIds, false);
+
+                    // 👇 Ajuste manual de columnas pinned
+                    ['codigo', 'sucursal', '{ultima_col}'].forEach(function(colKey) {{
+                        if (params.columnApi.getColumn(colKey)) {{
+                            params.columnApi.autoSizeColumn(colKey, false);
+                        }}
+                    }});
+
+                    // 👇 Modo escritorio: ocupa todo el ancho si sobra espacio
+                    if (window.innerWidth > 768) {{
                         params.api.sizeColumnsToFit();
-                    }
-                }
+                    }}
+                }}
 
                 ajustarColumnas();
                 setTimeout(ajustarColumnas, 300);
                 window.addEventListener('resize', ajustarColumnas);
 
-                // También con ResizeObserver para asegurar redibujo
+                // 👇 ResizeObserver para asegurar redibujo
                 const gridDiv = params.api.gridBodyCtrl.eGridBody;
-                if (window.ResizeObserver) {
+                if (window.ResizeObserver) {{
                     const ro = new ResizeObserver(() => ajustarColumnas());
                     ro.observe(gridDiv);
-                }
-            }
+                }}
+            }}
             """)
 
             grid_options = gb.build()
