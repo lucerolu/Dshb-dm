@@ -916,14 +916,23 @@ if authentication_status:
             function(params) {
                 function ajustarColumnas() {
                     if (window.innerWidth <= 768) {
-                        params.api.resetColumnState();
+                        // 👇 Modo móvil: ajusta al contenido
+                        let allColumnIds = [];
+                        params.columnApi.getAllColumns().forEach(function(col) {
+                            allColumnIds.push(col.getId());
+                        });
+                        params.columnApi.autoSizeColumns(allColumnIds, false); 
                     } else {
+                        // 👇 Modo escritorio: ocupa todo el ancho
                         params.api.sizeColumnsToFit();
                     }
                 }
+
                 ajustarColumnas();
                 setTimeout(ajustarColumnas, 300);
                 window.addEventListener('resize', ajustarColumnas);
+
+                // También con ResizeObserver para asegurar redibujo
                 const gridDiv = params.api.gridBodyCtrl.eGridBody;
                 if (window.ResizeObserver) {
                     const ro = new ResizeObserver(() => ajustarColumnas());
@@ -966,8 +975,8 @@ if authentication_status:
                 height=800,
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=False,
-                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                fit_columns_on_grid_load=False,   # 👈 desactivamos el auto por defecto
+                columns_auto_size_mode=None,      # 👈 no forzar FIT_CONTENTS global
                 enable_enterprise_modules=False
             )
 
