@@ -913,6 +913,7 @@ if authentication_status:
 
             on_grid_ready = JsCode(f"""
             function(params) {{
+                console.log("✅ onGridReady ejecutado");
                 function ajustarColumnas() {{
                     // --- Todas las columnas (incluye pinned) ---
                     let allColumnIds = [];
