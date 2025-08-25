@@ -809,33 +809,6 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            gb.configure_column(
-                "codigo",
-                headerName="Código",   # 👈 aquí
-                pinned="left",
-                #minWidth=110,
-                #width=150,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign':'right'
-                }
-            )
-
-            gb.configure_column(
-                "sucursal",
-                headerName="Sucursal",   # 👈 aquí
-                #minWidth=110,
-                #width=150,
-                cellStyle={
-                    'backgroundColor': '#0B083D',
-                    'color': 'white',
-                    'fontWeight': 'bold',
-                    'textAlign':'right'
-                }
-            )
-
             # --- Función JS para color de vencimiento en header ---
             header_vencimiento = JsCode(f"""
             function(params) {{
@@ -855,25 +828,54 @@ if authentication_status:
             }}
             """)
 
+            # --- Columnas principales: Código y Sucursal ---
+            gb.configure_column(
+                "codigo",
+                headerName="Código",
+                flex=1,           # Se expande proporcionalmente
+                minWidth=120,     # Nunca menor a 120px
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign':'right'
+                }
+            )
+
+            gb.configure_column(
+                "sucursal",
+                headerName="Sucursal",
+                flex=1,
+                minWidth=120,
+                cellStyle={
+                    'backgroundColor': '#0B083D',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'textAlign':'right'
+                }
+            )
+
+            # --- Columnas numéricas ---
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    #minWidth=100,
+                    flex=1,                # Se expande proporcionalmente
+                    minWidth=80,           # Ancho mínimo
                     headerClass='header-left',
-                    headerStyle=header_vencimiento,   # línea en el header
-                    cellStyle=gradient_y_line_renderer,  # degradado + barra vertical normal
-                    #pinnedRowCellStyle=total_row_renderer,  # <- línea superior en fila total anclada
+                    headerStyle=header_vencimiento,   # línea de vencimiento en header
+                    cellStyle=gradient_y_line_renderer,
                     valueFormatter=value_formatter
                 )
 
-            # Columna Total (solo estilo)
+            # --- Columna Total ---
             gb.configure_column(
                 ultima_col,
-                #minWidth=120,
-                headerClass='header-left',
+                flex=1,
+                minWidth=120,
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
             )
+
 
             custom_css = {
                 # Alineación headers normales
@@ -977,18 +979,18 @@ if authentication_status:
             grid_options["onGridReady"] = on_grid_ready
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             
-
-            # --- Renderizado final ---
+            # --- Renderizado final de AgGrid (100% ancho, responsivo) ---
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
                 custom_css=custom_css,
-                height=800,
+                height=800,                      # Alto fijo, puedes ajustar según necesites
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=False,   # 👈 desactivamos el auto por defecto
-                columns_auto_size_mode=None,      # 👈 no forzar FIT_CONTENTS global
-                enable_enterprise_modules=False
+                fit_columns_on_grid_load=False,  # Ya usamos flex, no hace falta auto-fit
+                enable_enterprise_modules=False,
+                # Esta opción asegura que tome todo el ancho del contenedor Streamlit
+                use_container_width=True
             )
 
             #--------------------- BOTON DE DESCARGA -----------
