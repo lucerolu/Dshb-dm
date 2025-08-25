@@ -813,7 +813,7 @@ if authentication_status:
                 "codigo",
                 headerName="Código",   # 👈 aquí
                 pinned="left",
-                minWidth=150,
+                minWidth=110,
                 width=180,
                 cellStyle={
                     'backgroundColor': '#0B083D',
@@ -826,7 +826,7 @@ if authentication_status:
             gb.configure_column(
                 "sucursal",
                 headerName="Sucursal",   # 👈 aquí
-                minWidth=150,
+                minWidth=110,
                 width=180,
                 cellStyle={
                     'backgroundColor': '#0B083D',
