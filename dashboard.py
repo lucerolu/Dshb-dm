@@ -806,8 +806,13 @@ if authentication_status:
                 columnas.remove("sucursal")
                 data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
 
+            # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
+
+            # Deja que cada columna se ajuste a su contenido
+            for col in data_sin_total.columns:
+                gb.configure_column(col, autoSize=True)
 
             gb.configure_column(
                 "codigo",
@@ -911,40 +916,6 @@ if authentication_status:
                 }
             }
 
-            on_grid_ready = JsCode(f"""
-            function(params) {{
-                console.log("✅ onGridReady ejecutado");
-
-                function ajustarColumnas() {{
-                    let allColumnIds = [];
-                    params.columnApi.getAllColumns().forEach(function(col) {{
-                        allColumnIds.push(col.getColId());
-                    }});
-
-                    // Paso 1 → Ajustar cada columna al contenido mínimo
-                    params.columnApi.autoSizeColumns(allColumnIds, false);
-
-                    // Paso 2 → Expandir al ancho de la pantalla si sobra espacio
-                    params.api.sizeColumnsToFit();
-                }}
-
-                // Ejecutar al inicio
-                ajustarColumnas();
-
-                // Reajustar tras un pequeño delay (por si tarda el renderizado)
-                setTimeout(ajustarColumnas, 300);
-
-                // Reajustar al redimensionar ventana
-                window.addEventListener('resize', ajustarColumnas);
-
-                // ResizeObserver para asegurar redibujo cuando cambia el grid
-                if (window.ResizeObserver) {{
-                    const ro = new ResizeObserver(() => ajustarColumnas());
-                    ro.observe(params.api.getGridBodyElement());
-                }}
-            }}
-            """)
-
             grid_options = gb.build()
             hoy_py = datetime.today()
             total_row_styles = {}
@@ -967,10 +938,34 @@ if authentication_status:
                 "backgroundColor": "#0B083D"
             }
 
-            grid_options["onGridReady"] = on_grid_ready
+            grid_options = gb.build()
+            grid_options["onGridReady"] = JsCode("""
+            function(params) {
+                console.log("✅ onGridReady ejecutado");
+
+                function ajustarColumnas() {
+                    // Ajusta primero al contenido
+                    params.columnApi.autoSizeAllColumns();
+
+                    // Si sobra espacio, expandir proporcionalmente
+                    params.api.sizeColumnsToFit();
+                }
+
+                // Ejecutar al inicio
+                ajustarColumnas();
+
+                // Reajustar cuando los datos se rendericen
+                params.api.addEventListener('firstDataRendered', ajustarColumnas);
+
+                // Reajustar al redimensionar ventana
+                window.addEventListener('resize', ajustarColumnas);
+
+                // Delay extra por seguridad
+                setTimeout(ajustarColumnas, 300);
+            }
+            """)
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
             
-
             # --- Renderizado final ---
             AgGrid(
                 data_sin_total,
