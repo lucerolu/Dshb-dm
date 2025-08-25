@@ -858,7 +858,7 @@ if authentication_status:
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    minWidth=100,
+                    #minWidth=100,
                     headerClass='header-left',
                     headerStyle=header_vencimiento,   # línea en el header
                     cellStyle=gradient_y_line_renderer,  # degradado + barra vertical normal
@@ -869,7 +869,7 @@ if authentication_status:
             # Columna Total (solo estilo)
             gb.configure_column(
                 ultima_col,
-                minWidth=120,
+                #minWidth=120,
                 headerClass='header-left',
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
