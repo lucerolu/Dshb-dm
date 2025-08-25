@@ -914,22 +914,18 @@ if authentication_status:
             on_grid_ready = JsCode(f"""
             function(params) {{
                 function ajustarColumnas() {{
+                    // --- Todas las columnas (incluye pinned) ---
                     let allColumnIds = [];
                     params.columnApi.getAllColumns().forEach(function(col) {{
                         allColumnIds.push(col.getColId());
                     }});
 
-                    if (window.innerWidth <= 768) {{
-                        // 👇 En móvil: ajusta cada columna a su contenido
-                        allColumnIds.forEach(function(colId) {{
-                            params.columnApi.autoSizeColumn(colId, false);
-                        }});
-                    }} else {{
-                        // 👇 En escritorio: ocupa todo el ancho
-                        params.api.sizeColumnsToFit();
-                    }}
+                    // Autoajuste individual de cada columna
+                    allColumnIds.forEach(function(colId) {{
+                        params.columnApi.autoSizeColumn(colId, false);
+                    }});
 
-                    // 👇 Ajuste manual extra para columnas pinned y Total
+                    // --- Ajuste especial para pinned (para garantizar ancho mínimo) ---
                     ['codigo', 'sucursal', '{ultima_col}'].forEach(function(colKey) {{
                         if (params.columnApi.getColumn(colKey)) {{
                             params.columnApi.autoSizeColumn(colKey, false);
