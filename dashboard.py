@@ -800,11 +800,11 @@ if authentication_status:
                     return "transparent"
 
             # --- Configuración inicial del grid ---
-            columnas = list(data_sin_total.columns)
-            if "codigo" in columnas and "sucursal" in columnas:
-                columnas.remove("codigo")
-                columnas.remove("sucursal")
-                data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
+            col_id_map = {}
+            for col in numeric_cols_sin_total + [ultima_col]:
+                col_str = str(col)   # <- convertir a string
+                safe_id = col_str.replace("/", "_").replace(" ", "_")
+                col_id_map[col_str] = safe_id
 
             # --- Mapear columnas a col-id seguros ---
             col_id_map = {}
@@ -813,9 +813,12 @@ if authentication_status:
                 col_id_map[col] = safe_id
 
             # Renombrar columnas en DataFrame para AgGrid
-            data_sin_total_renamed = data_sin_total.rename(columns=col_id_map)
-            ultima_col_safe = col_id_map[ultima_col]
-            numeric_cols_sin_total_safe = [col_id_map[c] for c in numeric_cols_sin_total]
+            data_sin_total_renamed = data_sin_total.rename(columns={str(k):v for k,v in col_id_map.items()})
+            ultima_col_safe = col_id_map[str(ultima_col)]
+            numeric_cols_sin_total_safe = [col_id_map[str(c)] for c in numeric_cols_sin_total]
+            numeric_cols_sin_total = [c for c in numeric_cols_sin_total if c is not None]
+            if ultima_col is None:
+                ultima_col = numeric_cols_sin_total[-1]  # fallback
 
             # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total_renamed)
