@@ -433,7 +433,7 @@ if authentication_status:
 
 
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
-            # --- Configuración inicial ---
+            # --- Fechas y estado ---
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
@@ -466,25 +466,32 @@ if authentication_status:
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
 
-            # --- Configuración de filas y columnas ---
+            # --- Configuración de columnas ---
             cols_per_row = 4
             num_rows = math.ceil(len(meses)/cols_per_row)
+            cell_size = 1  # tamaño de cada recuadro
+            gap = 0.05     # pequeño gap entre días
 
-            fig = make_subplots(
-                rows=num_rows, cols=cols_per_row,
-                subplot_titles=[f"{calendar.month_name[m.month]} {m.year}" for m in meses]
-            )
+            fig = go.Figure()
 
-            # --- Meses en español ---
-            meses_es = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-
+            # --- Posición de cada mes ---
             for idx, m in enumerate(meses):
-                row = idx // cols_per_row + 1
-                col = idx % cols_per_row + 1
+                row = idx // cols_per_row
+                col = idx % cols_per_row
+                x_offset = col * (7 * (cell_size + gap) + 1)  # 7 días + espacio para título
+                y_offset = -row * (6 * (cell_size + gap) + 2)  # 6 semanas + espacio para nombre mes
 
                 cal = calendar.Calendar(firstweekday=0)
                 month_matrix = cal.monthdatescalendar(m.year, m.month)
+
+                # Agregar nombre del mes
+                fig.add_annotation(
+                    x=x_offset + 3,  # centro del mes
+                    y=y_offset + 1,
+                    text=f"{calendar.month_name[m.month]} {m.year}",
+                    showarrow=False,
+                    font=dict(size=14, family="Arial", color="black")
+                )
 
                 # Dibujar días
                 for week_idx, week in enumerate(month_matrix):
@@ -494,15 +501,14 @@ if authentication_status:
                             estado = estado.values[0] if len(estado) > 0 else None
                             color = color_map[estado]
 
-                            # Scatter cuadrado uniforme
                             fig.add_trace(
                                 go.Scatter(
-                                    x=[day_idx],
-                                    y=[-week_idx],
+                                    x=[x_offset + day_idx],
+                                    y=[y_offset - week_idx],
                                     mode="markers+text",
                                     marker=dict(
                                         color=color,
-                                        size=50,
+                                        size=cell_size*40,
                                         line=dict(color="black", width=1),
                                         symbol="square"
                                     ),
@@ -512,21 +518,28 @@ if authentication_status:
                                     showlegend=False,
                                     hovertext=f"{day.strftime('%d-%m-%Y')}<br>{estado if estado else ''}",
                                     hoverinfo="text"
-                                ),
-                                row=row, col=col
+                                )
                             )
 
-                # Ajustar ejes para cuadrícula uniforme
-                fig.update_xaxes(range=[-0.5, 6.5], row=row, col=col, showgrid=False, zeroline=False, showticklabels=False)
-                fig.update_yaxes(range=[-len(month_matrix),1], row=row, col=col, showgrid=False, zeroline=False, showticklabels=False, scaleanchor=f"x{idx+1}")
+                # Nombres de días de la semana
+                for i, day_name in enumerate(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]):
+                    fig.add_annotation(
+                        x=x_offset + i,
+                        y=y_offset + 0.5,
+                        text=day_name,
+                        showarrow=False,
+                        font=dict(size=10, color="black")
+                    )
 
+            # Ajustes finales
+            fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
+            fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
             fig.update_layout(
                 height=250*num_rows,
                 width=300*cols_per_row,
-                title="Calendario de Fechas de Exigibilidad tipo Agenda",
-                showlegend=False,
                 plot_bgcolor="white",
-                margin=dict(t=50, b=20, l=20, r=20)
+                margin=dict(t=50, b=20, l=20, r=20),
+                title="Calendario de Fechas de Exigibilidad tipo Agenda"
             )
 
             st.plotly_chart(fig, use_container_width=True)
