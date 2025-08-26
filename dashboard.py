@@ -810,16 +810,12 @@ if authentication_status:
             gb = GridOptionsBuilder.from_dataframe(data_sin_total)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Deja que cada columna se ajuste a su contenido
-            for col in data_sin_total.columns:
-                gb.configure_column(col, autoSize=True)
-
+            # ❌ ya no usamos autoSize=True en cada columna
+            # Deja la definición normal
             gb.configure_column(
                 "codigo",
-                headerName="Código",   # 👈 aquí
+                headerName="Código",
                 pinned="left",
-                #minWidth=110,
-                #width=150,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -827,12 +823,9 @@ if authentication_status:
                     'textAlign':'right'
                 }
             )
-
             gb.configure_column(
                 "sucursal",
-                headerName="Sucursal",   # 👈 aquí
-                #minWidth=110,
-                #width=150,
+                headerName="Sucursal",
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -860,21 +853,21 @@ if authentication_status:
             }}
             """)
 
+
+
+            # Numéricas
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
-                    #minWidth=100,
                     headerClass='header-left',
-                    headerStyle=header_vencimiento,   # línea en el header
-                    cellStyle=gradient_y_line_renderer,  # degradado + barra vertical normal
-                    #pinnedRowCellStyle=total_row_renderer,  # <- línea superior en fila total anclada
+                    headerStyle=header_vencimiento,
+                    cellStyle=gradient_y_line_renderer,
                     valueFormatter=value_formatter
                 )
 
-            # Columna Total (solo estilo)
+            # Columna Total
             gb.configure_column(
                 ultima_col,
-                #minWidth=120,
                 headerClass='header-left',
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
@@ -914,6 +907,7 @@ if authentication_status:
                     "padding-top": "2px",
                     "padding-bottom": "2px"
                 }
+                
             }
 
             # Construcción de grid_options SOLO UNA VEZ
@@ -941,7 +935,7 @@ if authentication_status:
                 "backgroundColor": "#0B083D"
             }
 
-            # 👉 acá le inyectas el onGridReady
+            # 👉 acá le inyectas el onGridReady (se queda igual que la versión corregida)
             grid_options["onGridReady"] = JsCode("""
             function(params) {
                 console.log("✅ onGridReady ejecutado");
@@ -975,7 +969,7 @@ if authentication_status:
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
-                custom_css=custom_css,
+                custom_css=custom_css,   # <-- aquí entra tu bloque completo con lo de vencimiento agregado
                 height=800,
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
