@@ -457,6 +457,9 @@ if authentication_status:
             fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
 
+            # --- Crear lista de meses ---
+            meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
+
             # --- Generar un DataFrame con todos los días en el rango ---
             fechas = pd.date_range(start=fecha_min, end=fecha_max, freq="D")
             df_cal = pd.DataFrame({"fecha": fechas})
@@ -477,48 +480,40 @@ if authentication_status:
             }
             df_cal["color"] = df_cal["estado"].map(color_map)
 
-            # --- Dibujar calendario mes por mes ---
+            # --- Crear subplots: un mes por fila ---
             fig = make_subplots(
-                rows=(fecha_max.year - fecha_min.year) * 12 + (fecha_max.month - fecha_min.month) + 1,
+                rows=len(meses),
                 cols=1,
-                subplot_titles=[f"{calendar.month_name[m]} {y}" 
-                                for y in range(fecha_min.year, fecha_max.year+1)
-                                for m in range(1, 13)
-                                if (y > fecha_min.year or m >= fecha_min.month) and (y < fecha_max.year or m <= fecha_max.month)]
+                subplot_titles=[f"{calendar.month_name[m.month]} {m.year}" for m in meses]
             )
 
-            row = 1
-            for y in range(fecha_min.year, fecha_max.year+1):
-                for m in range(1, 13):
-                    if (y > fecha_min.year or m >= fecha_min.month) and (y < fecha_max.year or m <= fecha_max.month):
-                        month_days = pd.date_range(start=f"{y}-{m:02d}-01", end=f"{y}-{m:02d}-{calendar.monthrange(y, m)[1]}")
-                        # grid: semanas x días
-                        semanas = []
-                        colores = []
-                        for d in month_days:
-                            semana = d.isocalendar()[1]
-                            if semana not in [w[0] for w in semanas]:
-                                semanas.append([semana])
-                            semanas[-1].append(d)
-                            colores.append(df_cal.loc[df_cal["fecha"] == d, "color"].values[0])
-                        
-                        x = [d.day for d in month_days]
-                        y = [d.weekday() for d in month_days]  # lunes=0, domingo=6
-                        fig.add_trace(
-                            go.Scatter(
-                                x=x,
-                                y=y,
-                                mode="markers",
-                                marker=dict(color=colores, size=30, line=dict(color="black", width=1)),
-                                text=[f"{d.strftime('%d-%m-%Y')}<br>{df_cal.loc[df_cal['fecha']==d,'estado'].values[0]}" for d in month_days],
-                                hoverinfo="text"
-                            ),
-                            row=row, col=1
-                        )
-                        row += 1
+            # --- Dibujar cada mes ---
+            for i, m in enumerate(meses, start=1):
+                month_days = pd.date_range(start=m, end=m + pd.offsets.MonthEnd(0))
+                x = [d.day for d in month_days]
+                y = [d.weekday() for d in month_days]  # lunes=0, domingo=6
+                colores = [df_cal.loc[df_cal["fecha"] == d, "color"].values[0] for d in month_days]
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=x,
+                        y=y,
+                        mode="markers",
+                        marker=dict(color=colores, size=30, line=dict(color="black", width=1)),
+                        text=[f"{d.strftime('%d-%m-%Y')}<br>{df_cal.loc[df_cal['fecha']==d,'estado'].values[0]}" for d in month_days],
+                        hoverinfo="text"
+                    ),
+                    row=i, col=1
+                )
+
+                fig.update_yaxes(
+                    tickvals=list(range(7)),
+                    ticktext=["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+                    row=i, col=1
+                )
 
             fig.update_layout(
-                height=300*row,
+                height=300*len(meses),
                 showlegend=False,
                 title="Calendario de fechas de exigibilidad",
             )
