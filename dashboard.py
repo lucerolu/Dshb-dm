@@ -433,92 +433,77 @@ if authentication_status:
 
 
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
-            # --- Asegurar fechas ---
-            hoy = datetime.today()
-            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
-            # --- Clasificación de estado ---
-            def clasificar_estado(fecha, hoy):
-                diff = (fecha - hoy).days
-                if diff < 0:
-                    return "Vencido"
-                elif diff <= 30:
-                    return "0-30 días"
-                elif diff <= 60:
-                    return "31-60 días"
-                elif diff <= 90:
-                    return "61-90 días"
-                else:
-                    return "91+ días"
+            # --- Fechas mín y máx de tu DataFrame ---
+            fecha_min = df_estado_cuenta["fecha_exigibilidad"].min()
+            fecha_max = df_estado_cuenta["fecha_exigibilidad"].max()
 
-            df_estado_cuenta["estado"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: clasificar_estado(f, hoy))
-
-            # --- Rango de meses a mostrar ---
-            fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
-            fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
-
-            # --- Crear lista de meses ---
-            meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
-
-            # --- Generar un DataFrame con todos los días en el rango ---
-            fechas = pd.date_range(start=fecha_min, end=fecha_max, freq="D")
-            df_cal = pd.DataFrame({"fecha": fechas})
-            df_cal["estado"] = None
-
-            # Marcar días de exigibilidad
-            mapa_fechas = dict(zip(df_estado_cuenta["fecha_exigibilidad"], df_estado_cuenta["estado"]))
-            df_cal["estado"] = df_cal["fecha"].map(mapa_fechas)
-
-            # --- Colores ---
-            color_map = {
-                "Vencido": "red",
-                "0-30 días": "orange",
-                "31-60 días": "yellow",
-                "61-90 días": "lightgreen",
-                "91+ días": "green",
-                None: "white"
-            }
-            df_cal["color"] = df_cal["estado"].map(color_map)
-
-            # --- Crear subplots: un mes por fila ---
+            # --- Configurar subplots (un calendario por mes) ---
+            num_meses = (fecha_max.year - fecha_min.year) * 12 + (fecha_max.month - fecha_min.month) + 1
             fig = make_subplots(
-                rows=len(meses),
+                rows=num_meses,
                 cols=1,
-                subplot_titles=[f"{calendar.month_name[m.month]} {m.year}" for m in meses]
+                subplot_titles=[f"{calendar.month_name[m]} {y}" 
+                                for y in range(fecha_min.year, fecha_max.year + 1) 
+                                for m in range(1, 13) 
+                                if (y > fecha_min.year or m >= fecha_min.month) and (y < fecha_max.year or m <= fecha_max.month)],
             )
 
-            # --- Dibujar cada mes ---
-            for i, m in enumerate(meses, start=1):
-                month_days = pd.date_range(start=m, end=m + pd.offsets.MonthEnd(0))
-                x = [d.day for d in month_days]
-                y = [d.weekday() for d in month_days]  # lunes=0, domingo=6
-                colores = [df_cal.loc[df_cal["fecha"] == d, "color"].values[0] for d in month_days]
+            row = 1
+            for y in range(fecha_min.year, fecha_max.year + 1):
+                for m in range(1, 13):
+                    if (y > fecha_min.year or m >= fecha_min.month) and (y < fecha_max.year or m <= fecha_max.month):
+                        # --- Generar la matriz de días del mes ---
+                        cal = calendar.Calendar(firstweekday=0)
+                        month_days = list(cal.itermonthdates(y, m))
+                        weeks = [month_days[i:i+7] for i in range(0, len(month_days), 7)]
 
-                fig.add_trace(
-                    go.Scatter(
-                        x=x,
-                        y=y,
-                        mode="markers",
-                        marker=dict(color=colores, size=30, line=dict(color="black", width=1)),
-                        text=[f"{d.strftime('%d-%m-%Y')}<br>{df_cal.loc[df_cal['fecha']==d,'estado'].values[0]}" for d in month_days],
-                        hoverinfo="text"
-                    ),
-                    row=i, col=1
-                )
+                        # --- Crear la cuadrícula ---
+                        for week_idx, week in enumerate(weeks):
+                            for day_idx, day in enumerate(week):
+                                if day.month == m:
+                                    # Filtrar tus datos reales por fecha
+                                    monto_dia = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"] == day, "monto"].sum()
+                                    
+                                    # Texto de la celda
+                                    text = f"{day.day}"
+                                    if monto_dia > 0:
+                                        text += f"<br>${monto_dia:,.0f}"
 
-                fig.update_yaxes(
-                    tickvals=list(range(7)),
-                    ticktext=["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
-                    row=i, col=1
-                )
+                                    # Agregar anotación (celda)
+                                    fig.add_trace(
+                                        go.Scatter(
+                                            x=[day_idx], y=[-week_idx], 
+                                            mode="text",
+                                            text=[text],
+                                            textposition="middle center",
+                                            showlegend=False
+                                        ),
+                                        row=row, col=1
+                                    )
+
+                        # --- Ajustar ejes ---
+                        fig.update_xaxes(
+                            range=[-0.5, 6.5],
+                            tickmode="array",
+                            tickvals=list(range(7)),
+                            ticktext=["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+                            row=row, col=1
+                        )
+                        fig.update_yaxes(
+                            showgrid=False, zeroline=False,
+                            scaleanchor=f"x{row}",  # cuadrícula cuadrada
+                            row=row, col=1
+                        )
+
+                        row += 1
 
             fig.update_layout(
-                height=300*len(meses),
-                showlegend=False,
-                title="Calendario de fechas de exigibilidad",
+                height=300*num_meses, 
+                title="Calendario de Fechas de Exigibilidad",
+                showlegend=False
             )
 
-            st.plotly_chart(fig, use_container_width=True)
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
 
             hoy = datetime.today()
