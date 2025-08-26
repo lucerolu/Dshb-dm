@@ -433,7 +433,7 @@ if authentication_status:
 
 
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
-            # --- Fechas y estado ---
+            # --- Datos ---
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
@@ -458,10 +458,10 @@ if authentication_status:
                 "31-60 días": "#ffff99",
                 "61-90 días": "#ccff99",
                 "91+ días": "#99ff99",
-                None: "#ffffff"  # celdas sin estado
+                None: "#ffffff"
             }
 
-            # --- Meses a mostrar ---
+            # --- Meses ---
             fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
@@ -469,15 +469,12 @@ if authentication_status:
             # --- Configuración responsive ---
             cols_per_row = 4
             num_rows = math.ceil(len(meses)/cols_per_row)
-            cell_size = 1
-            gap = 0.15
+            cell_size = 1  # tamaño de cada celda en unidades del eje
+            gap = 0.05
 
-            # --- Fondo adaptable ---
             bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
-
             fig = go.Figure()
 
-            # --- Posición de cada mes ---
             for idx, m in enumerate(meses):
                 row = idx // cols_per_row
                 col = idx % cols_per_row
@@ -493,10 +490,10 @@ if authentication_status:
                     y=y_offset + 1.5,
                     text=f"{calendar.month_name[m.month]} {m.year}",
                     showarrow=False,
-                    font=dict(size=14, family="Arial", color="black")
+                    font=dict(size=14, color="black")
                 )
 
-                # Días
+                # Dibujar celdas
                 for week_idx, week in enumerate(month_matrix):
                     for day_idx, day in enumerate(week):
                         if day.month == m.month:
@@ -504,37 +501,42 @@ if authentication_status:
                             estado = estado.values[0] if len(estado) > 0 else None
                             color = color_map[estado]
 
-                            fig.add_trace(
-                                go.Scatter(
-                                    x=[x_offset + day_idx],
-                                    y=[y_offset - week_idx],
-                                    mode="markers+text",
-                                    marker=dict(
-                                        color=color,
-                                        size=cell_size*60,
-                                        line=dict(color="black", width=1),
-                                        symbol="square"
-                                    ),
-                                    text=[str(day.day)],
-                                    textposition="middle center",
-                                    textfont=dict(size=12, color="black"),
-                                    showlegend=False,
-                                    hovertext=f"{day.strftime('%d-%m-%Y')}<br>{estado if estado else ''}",
-                                    hoverinfo="text"
-                                )
+                            x0 = x_offset + day_idx
+                            x1 = x_offset + day_idx + cell_size
+                            y0 = y_offset - week_idx
+                            y1 = y_offset - week_idx + cell_size
+
+                            fig.add_shape(
+                                type="rect",
+                                x0=x0, x1=x1, y0=y0, y1=y1,
+                                line=dict(color="black", width=1),
+                                fillcolor=color
                             )
 
-                # Nombres de días
+                            # Día como texto centrado
+                            fig.add_annotation(
+                                x=(x0 + x1)/2,
+                                y=(y0 + y1)/2,
+                                text=str(day.day),
+                                showarrow=False,
+                                font=dict(size=12, color="black")
+                            )
+
+            # Nombres de días
+            for idx in range(len(meses)):
+                row = idx // cols_per_row
+                col = idx % cols_per_row
+                x_offset = col * (7 * (cell_size + gap) + 1)
+                y_offset = -row * (6 * (cell_size + gap) + 2)
                 for i, day_name in enumerate(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]):
                     fig.add_annotation(
-                        x=x_offset + i,
+                        x=x_offset + i + 0.5,
                         y=y_offset + 0.5,
                         text=day_name,
                         showarrow=False,
                         font=dict(size=10, color="black")
                     )
 
-            # --- Ajustes finales para mantener cuadrados ---
             fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
             fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
             fig.update_layout(
@@ -549,7 +551,6 @@ if authentication_status:
             )
 
             st.plotly_chart(fig, use_container_width=True)
-
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
 
             hoy = datetime.today()
