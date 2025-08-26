@@ -916,7 +916,10 @@ if authentication_status:
                 }
             }
 
+            # Construcción de grid_options SOLO UNA VEZ
             grid_options = gb.build()
+
+            # 👉 después ya puedes meterle tus extras
             hoy_py = datetime.today()
             total_row_styles = {}
 
@@ -938,6 +941,7 @@ if authentication_status:
                 "backgroundColor": "#0B083D"
             }
 
+            # 👉 acá le inyectas el onGridReady
             grid_options["onGridReady"] = JsCode("""
             function(params) {
                 console.log("✅ onGridReady ejecutado");
@@ -963,8 +967,10 @@ if authentication_status:
                 setTimeout(ajustarColumnas, 300);
             }
             """)
+
+            # 👉 y también la fila total anclada
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-            
+
             # --- Renderizado final ---
             AgGrid(
                 data_sin_total,
