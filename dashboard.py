@@ -938,7 +938,6 @@ if authentication_status:
                 "backgroundColor": "#0B083D"
             }
 
-            grid_options = gb.build()
             grid_options["onGridReady"] = JsCode("""
             function(params) {
                 console.log("✅ onGridReady ejecutado");
