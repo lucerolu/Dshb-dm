@@ -1,5 +1,5 @@
 streamlit==1.25.0
-streamlit-aggrid==0.5.11
+streamlit-aggrid
 pandas
 pymysql
 plotly
