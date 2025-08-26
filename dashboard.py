@@ -433,11 +433,10 @@ if authentication_status:
 
 
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
-            # --- Asegurar fechas ---
+            # --- Fechas y estado ---
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
-            # --- Clasificación de estado ---
             def clasificar_estado(fecha, hoy):
                 diff = (fecha - hoy).days
                 if diff < 0:
@@ -453,51 +452,66 @@ if authentication_status:
 
             df_estado_cuenta["estado"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: clasificar_estado(f, hoy))
 
-            # --- Colores ---
             color_map = {
-                "Vencido": "red",
-                "0-30 días": "orange",
-                "31-60 días": "yellow",
-                "61-90 días": "lightgreen",
-                "91+ días": "green",
-                None: "white"
+                "Vencido": "#ff6666",       # rojo suave
+                "0-30 días": "#ffcc66",     # naranja claro
+                "31-60 días": "#ffff99",    # amarillo claro
+                "61-90 días": "#ccff99",    # verde claro
+                "91+ días": "#99ff99",      # verde más suave
+                None: "#f2f2f2"             # gris para días sin evento
             }
 
-            # --- Rango de meses a mostrar ---
+            # --- Meses a mostrar ---
             fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
 
-            # --- Crear subplots: un mes por fila ---
+            # --- Subplots ---
             fig = make_subplots(
                 rows=len(meses),
                 cols=1,
                 subplot_titles=[f"{calendar.month_name[m.month]} {m.year}" for m in meses]
             )
 
-            # --- Dibujar cada mes como calendario tipo agenda ---
             for row_idx, m in enumerate(meses, start=1):
-                # Crear matriz del mes
                 cal = calendar.Calendar(firstweekday=0)
-                month_matrix = cal.monthdatescalendar(m.year, m.month)  # semanas x días
+                month_matrix = cal.monthdatescalendar(m.year, m.month)
 
+                # Dibujar los nombres de los días de la semana
+                for i, day_name in enumerate(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]):
+                    fig.add_trace(
+                        go.Scatter(
+                            x=[i], y=[1],
+                            mode="text",
+                            text=[day_name],
+                            textfont=dict(size=14, color="black", family="Arial"),
+                            showlegend=False
+                        ),
+                        row=row_idx, col=1
+                    )
+
+                # Dibujar los días
                 for week_idx, week in enumerate(month_matrix):
                     for day_idx, day in enumerate(week):
-                        # Solo pintar días que pertenecen al mes
                         if day.month == m.month:
                             estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
                             estado = estado.values[0] if len(estado) > 0 else None
                             color = color_map[estado]
 
-                            # Dibujar celda con Scatter
                             fig.add_trace(
                                 go.Scatter(
                                     x=[day_idx],
                                     y=[-week_idx],
                                     mode="markers+text",
-                                    marker=dict(color=color, size=40, line=dict(color="black", width=1)),
+                                    marker=dict(
+                                        color=color,
+                                        size=40,
+                                        line=dict(color="black", width=1),
+                                        symbol="square"
+                                    ),
                                     text=[str(day.day)],
                                     textposition="middle center",
+                                    textfont=dict(size=12, family="Arial", color="black"),
                                     showlegend=False,
                                     hovertext=f"{day.strftime('%d-%m-%Y')}<br>{estado if estado else ''}",
                                     hoverinfo="text"
@@ -506,21 +520,15 @@ if authentication_status:
                             )
 
                 # Ajustar ejes
-                fig.update_xaxes(
-                    range=[-0.5, 6.5],
-                    tickvals=list(range(7)),
-                    ticktext=["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
-                    row=row_idx, col=1
-                )
-                fig.update_yaxes(
-                    showgrid=False, zeroline=False,
-                    row=row_idx, col=1
-                )
+                fig.update_xaxes(range=[-0.5, 6.5], row=row_idx, col=1, showgrid=False, zeroline=False)
+                fig.update_yaxes(row=row_idx, col=1, showgrid=False, zeroline=False)
 
             fig.update_layout(
-                height=300*len(meses),
-                title="Calendario de fechas de exigibilidad tipo agenda",
-                showlegend=False
+                height=320*len(meses),
+                title="Calendario de Fechas de Exigibilidad - Estilo Agenda",
+                showlegend=False,
+                plot_bgcolor="white",
+                margin=dict(t=50, b=50)
             )
 
             st.plotly_chart(fig, use_container_width=True)
