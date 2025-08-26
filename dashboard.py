@@ -466,91 +466,80 @@ if authentication_status:
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
 
-            # --- Configuración responsive ---
+            # --- Configuración columnas ---
             cols_per_row = 4
-            num_rows = math.ceil(len(meses)/cols_per_row)
-            cell_size = 1  # tamaño de cada celda en unidades del eje
-            gap = 0.05
-
             bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
-            fig = go.Figure()
+
+            # --- Loop para mostrar cada mes ---
+            row_cols = []
+            for i in range(0, len(meses), cols_per_row):
+                row_cols.append(st.columns(min(cols_per_row, len(meses)-i)))
 
             for idx, m in enumerate(meses):
-                row = idx // cols_per_row
-                col = idx % cols_per_row
-                x_offset = col * (7 * (cell_size + gap) + 1)
-                y_offset = -row * (6 * (cell_size + gap) + 2)
+                row_idx = idx // cols_per_row
+                col_idx = idx % cols_per_row
+                with row_cols[row_idx][col_idx]:
+                    cal = calendar.Calendar(firstweekday=0)
+                    month_matrix = cal.monthdatescalendar(m.year, m.month)
 
-                cal = calendar.Calendar(firstweekday=0)
-                month_matrix = cal.monthdatescalendar(m.year, m.month)
+                    fig = go.Figure()
 
-                # Nombre del mes
-                fig.add_annotation(
-                    x=x_offset + 3,
-                    y=y_offset + 1.5,
-                    text=f"{calendar.month_name[m.month]} {m.year}",
-                    showarrow=False,
-                    font=dict(size=14, color="black")
-                )
+                    # Dibujar celdas
+                    for week_idx, week in enumerate(month_matrix):
+                        for day_idx, day in enumerate(week):
+                            if day.month == m.month:
+                                estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
+                                estado = estado.values[0] if len(estado) > 0 else None
+                                color = color_map[estado]
 
-                # Dibujar celdas
-                for week_idx, week in enumerate(month_matrix):
-                    for day_idx, day in enumerate(week):
-                        if day.month == m.month:
-                            estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
-                            estado = estado.values[0] if len(estado) > 0 else None
-                            color = color_map[estado]
+                                x0, x1 = day_idx, day_idx + 1
+                                y0, y1 = -week_idx, -week_idx + 1
 
-                            x0 = x_offset + day_idx
-                            x1 = x_offset + day_idx + cell_size
-                            y0 = y_offset - week_idx
-                            y1 = y_offset - week_idx + cell_size
+                                fig.add_shape(
+                                    type="rect",
+                                    x0=x0, x1=x1, y0=y0, y1=y1,
+                                    line=dict(color="black", width=1),
+                                    fillcolor=color
+                                )
 
-                            fig.add_shape(
-                                type="rect",
-                                x0=x0, x1=x1, y0=y0, y1=y1,
-                                line=dict(color="black", width=1),
-                                fillcolor=color
-                            )
+                                fig.add_annotation(
+                                    x=(x0 + x1)/2,
+                                    y=(y0 + y1)/2,
+                                    text=str(day.day),
+                                    showarrow=False,
+                                    font=dict(size=12, color="black")
+                                )
 
-                            # Día como texto centrado
-                            fig.add_annotation(
-                                x=(x0 + x1)/2,
-                                y=(y0 + y1)/2,
-                                text=str(day.day),
-                                showarrow=False,
-                                font=dict(size=12, color="black")
-                            )
-
-            # Nombres de días
-            for idx in range(len(meses)):
-                row = idx // cols_per_row
-                col = idx % cols_per_row
-                x_offset = col * (7 * (cell_size + gap) + 1)
-                y_offset = -row * (6 * (cell_size + gap) + 2)
-                for i, day_name in enumerate(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]):
+                    # Nombre del mes
                     fig.add_annotation(
-                        x=x_offset + i + 0.5,
-                        y=y_offset + 0.5,
-                        text=day_name,
+                        x=3.5,
+                        y=1.5,
+                        text=f"{calendar.month_name[m.month]} {m.year}",
                         showarrow=False,
-                        font=dict(size=10, color="black")
+                        font=dict(size=14, color="black")
                     )
 
-            fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
-            fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
-            fig.update_layout(
-                height=270*num_rows,
-                width=320*cols_per_row,
-                plot_bgcolor=bg_color,
-                paper_bgcolor=bg_color,
-                margin=dict(t=50, b=20, l=20, r=20),
-                title="Calendario de Fechas de Exigibilidad tipo Agenda",
-                xaxis=dict(scaleanchor="y", scaleratio=1),
-                yaxis=dict(scaleanchor="x", scaleratio=1)
-            )
+                    # Nombres de días
+                    for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
+                        fig.add_annotation(
+                            x=i + 0.5,
+                            y=0.5,
+                            text=day_name,
+                            showarrow=False,
+                            font=dict(size=10, color="black")
+                        )
 
-            st.plotly_chart(fig, use_container_width=True)
+                    fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
+                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,2])
+                    fig.update_layout(
+                        width=200,
+                        height=200,
+                        plot_bgcolor=bg_color,
+                        paper_bgcolor=bg_color,
+                        margin=dict(t=30, b=10, l=10, r=10)
+                    )
+
+                    st.plotly_chart(fig, use_container_width=True)
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
 
             hoy = datetime.today()
