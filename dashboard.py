@@ -458,7 +458,7 @@ if authentication_status:
                 "31-60 días": "#ffff99",
                 "61-90 días": "#ccff99",
                 "91+ días": "#99ff99",
-                None: "#f2f2f2"
+                None: "#ffffff"  # celdas sin estado permanecen blancas
             }
 
             # --- Meses a mostrar ---
@@ -470,7 +470,10 @@ if authentication_status:
             cols_per_row = 4
             num_rows = math.ceil(len(meses)/cols_per_row)
             cell_size = 1  # tamaño de cada recuadro
-            gap = 0.05     # pequeño gap entre días
+            gap = 0.15     # espacio entre celdas para que no se encimen
+
+            # --- Color de fondo adaptable ---
+            bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
 
             fig = go.Figure()
 
@@ -478,16 +481,16 @@ if authentication_status:
             for idx, m in enumerate(meses):
                 row = idx // cols_per_row
                 col = idx % cols_per_row
-                x_offset = col * (7 * (cell_size + gap) + 1)  # 7 días + espacio para título
-                y_offset = -row * (6 * (cell_size + gap) + 2)  # 6 semanas + espacio para nombre mes
+                x_offset = col * (7 * (cell_size + gap) + 1)  # 7 días + espacio
+                y_offset = -row * (6 * (cell_size + gap) + 2)  # 6 semanas + espacio
 
                 cal = calendar.Calendar(firstweekday=0)
                 month_matrix = cal.monthdatescalendar(m.year, m.month)
 
-                # Agregar nombre del mes
+                # Agregar nombre del mes más arriba
                 fig.add_annotation(
                     x=x_offset + 3,  # centro del mes
-                    y=y_offset + 1,
+                    y=y_offset + 1.5,  # más arriba para separarlo de la cuadrícula
                     text=f"{calendar.month_name[m.month]} {m.year}",
                     showarrow=False,
                     font=dict(size=14, family="Arial", color="black")
@@ -535,9 +538,10 @@ if authentication_status:
             fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
             fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
             fig.update_layout(
-                height=250*num_rows,
-                width=300*cols_per_row,
-                plot_bgcolor="white",
+                height=270*num_rows,
+                width=320*cols_per_row,
+                plot_bgcolor=bg_color,
+                paper_bgcolor=bg_color,
                 margin=dict(t=50, b=20, l=20, r=20),
                 title="Calendario de Fechas de Exigibilidad tipo Agenda"
             )
