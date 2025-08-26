@@ -853,14 +853,12 @@ if authentication_status:
             }}
             """)
 
-
-
             # Numéricas
             for col in numeric_cols_sin_total:
                 gb.configure_column(
                     col,
                     headerClass='header-left',
-                    headerStyle=header_vencimiento,
+                    #headerStyle=header_vencimiento,
                     cellStyle=gradient_y_line_renderer,
                     valueFormatter=value_formatter
                 )
@@ -907,8 +905,27 @@ if authentication_status:
                     "padding-top": "2px",
                     "padding-bottom": "2px"
                 }
-                
             }
+
+            # --- CSS dinámico para líneas de vencimiento en header ---
+            hoy_dt = datetime.today()
+            for col in numeric_cols_sin_total:
+                try:
+                    fecha_dt = datetime.strptime(col, "%d/%m/%Y")
+                    diff = (fecha_dt - hoy_dt).days
+                    if diff < 0:
+                        color = "red"
+                    elif diff <= 30:
+                        color = "orange"
+                    elif diff <= 60:
+                        color = "yellow"
+                    else:
+                        color = "green"
+                    custom_css[f".ag-header-cell[col-id='{col}'] .ag-header-cell-text"] = {
+                        "border-bottom": f"4px solid {color}"
+                    }
+                except:
+                    continue
 
             # Construcción de grid_options SOLO UNA VEZ
             grid_options = gb.build()
