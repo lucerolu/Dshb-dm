@@ -1,4 +1,5 @@
-streamlit
+streamlit==1.25.0
+streamlit-aggrid==0.5.11
 pandas
 pymysql
 plotly
@@ -6,7 +7,6 @@ matplotlib
 seaborn
 requests
 xlsxwriter
-streamlit-aggrid
 babel
 calplot
 streamlit-authenticator==0.2.2
