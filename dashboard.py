@@ -430,8 +430,41 @@ if authentication_status:
             )
 
 
-            #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
-            
+            #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
+            # --- Ejemplo con tu DataFrame ---
+            hoy = datetime.today()
+
+            # Nos aseguramos de que fecha_exigibilidad sea datetime
+            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+
+            # Creamos columna de estado para colores
+            df_estado_cuenta["estado"] = df_estado_cuenta["fecha_exigibilidad"].apply(
+                lambda f: "Vencido" if f < hoy else "Pendiente"
+            )
+
+            # --- Gráfico tipo calendario con Plotly ---
+            fig = px.scatter(
+                df_estado_cuenta,
+                x="fecha_exigibilidad",
+                y=[""]*len(df_estado_cuenta),   # truco para que se vean en línea horizontal
+                color="estado",
+                hover_data=["sucursal_abrev", "codigo_6digitos", "total"],
+                color_discrete_map={
+                    "Vencido": "red",
+                    "Pendiente": "green"
+                },
+                size=[10]*len(df_estado_cuenta)  # tamaño de los puntos
+            )
+
+            fig.update_layout(
+                title="Calendario de Fechas de Exigibilidad",
+                xaxis_title="Fecha de exigibilidad",
+                yaxis=dict(showticklabels=False),   # escondemos eje Y
+                plot_bgcolor="white",
+                xaxis=dict(showgrid=True)
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
 
             hoy = datetime.today()
