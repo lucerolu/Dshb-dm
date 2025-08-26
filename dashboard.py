@@ -806,12 +806,22 @@ if authentication_status:
                 columnas.remove("sucursal")
                 data_sin_total = data_sin_total[["codigo", "sucursal"] + columnas]
 
+            # --- Mapear columnas a col-id seguros ---
+            col_id_map = {}
+            for col in numeric_cols_sin_total + [ultima_col]:
+                safe_id = col.replace("/", "_").replace(" ", "_")
+                col_id_map[col] = safe_id
+
+            # Renombrar columnas en DataFrame para AgGrid
+            data_sin_total_renamed = data_sin_total.rename(columns=col_id_map)
+            ultima_col_safe = col_id_map[ultima_col]
+            numeric_cols_sin_total_safe = [col_id_map[c] for c in numeric_cols_sin_total]
+
             # --- Configuración AgGrid ---
-            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+            gb = GridOptionsBuilder.from_dataframe(data_sin_total_renamed)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # ❌ ya no usamos autoSize=True en cada columna
-            # Deja la definición normal
+            # Columnas fijas
             gb.configure_column(
                 "codigo",
                 headerName="Código",
@@ -834,65 +844,34 @@ if authentication_status:
                 }
             )
 
-            # Numéricas
-            for col in numeric_cols_sin_total:
-                gb.configure_column(
-                    col,
-                    headerClass='header-left',
-                    #headerStyle=header_vencimiento,
-                    cellStyle=gradient_y_line_renderer,
-                    valueFormatter=value_formatter
-                )
-
-            # Columna Total
-            gb.configure_column(
-                ultima_col,
-                headerClass='header-left',
-                valueFormatter=value_formatter,
-                cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
-            )
-
+            # Numéricas con header dinámico según vencimiento
+            hoy_dt = datetime.today()
             custom_css = {
                 # Alineación headers normales
                 ".header-left": {"justify-content": "flex-start !important"},
                 ".header-right": {"justify-content": "flex-end !important"},
-
-                # Headers de codigo y sucursal → como los normales, texto negro sobre blanco
+                # Headers de codigo y sucursal → texto negro sobre blanco
                 ".ag-header-cell[col-id='codigo'] .ag-header-cell-text, .ag-header-cell[col-id='sucursal'] .ag-header-cell-text": {
                     "color": "black !important",
                     "font-weight": "bold !important",
                     "background-color": "white !important",
                     "padding-right": "4px",
-                    "border-bottom": "none !important"   # 👈 les quita el subrayado
+                    "border-bottom": "none !important"
                 },
-
-                # Para que sigan alineados a la derecha en el header
                 ".ag-header-cell[col-id='codigo'] .ag-header-cell-label, .ag-header-cell[col-id='sucursal'] .ag-header-cell-label": {
                     "justify-content": "flex-end !important",
                     "display": "flex",
                     "align-items": "center"
                 },
-
-                # Filas (como ya lo tenías)
-                ".ag-center-cols-container .ag-row": {
-                    "height": "20px",
-                    "line-height": "16px",
-                    "padding-top": "2px",
-                    "padding-bottom": "2px"
-                },
-                ".ag-pinned-left-cols-container .ag-row": {
-                    "height": "20px",
-                    "line-height": "16px",
-                    "padding-top": "2px",
-                    "padding-bottom": "2px"
-                }
+                # Filas
+                ".ag-center-cols-container .ag-row": {"height": "20px","line-height": "16px","padding-top": "2px","padding-bottom": "2px"},
+                ".ag-pinned-left-cols-container .ag-row": {"height": "20px","line-height": "16px","padding-top": "2px","padding-bottom": "2px"}
             }
 
-            # --- CSS dinámico para líneas de vencimiento en header ---
-            hoy_dt = datetime.today()
-            for col in numeric_cols_sin_total:
+            # Líneas de vencimiento para headers
+            for original_col, safe_col in col_id_map.items():
                 try:
-                    fecha_dt = datetime.strptime(col, "%d/%m/%Y")
+                    fecha_dt = datetime.strptime(original_col, "%d/%m/%Y")
                     diff = (fecha_dt - hoy_dt).days
                     if diff < 0:
                         color = "red"
@@ -902,77 +881,82 @@ if authentication_status:
                         color = "yellow"
                     else:
                         color = "green"
-                    custom_css[f".ag-header-cell[col-id='{col}'] .ag-header-cell-text"] = {
+                    custom_css[f".ag-header-cell[col-id='{safe_col}'] .ag-header-cell-text"] = {
                         "border-bottom": f"4px solid {color}"
                     }
                 except:
                     continue
 
-            # Construcción de grid_options SOLO UNA VEZ
+            # Configuración de columnas numéricas
+            for original_col, safe_col in col_id_map.items():
+                if safe_col in numeric_cols_sin_total_safe:
+                    gb.configure_column(
+                        safe_col,
+                        headerClass='header-left',
+                        cellStyle=gradient_y_line_renderer,
+                        valueFormatter=value_formatter,
+                        headerName=original_col  # muestra el nombre original en el header
+                    )
+
+            # Columna Total
+            gb.configure_column(
+                ultima_col_safe,
+                headerClass='header-left',
+                valueFormatter=value_formatter,
+                cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'},
+                headerName=ultima_col
+            )
+
+            # --- Construir grid options ---
             grid_options = gb.build()
 
-            # 👉 después ya puedes meterle tus extras
-            hoy_py = datetime.today()
+            # Fila total anclada con color por vencimiento
             total_row_styles = {}
-
-            for col in numeric_cols_sin_total:
-                color = color_por_vencimiento(col, hoy_py)
-                total_row_styles[col] = {
-                    "color": "white",
-                    "fontWeight": "bold",
-                    "textAlign": "left",
-                    "backgroundColor": "#0B083D",
-                    "borderTop": f"4px solid {color}"
-                }
-
-            # Para la columna "Total"
-            total_row_styles[ultima_col] = {
+            for original_col, safe_col in col_id_map.items():
+                if safe_col in numeric_cols_sin_total_safe:
+                    color = color_por_vencimiento(original_col, hoy_dt)
+                    total_row_styles[safe_col] = {
+                        "color": "white",
+                        "fontWeight": "bold",
+                        "textAlign": "left",
+                        "backgroundColor": "#0B083D",
+                        "borderTop": f"4px solid {color}"
+                    }
+            total_row_styles[ultima_col_safe] = {
                 "color": "white",
                 "fontWeight": "bold",
                 "textAlign": "left",
                 "backgroundColor": "#0B083D"
             }
 
-            # 👉 acá le inyectas el onGridReady (se queda igual que la versión corregida)
             grid_options["onGridReady"] = JsCode("""
             function(params) {
                 console.log("✅ onGridReady ejecutado");
 
                 function ajustarColumnas() {
-                    // Ajusta primero al contenido
                     params.columnApi.autoSizeAllColumns();
-
-                    // Si sobra espacio, expandir proporcionalmente
                     params.api.sizeColumnsToFit();
                 }
 
-                // Ejecutar al inicio
                 ajustarColumnas();
-
-                // Reajustar cuando los datos se rendericen
                 params.api.addEventListener('firstDataRendered', ajustarColumnas);
-
-                // Reajustar al redimensionar ventana
                 window.addEventListener('resize', ajustarColumnas);
-
-                // Delay extra por seguridad
                 setTimeout(ajustarColumnas, 300);
             }
             """)
 
-            # 👉 y también la fila total anclada
-            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+            grid_options['pinnedBottomRowData'] = total_row.rename(columns=col_id_map).to_dict('records')
 
-            # --- Renderizado final ---
+            # --- Renderizar AgGrid ---
             AgGrid(
-                data_sin_total,
+                data_sin_total_renamed,
                 gridOptions=grid_options,
-                custom_css=custom_css,   # <-- aquí entra tu bloque completo con lo de vencimiento agregado
+                custom_css=custom_css,
                 height=800,
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=False,   # 👈 desactivamos el auto por defecto
-                columns_auto_size_mode=None,      # 👈 no forzar FIT_CONTENTS global
+                fit_columns_on_grid_load=False,
+                columns_auto_size_mode=None,
                 enable_enterprise_modules=False
             )
 
