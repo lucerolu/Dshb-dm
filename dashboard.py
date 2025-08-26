@@ -458,7 +458,7 @@ if authentication_status:
                 "31-60 días": "#ffff99",
                 "61-90 días": "#ccff99",
                 "91+ días": "#99ff99",
-                None: "#ffffff"  # celdas sin estado permanecen blancas
+                None: "#ffffff"  # celdas sin estado
             }
 
             # --- Meses a mostrar ---
@@ -466,13 +466,13 @@ if authentication_status:
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
 
-            # --- Configuración de columnas ---
+            # --- Configuración responsive ---
             cols_per_row = 4
             num_rows = math.ceil(len(meses)/cols_per_row)
-            cell_size = 1  # tamaño de cada recuadro
-            gap = 0.15     # espacio entre celdas para que no se encimen
+            cell_size = 1
+            gap = 0.15
 
-            # --- Color de fondo adaptable ---
+            # --- Fondo adaptable ---
             bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
 
             fig = go.Figure()
@@ -481,22 +481,22 @@ if authentication_status:
             for idx, m in enumerate(meses):
                 row = idx // cols_per_row
                 col = idx % cols_per_row
-                x_offset = col * (7 * (cell_size + gap) + 1)  # 7 días + espacio
-                y_offset = -row * (6 * (cell_size + gap) + 2)  # 6 semanas + espacio
+                x_offset = col * (7 * (cell_size + gap) + 1)
+                y_offset = -row * (6 * (cell_size + gap) + 2)
 
                 cal = calendar.Calendar(firstweekday=0)
                 month_matrix = cal.monthdatescalendar(m.year, m.month)
 
-                # Agregar nombre del mes más arriba
+                # Nombre del mes
                 fig.add_annotation(
-                    x=x_offset + 3,  # centro del mes
-                    y=y_offset + 1.5,  # más arriba para separarlo de la cuadrícula
+                    x=x_offset + 3,
+                    y=y_offset + 1.5,
                     text=f"{calendar.month_name[m.month]} {m.year}",
                     showarrow=False,
                     font=dict(size=14, family="Arial", color="black")
                 )
 
-                # Dibujar días
+                # Días
                 for week_idx, week in enumerate(month_matrix):
                     for day_idx, day in enumerate(week):
                         if day.month == m.month:
@@ -511,7 +511,7 @@ if authentication_status:
                                     mode="markers+text",
                                     marker=dict(
                                         color=color,
-                                        size=cell_size*40,
+                                        size=cell_size*60,
                                         line=dict(color="black", width=1),
                                         symbol="square"
                                     ),
@@ -524,7 +524,7 @@ if authentication_status:
                                 )
                             )
 
-                # Nombres de días de la semana
+                # Nombres de días
                 for i, day_name in enumerate(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]):
                     fig.add_annotation(
                         x=x_offset + i,
@@ -534,7 +534,7 @@ if authentication_status:
                         font=dict(size=10, color="black")
                     )
 
-            # Ajustes finales
+            # --- Ajustes finales para mantener cuadrados ---
             fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
             fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
             fig.update_layout(
@@ -543,7 +543,9 @@ if authentication_status:
                 plot_bgcolor=bg_color,
                 paper_bgcolor=bg_color,
                 margin=dict(t=50, b=20, l=20, r=20),
-                title="Calendario de Fechas de Exigibilidad tipo Agenda"
+                title="Calendario de Fechas de Exigibilidad tipo Agenda",
+                xaxis=dict(scaleanchor="y", scaleratio=1),
+                yaxis=dict(scaleanchor="x", scaleratio=1)
             )
 
             st.plotly_chart(fig, use_container_width=True)
