@@ -433,7 +433,7 @@ if authentication_status:
             #------------------------------------------------------- MEDIDOR ------------------------------------------------------------------------------------------------------------------
             
             #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
-        
+
             hoy = datetime.today()
 
             # --- Cargar JSON de configuración ---
@@ -813,8 +813,8 @@ if authentication_status:
                 "codigo",
                 headerName="Código",   # 👈 aquí
                 pinned="left",
-                minWidth=110,
-                width=150,
+                minWidth=150,
+                width=180,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -826,8 +826,8 @@ if authentication_status:
             gb.configure_column(
                 "sucursal",
                 headerName="Sucursal",   # 👈 aquí
-                minWidth=110,
-                width=150,
+                minWidth=150,
+                width=180,
                 cellStyle={
                     'backgroundColor': '#0B083D',
                     'color': 'white',
@@ -956,7 +956,7 @@ if authentication_status:
 
             grid_options["onGridReady"] = on_grid_ready
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-            
+
 
             # --- Renderizado final ---
             AgGrid(
