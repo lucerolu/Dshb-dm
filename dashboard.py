@@ -431,35 +431,36 @@ if authentication_status:
 
 
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
-            # --- Ejemplo con tu DataFrame ---
+            # --- Asegurar fechas ---
             hoy = datetime.today()
-
-            # Nos aseguramos de que fecha_exigibilidad sea datetime
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
-            # Creamos columna de estado para colores
+            # --- Columna de estado ---
             df_estado_cuenta["estado"] = df_estado_cuenta["fecha_exigibilidad"].apply(
                 lambda f: "Vencido" if f < hoy else "Pendiente"
             )
 
-            # --- Gráfico tipo calendario con Plotly ---
+            # --- Columna dummy para eje Y ---
+            df_estado_cuenta["linea"] = "Fechas"
+
+            # --- Gráfico tipo timeline ---
             fig = px.scatter(
                 df_estado_cuenta,
                 x="fecha_exigibilidad",
-                y=[""]*len(df_estado_cuenta),   # truco para que se vean en línea horizontal
+                y="linea",
                 color="estado",
                 hover_data=["sucursal_abrev", "codigo_6digitos", "total"],
                 color_discrete_map={
                     "Vencido": "red",
                     "Pendiente": "green"
                 },
-                size=[10]*len(df_estado_cuenta)  # tamaño de los puntos
+                size=[10]*len(df_estado_cuenta)  # tamaño fijo de puntos
             )
 
             fig.update_layout(
                 title="Calendario de Fechas de Exigibilidad",
                 xaxis_title="Fecha de exigibilidad",
-                yaxis=dict(showticklabels=False),   # escondemos eje Y
+                yaxis=dict(showticklabels=False),   # escondemos labels del eje Y
                 plot_bgcolor="white",
                 xaxis=dict(showgrid=True)
             )
