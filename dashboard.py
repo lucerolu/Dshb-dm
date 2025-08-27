@@ -1096,16 +1096,20 @@ if authentication_status:
                 None: "#ffffff"
             }
 
-            # --- Rango de meses ---
+            # --- Meses ---
             fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
 
-            # --- Columnas para todos los meses en una fila ---
-            cols = st.columns(len(meses))
-
             # --- Fondo según tema ---
             bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
+
+            # --- Meses en español ---
+            meses_es = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                        "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+
+            # --- Columnas para todos los meses en una fila ---
+            cols = st.columns(len(meses))
 
             for idx, m in enumerate(meses):
                 with cols[idx]:
@@ -1144,12 +1148,12 @@ if authentication_status:
                     fig.add_annotation(
                         x=3.5,
                         y=2.5,
-                        text=f"{calendar.month_name[m.month]} {m.year}",
+                        text=f"{meses_es[m.month-1]} {m.year}",  # español
                         showarrow=False,
                         font=dict(size=14, color="black")
                     )
 
-                    # Nombres de los días (Lun-Dom)
+                    # Nombres de los días en español
                     for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
                         fig.add_annotation(
                             x=i + 0.5,
@@ -1159,22 +1163,20 @@ if authentication_status:
                             font=dict(size=10, color="black")
                         )
 
-                    # Ejes sin ticks, con proporción 1:1
+                    # Ejes sin ticks, proporción 1:1
                     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
                     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
 
-                    # Layout con tamaño fijo y márgenes ajustados
+                    # Layout con tamaño fijo y márgenes reducidos
                     fig.update_layout(
                         width=200,
                         height=220,
                         plot_bgcolor=bg_color,
                         paper_bgcolor=bg_color,
-                        margin=dict(t=5, b=2, l=2, r=2)
+                        margin=dict(t=5, b=5, l=5, r=5)  # márgenes reducidos para más espacio de cuadricula
                     )
 
-                    # Mostrar calendario
                     st.plotly_chart(fig, use_container_width=False)
-
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
             st.markdown("### Gráfico del comportamiento de la deuda según las fechas de exigibilidad")
