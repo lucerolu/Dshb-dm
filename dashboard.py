@@ -845,6 +845,16 @@ if authentication_status:
             columnas_finales = [c for c in columnas_finales if c in data_sin_total_bucket.columns]
             data_sin_total_bucket = data_sin_total_bucket[columnas_finales]
 
+            # --- Calcular ancho dinámico según columnas ---
+            # Tomamos el ancho aproximado por columna (ajústalo si quieres más espacio)
+            ancho_por_columna = 100
+            num_columnas = len(data_sin_total_bucket.columns)
+            ancho_total_tabla = ancho_por_columna * num_columnas
+
+            # Máximo ancho para no salirse de la pantalla
+            ancho_maximo = 1200  # puedes ajustar según tu layout
+            ancho_final = min(ancho_total_tabla, ancho_maximo)
+
             # --- Configuración AgGrid ---
             gb = GridOptionsBuilder.from_dataframe(data_sin_total_bucket)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
@@ -880,6 +890,7 @@ if authentication_status:
                     cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
                 )
 
+            # --- Custom CSS para AgGrid ---
             custom_css = {
                 ".header-Vencido": {"border-bottom": "4px solid red"},
                 ".header-0-30dias": {"border-bottom": "4px solid orange"},
@@ -888,15 +899,16 @@ if authentication_status:
                 ".header-91+dias": {"border-bottom": "4px solid green"},
                 ".header-total": {"border-bottom": "4px solid #0B083D"},
                 ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
-                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
+                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
+                # --- Ajuste ancho del contenedor ---
+                ".ag-root-wrapper": {"width": f"{ancho_final}px", "margin": "auto"}
             }
 
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row_bucket.to_dict('records')
 
-            # --- AgGrid ---
             st.markdown("### Tabla de estado de cuenta agrupada por fecha de vencimiento")
-
+            # --- AgGrid ---
             grid_response = AgGrid(
                 data_sin_total_bucket,
                 gridOptions=grid_options,
@@ -904,7 +916,7 @@ if authentication_status:
                 height=500,
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=False,
+                fit_columns_on_grid_load=True,
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
                 enable_enterprise_modules=False
             )
