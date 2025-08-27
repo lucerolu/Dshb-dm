@@ -1062,7 +1062,7 @@ if authentication_status:
                         margin=dict(t=60, l=0, r=0, b=0)
                     )
 
-
+                    st.markdown("### Distribución de la deuda según la fecha de exigibilidad")
                     col.plotly_chart(fig, use_container_width=True)
                     st.markdown("<br><br>", unsafe_allow_html=True)
 
