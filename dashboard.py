@@ -275,6 +275,10 @@ if authentication_status:
                         return info["abreviatura"]
                 return ""
             
+            # --- Tema ---
+            modo = st.get_option("theme.base")  # 'dark' o 'light'
+            template = "plotly_dark" if modo == "dark" else "plotly_white"
+
             # ------------------ Preparar DataFrame base ------------------
             df = df_estado_cuenta.copy()
 
@@ -1151,7 +1155,7 @@ if authentication_status:
                                     y=(y0 + y1)/2,
                                     text=str(day.day),
                                     showarrow=False,
-                                    font=dict(size=12, color=text_color)
+                                    font=dict(size=12)
                                 )
 
                     # Nombre del mes (más separado del calendario)
@@ -1170,7 +1174,7 @@ if authentication_status:
                             y=1.6,
                             text=day_name,
                             showarrow=False,
-                            font=dict(size=10, color=text_color)
+                            font=dict(size=10)
                         )
 
                     # Ejes sin ticks ni controles, escala cuadrada
@@ -1178,17 +1182,18 @@ if authentication_status:
                     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
 
                     fig.update_layout(
-                        margin=dict(l=40, r=40, t=60, b=80),  # márgenes fijos
-                        height=700,                           # altura fija
-                        autosize=True,                        # que se ajuste pero dentro del límite
+                        template=template,
+                        margin=dict(l=40, r=40, t=60, b=80),
+                        height=700,
+                        autosize=True,
                         legend=dict(
                             orientation="h",
                             yanchor="top",
-                            y=-0.15,        # con número negativo pero pequeño, siempre dentro
+                            y=-0.15,
                             xanchor="center",
                             x=0.5,
                             font=dict(size=12),
-                            bgcolor="rgba(255,255,255,0.6)",  # fondo semitransparente para legibilidad
+                            bgcolor="rgba(255,255,255,0.6)" if modo=="light" else "rgba(0,0,0,0.6)",
                         )
                     )
 
@@ -1214,7 +1219,7 @@ if authentication_status:
                                 y=leyenda_y + 0.15,
                                 text=estado,
                                 showarrow=False,
-                                font=dict(size=9, color=text_color),
+                                font=dict(size=9),
                                 xanchor="left",
                                 yanchor="middle"
                             )
