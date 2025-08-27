@@ -1173,21 +1173,32 @@ if authentication_status:
                     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
                     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
 
-                    # Layout fijo y adaptable
+                    # --- Detectar tema de Streamlit ---
+                    theme = st.get_option("theme.base")
+                    if theme == "dark":
+                        text_color = "white"
+                    else:
+                        text_color = "black"
+
+                    # --- Layout del gráfico ---
                     fig.update_layout(
-                        margin=dict(l=40, r=40, t=60, b=80),
-                        height=700,
-                        autosize=True,
-                        plot_bgcolor=bg_color,
-                        paper_bgcolor=bg_color,
+                        margin=dict(l=0, r=0, t=40, b=0),
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(255,255,255,0.6)",  # se mantiene semitransparente
+                        font=dict(color=text_color),  # cambia color del texto según tema
                         legend=dict(
                             orientation="h",
-                            yanchor="top",
-                            y=-0.15,
+                            yanchor="bottom",
+                            y=-0.2,
                             xanchor="center",
                             x=0.5,
-                            font=dict(size=12, color=texto_color),
-                            bgcolor="rgba(255,255,255,0.3)" if modo=="light" else "rgba(0,0,0,0.3)",
+                            font=dict(color=text_color)  # también aplica a la leyenda
+                        ),
+                        title=dict(
+                            x=0.5,
+                            xanchor="center",
+                            yanchor="top",
+                            font=dict(color=text_color, size=18)
                         )
                     )
 
