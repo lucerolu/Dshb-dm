@@ -1064,6 +1064,7 @@ if authentication_status:
 
 
                     col.plotly_chart(fig, use_container_width=True)
+                    st.markdown("<br><br>", unsafe_allow_html=True)
 
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
             # --- Datos ---
