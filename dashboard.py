@@ -1071,6 +1071,7 @@ if authentication_status:
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
+            # --- Clasificar estado de cada fecha ---
             def clasificar_estado(fecha, hoy):
                 diff = (fecha - hoy).days
                 if diff < 0:
@@ -1095,14 +1096,15 @@ if authentication_status:
                 None: "#ffffff"
             }
 
-            # --- Meses ---
+            # --- Rango de meses ---
             fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
 
-            # --- Columnas para todos los meses en una sola fila ---
+            # --- Columnas para todos los meses en una fila ---
             cols = st.columns(len(meses))
 
+            # --- Fondo según tema ---
             bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
 
             for idx, m in enumerate(meses):
@@ -1112,7 +1114,7 @@ if authentication_status:
 
                     fig = go.Figure()
 
-                    # Dibujar celdas
+                    # Dibujar celdas de cada día
                     for week_idx, week in enumerate(month_matrix):
                         for day_idx, day in enumerate(week):
                             if day.month == m.month:
@@ -1138,16 +1140,16 @@ if authentication_status:
                                     font=dict(size=12, color="black")
                                 )
 
-                    # Nombre del mes (separado más arriba)
+                    # Nombre del mes (arriba del calendario)
                     fig.add_annotation(
                         x=3.5,
-                        y=2.0,
+                        y=2.5,
                         text=f"{calendar.month_name[m.month]} {m.year}",
                         showarrow=False,
                         font=dict(size=14, color="black")
                     )
 
-                    # Nombres de días (arriba del primer recuadro)
+                    # Nombres de los días (Lun-Dom)
                     for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
                         fig.add_annotation(
                             x=i + 0.5,
@@ -1157,18 +1159,21 @@ if authentication_status:
                             font=dict(size=10, color="black")
                         )
 
+                    # Ejes sin ticks, con proporción 1:1
                     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
-                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,2], scaleanchor="x")  # 1:1
+                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
 
+                    # Layout con tamaño fijo y márgenes ajustados
                     fig.update_layout(
                         width=200,
-                        height=200,
+                        height=220,
                         plot_bgcolor=bg_color,
                         paper_bgcolor=bg_color,
-                        margin=dict(t=40, b=10, l=10, r=10)
+                        margin=dict(t=20, b=10, l=10, r=10)
                     )
 
-                    st.plotly_chart(fig, use_container_width=False)  # Tamaño fijo para evitar deformación
+                    # Mostrar calendario
+                    st.plotly_chart(fig, use_container_width=False)
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
