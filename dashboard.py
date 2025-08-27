@@ -1141,7 +1141,7 @@ if authentication_status:
                     # Nombre del mes (separado más arriba)
                     fig.add_annotation(
                         x=3.5,
-                        y=3.0,
+                        y=2.5,
                         text=f"{calendar.month_name[m.month]} {m.year}",
                         showarrow=False,
                         font=dict(size=14, color="black")
