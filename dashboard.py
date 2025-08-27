@@ -1177,6 +1177,7 @@ if authentication_status:
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
+            st.markdown("### Gráfico del comportamiento de la deuda según las fechas de exigibilidad")
             with open("config_colores.json", "r", encoding="utf-8") as f:
                 config = json.load(f)
 
