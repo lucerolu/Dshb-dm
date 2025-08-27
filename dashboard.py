@@ -1100,8 +1100,10 @@ if authentication_status:
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
 
-            # --- Fondo según tema ---
-            bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
+            # --- Fondo y color de texto según tema ---
+            modo = st.get_option("theme.base")
+            bg_color = "#0e1117" if modo == "dark" else "#ffffff"
+            texto_color = "white" if modo == "dark" else "black"
 
             # --- Meses en español ---
             meses_es = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
@@ -1145,16 +1147,16 @@ if authentication_status:
                                     y=(y0 + y1)/2,
                                     text=str(day.day),
                                     showarrow=False,
-                                    font=dict(size=12, color="black")
+                                    font=dict(size=12, color=texto_color)
                                 )
 
-                    # Nombre del mes (más separado del calendario)
+                    # Nombre del mes
                     fig.add_annotation(
                         x=3.5,
                         y=2.9,
                         text=f"{meses_es[m.month-1]} {m.year}",
                         showarrow=False,
-                        font=dict(size=14, color="black")
+                        font=dict(size=14, color=texto_color)
                     )
 
                     # Nombres de los días
@@ -1164,36 +1166,37 @@ if authentication_status:
                             y=1.6,
                             text=day_name,
                             showarrow=False,
-                            font=dict(size=10, color="black")
+                            font=dict(size=10, color=texto_color)
                         )
 
                     # Ejes sin ticks ni controles, escala cuadrada
                     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
                     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
 
-                    # Layout con tamaño fijo para cada calendario
+                    # Layout fijo y adaptable
                     fig.update_layout(
-                        margin=dict(l=40, r=40, t=60, b=80),  # márgenes fijos
-                        height=700,                           # altura fija
-                        autosize=True,                        # que se ajuste pero dentro del límite
+                        margin=dict(l=40, r=40, t=60, b=80),
+                        height=700,
+                        autosize=True,
+                        plot_bgcolor=bg_color,
+                        paper_bgcolor=bg_color,
                         legend=dict(
                             orientation="h",
                             yanchor="top",
-                            y=-0.15,        # con número negativo pero pequeño, siempre dentro
+                            y=-0.15,
                             xanchor="center",
                             x=0.5,
-                            font=dict(size=12),
-                            bgcolor="rgba(255,255,255,0.6)",  # fondo semitransparente para legibilidad
+                            font=dict(size=12, color=texto_color),
+                            bgcolor="rgba(255,255,255,0.3)" if modo=="light" else "rgba(0,0,0,0.3)",
                         )
                     )
 
-                    # --- Leyenda centrada debajo del calendario ---
+                    # Leyenda debajo del calendario
                     leyenda_y = -6.5
                     if leyenda:
                         total_width = len(leyenda) * 1.2
                         start_x = (7 - total_width)/2
                         for i, (estado, color) in enumerate(leyenda):
-                            # Cuadrito
                             x0 = start_x + i*1.2
                             x1 = x0 + 0.5
                             fig.add_shape(
@@ -1203,18 +1206,17 @@ if authentication_status:
                                 fillcolor=color,
                                 line=dict(color="black")
                             )
-                            # Texto al lado del cuadrito
                             fig.add_annotation(
                                 x=x1 + 0.1,
                                 y=leyenda_y + 0.15,
                                 text=estado,
                                 showarrow=False,
-                                font=dict(size=9, color="black"),
+                                font=dict(size=9, color=texto_color),
                                 xanchor="left",
                                 yanchor="middle"
                             )
 
-                    # --- Mostrar gráfico sin barra de herramientas ---
+                    # Mostrar gráfico
                     st.plotly_chart(fig, use_container_width=False, config={'displayModeBar': False})
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
