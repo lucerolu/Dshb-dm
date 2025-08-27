@@ -919,7 +919,7 @@ if authentication_status:
             # --- Función para exportar a Excel ---
             def to_excel(df):
                 output = BytesIO()
-                with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
                     df.to_excel(writer, index=False, sheet_name="Vencimiento")
                 return output.getvalue()
 
