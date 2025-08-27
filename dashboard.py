@@ -1169,7 +1169,7 @@ if authentication_status:
                         height=220,
                         plot_bgcolor=bg_color,
                         paper_bgcolor=bg_color,
-                        margin=dict(t=10, b=5, l=5, r=5)
+                        margin=dict(t=5, b=2, l=2, r=2)
                     )
 
                     # Mostrar calendario
