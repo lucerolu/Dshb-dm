@@ -847,12 +847,12 @@ if authentication_status:
 
             # --- Calcular ancho dinámico según columnas ---
             # Tomamos el ancho aproximado por columna (ajústalo si quieres más espacio)
-            ancho_por_columna = 100
+            ancho_por_columna = 150
             num_columnas = len(data_sin_total_bucket.columns)
             ancho_total_tabla = ancho_por_columna * num_columnas
 
             # Máximo ancho para no salirse de la pantalla
-            ancho_maximo = 1200  # puedes ajustar según tu layout
+            ancho_maximo = 1600  # puedes ajustar según tu layout
             ancho_final = min(ancho_total_tabla, ancho_maximo)
 
             # --- Configuración AgGrid ---
@@ -864,7 +864,7 @@ if authentication_status:
                 "codigo_sucursal",
                 headerName="Codigo - Sucursal",
                 pinned="left",
-                minWidth=140,
+                minWidth=160,
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
 
@@ -874,7 +874,7 @@ if authentication_status:
                     header_class = f"header-{col.replace(' ', '').replace('+','')}"
                     gb.configure_column(
                         col,
-                        minWidth=70,
+                        minWidth=100,
                         headerClass=header_class,
                         cellStyle=gradient_renderer,
                         valueFormatter=value_formatter
@@ -884,7 +884,7 @@ if authentication_status:
             if "Total" in data_sin_total_bucket.columns:
                 gb.configure_column(
                     "Total",
-                    minWidth=70,
+                    minWidth=100,
                     headerClass='header-total',
                     valueFormatter=value_formatter,
                     cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
@@ -913,7 +913,7 @@ if authentication_status:
                 data_sin_total_bucket,
                 gridOptions=grid_options,
                 custom_css=custom_css,
-                height=500,
+                height=700,
                 allow_unsafe_jscode=True,
                 theme=AgGridTheme.ALPINE,
                 fit_columns_on_grid_load=True,
