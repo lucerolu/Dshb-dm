@@ -893,8 +893,10 @@ if authentication_status:
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row_bucket.to_dict('records')
 
-            st.markdown("### Tabla de vencimiento por buckets")
-            AgGrid(
+            # --- AgGrid ---
+            st.markdown("### Tabla de estado de cuenta agrupada por fecha de vencimiento")
+
+            grid_response = AgGrid(
                 data_sin_total_bucket,
                 gridOptions=grid_options,
                 custom_css=custom_css,
@@ -904,6 +906,28 @@ if authentication_status:
                 fit_columns_on_grid_load=False,
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
                 enable_enterprise_modules=False
+            )
+
+            # --- Capturar la data filtrada/ordenada de AgGrid ---
+            df_filtrado = pd.DataFrame(grid_response["data"])
+
+            # --- Agregar la fila de totales al final ---
+            if not total_row_bucket.empty:
+                df_filtrado = pd.concat([df_filtrado, total_row_bucket], ignore_index=True)
+
+            # --- Función para exportar a Excel ---
+            def to_excel(df):
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                    df.to_excel(writer, index=False, sheet_name="Vencimiento")
+                return output.getvalue()
+
+            # --- Botón de descarga ---
+            st.download_button(
+                label="📥 Descargar tabla en Excel",
+                data=to_excel(df_filtrado),
+                file_name="estado_cuenta_vencimiento.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
             #----------------------------------- GRAFICO DE ANILLOS ------------------------------------------------------------------------------------------------------------------------
