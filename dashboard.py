@@ -1151,7 +1151,7 @@ if authentication_status:
                                     y=(y0 + y1)/2,
                                     text=str(day.day),
                                     showarrow=False,
-                                    font=dict(size=12, color="black")
+                                    font=dict(size=12, color=text_color)
                                 )
 
                     # Nombre del mes (más separado del calendario)
@@ -1160,7 +1160,7 @@ if authentication_status:
                         y=2.9,
                         text=f"{meses_es[m.month-1]} {m.year}",
                         showarrow=False,
-                        font=dict(size=14, color="black")
+                        font=dict(size=14, color=text_color)
                     )
 
                     # Nombres de los días
@@ -1170,7 +1170,7 @@ if authentication_status:
                             y=1.6,
                             text=day_name,
                             showarrow=False,
-                            font=dict(size=10, color="black")
+                            font=dict(size=10, color=text_color)
                         )
 
                     # Ejes sin ticks ni controles, escala cuadrada
@@ -1214,7 +1214,7 @@ if authentication_status:
                                 y=leyenda_y + 0.15,
                                 text=estado,
                                 showarrow=False,
-                                font=dict(size=9, color="black"),
+                                font=dict(size=9, color=text_color),
                                 xanchor="left",
                                 yanchor="middle"
                             )
