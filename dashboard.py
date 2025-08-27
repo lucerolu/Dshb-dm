@@ -1148,10 +1148,10 @@ if authentication_status:
                                     font=dict(size=12, color="black")
                                 )
 
-                    # Nombre del mes
+                    # Nombre del mes (más separado)
                     fig.add_annotation(
                         x=3.5,
-                        y=2.5,
+                        y=2.8,
                         text=f"{meses_es[m.month-1]} {m.year}",
                         showarrow=False,
                         font=dict(size=14, color="black")
@@ -1180,27 +1180,36 @@ if authentication_status:
                         showlegend=False
                     )
 
-                    # --- Leyenda de colores filtrada ---
+                    # --- Leyenda de colores centrada debajo del calendario ---
                     leyenda_y = -6.5
-                    for i, (estado, color) in enumerate(leyenda):
-                        fig.add_shape(
-                            type="rect",
-                            x0=i*1.5, x1=i*1.5+0.5,
-                            y0=leyenda_y, y1=leyenda_y+0.3,
-                            fillcolor=color,
-                            line=dict(color="black")
-                        )
-                        fig.add_annotation(
-                            x=i*1.5+0.25,
-                            y=leyenda_y-0.2,
-                            text=estado,
-                            showarrow=False,
-                            font=dict(size=9, color="black"),
-                            xanchor="center"
-                        )
+                    if leyenda:
+                        total_width = len(leyenda) * 1.2
+                        start_x = (7 - total_width)/2
+                        for i, (estado, color) in enumerate(leyenda):
+                            # Cuadrito
+                            x0 = start_x + i*1.2
+                            x1 = x0 + 0.5
+                            fig.add_shape(
+                                type="rect",
+                                x0=x0, x1=x1,
+                                y0=leyenda_y, y1=leyenda_y+0.3,
+                                fillcolor=color,
+                                line=dict(color="black")
+                            )
+                            # Texto al lado del cuadrito
+                            fig.add_annotation(
+                                x=x1 + 0.1,
+                                y=leyenda_y + 0.15,
+                                text=estado,
+                                showarrow=False,
+                                font=dict(size=9, color="black"),
+                                xanchor="left",
+                                yanchor="middle"
+                            )
 
-                    # --- Ocultar barra de herramientas (zoom/pan/reset) ---
+                    # --- Mostrar gráfico ---
                     st.plotly_chart(fig, use_container_width=False, config={'displayModeBar': False})
+
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
             st.markdown("### Gráfico del comportamiento de la deuda según las fechas de exigibilidad")
