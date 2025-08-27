@@ -708,10 +708,6 @@ if authentication_status:
 
             hoy = datetime.today()
 
-            # --- Cargar JSON de configuración ---
-            with open("config_colores.json", "r") as f:
-                config = json.load(f)
-
             # --- Limpiar nombres de sucursal y códigos ---
             df_estado_cuenta["sucursal"] = df_estado_cuenta["sucursal"].str.strip()
             df_estado_cuenta["codigo_6digitos"] = df_estado_cuenta["codigo_6digitos"].astype(str).str.strip()
@@ -735,13 +731,13 @@ if authentication_status:
                 if diff < 0:
                     return "Vencido"
                 elif diff <= 30:
-                    return "0-30 días"
+                    return "0-30 dias"
                 elif diff <= 60:
-                    return "31-60 días"
+                    return "31-60 dias"
                 elif diff <= 90:
-                    return "61-90 días"
+                    return "61-90 dias"
                 else:
-                    return "91+ días"
+                    return "91+ dias"
 
             df_estado_cuenta["bucket_venc"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: bucket_vencimiento(f, hoy))
             df_estado_cuenta["codigo_original"] = df_estado_cuenta["codigo_6digitos"]
@@ -758,7 +754,7 @@ if authentication_status:
             )
 
             # --- Ordenar columnas ---
-            orden_buckets = ["Vencido", "0-30 días", "31-60 días", "61-90 días", "91+ días"]
+            orden_buckets = ["Vencido", "0-30 dias", "31-60 dias", "61-90 dias", "91+ dias"]
             cols_presentes = [c for c in orden_buckets if c in df_pivot_bucket.columns]
             if "Total" in df_pivot_bucket.columns:
                 cols_presentes.append("Total")
@@ -772,33 +768,26 @@ if authentication_status:
             ) | (
                 df_reset["sucursal_abrev"].str.strip().str.lower() == "total"
             )
-            total_row = df_reset[mascara_total].copy()
-            data_sin_total = df_reset[~mascara_total].copy()
+            total_row_bucket = df_reset[mascara_total].copy()
+            data_sin_total_bucket = df_reset[~mascara_total].copy()
 
             # --- Crear columna combinada ---
-            data_sin_total["codigo_sucursal"] = (
-                data_sin_total["codigo_original"] + " - " +
-                data_sin_total["codigo_abrev"] + " - " +
-                data_sin_total["sucursal_abrev"]
+            data_sin_total_bucket["codigo_sucursal"] = (
+                data_sin_total_bucket["codigo_original"] + " - " +
+                data_sin_total_bucket["codigo_abrev"] + " - " +
+                data_sin_total_bucket["sucursal_abrev"]
             )
 
-            # --- Asegurarse de no tener columnas duplicadas ---
-            data_sin_total = data_sin_total.loc[:, ~data_sin_total.columns.duplicated()]
+            # --- Columnas numéricas ---
+            numeric_cols_bucket = [c for c in data_sin_total_bucket.select_dtypes(include='number').columns if c != "Total"]
 
-            # --- Columnas numéricas para gradient, excluyendo Total explícitamente ---
-            numeric_cols_sin_total = [c for c in data_sin_total.select_dtypes(include='number').columns if c != "Total"]
-
-            if numeric_cols_sin_total:
-                min_val = data_sin_total[numeric_cols_sin_total].min().min()
-                max_val = data_sin_total[numeric_cols_sin_total].max().max()
+            if numeric_cols_bucket:
+                min_val = data_sin_total_bucket[numeric_cols_bucket].min().min()
+                max_val = data_sin_total_bucket[numeric_cols_bucket].max().max()
             else:
-                min_val = 0
-                max_val = 1
+                min_val, max_val = 0, 1
 
-            # --- Buckets para gradiente ---
-            buckets_cols = numeric_cols_sin_total.copy()  # no incluye Total
-
-            # --- Formatter JS para números ---
+            # --- Formatter JS ---
             value_formatter = JsCode("""
             function(params) { 
                 if (params.value == null) return '0.00';
@@ -806,9 +795,8 @@ if authentication_status:
             }
             """)
 
-            # --- Crear lista JS de columnas con gradiente ---
-            buckets_cols_js_str = str(buckets_cols)
-
+            # --- Gradient renderer ---
+            buckets_cols_js_str = str(numeric_cols_bucket)
             gradient_renderer = JsCode(f"""
             function(params) {{
                 let gradientCols = {buckets_cols_js_str};
@@ -849,23 +837,18 @@ if authentication_status:
             }}
             """)
 
-            # --- Reordenar columnas ---
-            columnas_iniciales = ["codigo_sucursal"]
-            otras_columnas = [c for c in data_sin_total.columns if c not in columnas_iniciales]
-            data_sin_total = data_sin_total[columnas_iniciales + otras_columnas]
-
-            # --- Columnas finales ---
-            columnas_finales = ["codigo_sucursal"] + [c for c in numeric_cols_sin_total if c not in ["codigo_original","codigo_abrev","sucursal_abrev"]]
-            if "Total" in data_sin_total.columns:
+            # --- Ordenar columnas finales ---
+            columnas_finales = ["codigo_sucursal"] + orden_buckets
+            if "Total" in data_sin_total_bucket.columns:
                 columnas_finales.append("Total")
-
-            data_sin_total = data_sin_total[columnas_finales]
+            columnas_finales = [c for c in columnas_finales if c in data_sin_total_bucket.columns]
+            data_sin_total_bucket = data_sin_total_bucket[columnas_finales]
 
             # --- Configuración AgGrid ---
-            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+            gb = GridOptionsBuilder.from_dataframe(data_sin_total_bucket)
             gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
 
-            # Columna combinada azul
+            # Columna combinada
             gb.configure_column(
                 "codigo_sucursal",
                 headerName="Codigo - Sucursal",
@@ -874,9 +857,9 @@ if authentication_status:
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
 
-            # Buckets numéricos (gradiente)
-            for col in buckets_cols:
-                if col in data_sin_total.columns:
+            # Buckets numéricos
+            for col in orden_buckets:
+                if col in data_sin_total_bucket.columns:
                     header_class = f"header-{col.replace(' ', '').replace('+','')}"
                     gb.configure_column(
                         col,
@@ -886,32 +869,33 @@ if authentication_status:
                         valueFormatter=value_formatter
                     )
 
-            # Columna Total (solo azul)
-            gb.configure_column(
-                "Total",
-                minWidth=70,
-                headerClass='header-total',
-                valueFormatter=value_formatter,
-                cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
-            )
+            # Columna Total
+            if "Total" in data_sin_total_bucket.columns:
+                gb.configure_column(
+                    "Total",
+                    minWidth=70,
+                    headerClass='header-total',
+                    valueFormatter=value_formatter,
+                    cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
+                )
 
-            # --- Custom CSS para headers ---
             custom_css = {
-                ".header-Vencido": {"border-bottom": "4px solid red", "text-align": "left"},
-                ".header-0-30días": {"border-bottom": "4px solid orange", "text-align": "left"},
-                ".header-31-60días": {"border-bottom": "4px solid yellow", "text-align": "left"},
-                ".header-61-90días": {"border-bottom": "4px solid lightgreen", "text-align": "left"},
-                ".header-91+días": {"border-bottom": "4px solid green", "text-align": "left"},
-                ".header-total": {"border-bottom": "4px solid #0B083D", "text-align": "left"},
+                ".header-Vencido": {"border-bottom": "4px solid red"},
+                ".header-0-30dias": {"border-bottom": "4px solid orange"},
+                ".header-31-60dias": {"border-bottom": "4px solid yellow"},
+                ".header-61-90dias": {"border-bottom": "4px solid lightgreen"},
+                ".header-91+dias": {"border-bottom": "4px solid green"},
+                ".header-total": {"border-bottom": "4px solid #0B083D"},
                 ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
                 ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
             }
 
             grid_options = gb.build()
-            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+            grid_options['pinnedBottomRowData'] = total_row_bucket.to_dict('records')
 
+            st.markdown("### Tabla de vencimiento por buckets")
             AgGrid(
-                data_sin_total,
+                data_sin_total_bucket,
                 gridOptions=grid_options,
                 custom_css=custom_css,
                 height=500,
