@@ -1110,21 +1110,17 @@ if authentication_status:
             # --- Columnas para todos los meses en una fila ---
             cols = st.columns(len(meses))
 
-            # Leyenda de colores
-            leyenda = [
-                ("Vencido", "#ff6666"),
-                ("0-30 días", "#ffcc66"),
-                ("31-60 días", "#ffff99"),
-                ("61-90 días", "#ccff99"),
-                ("91+ días", "#99ff99")
-            ]
-
             for idx, m in enumerate(meses):
                 with cols[idx]:
                     cal = calendar.Calendar(firstweekday=0)
                     month_matrix = cal.monthdatescalendar(m.year, m.month)
 
                     fig = go.Figure()
+
+                    # Obtener estados presentes en el mes
+                    dias_mes = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"].dt.month == m.month]
+                    estados_presentes = dias_mes["estado"].unique()
+                    leyenda = [(estado, color_map[estado]) for estado in estados_presentes]
 
                     # Dibujar celdas de cada día
                     for week_idx, week in enumerate(month_matrix):
@@ -1171,18 +1167,20 @@ if authentication_status:
                             font=dict(size=10, color="black")
                         )
 
-                    # Ejes sin ticks ni controles
+                    # Ejes sin ticks ni controles, escala cuadrada
                     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
                     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
+
                     fig.update_layout(
                         width=200,
-                        height=240,  # un poco más de alto para leyenda
+                        height=240,
                         plot_bgcolor=bg_color,
                         paper_bgcolor=bg_color,
-                        margin=dict(t=5, b=5, l=5, r=5)
+                        margin=dict(t=5, b=5, l=5, r=5),
+                        showlegend=False
                     )
 
-                    # --- Añadir leyenda de colores debajo del calendario ---
+                    # --- Leyenda de colores filtrada ---
                     leyenda_y = -6.5
                     for i, (estado, color) in enumerate(leyenda):
                         fig.add_shape(
@@ -1201,7 +1199,8 @@ if authentication_status:
                             xanchor="center"
                         )
 
-                    st.plotly_chart(fig, use_container_width=False)
+                    # --- Ocultar barra de herramientas (zoom/pan/reset) ---
+                    st.plotly_chart(fig, use_container_width=False, config={'displayModeBar': False})
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
             st.markdown("### Gráfico del comportamiento de la deuda según las fechas de exigibilidad")
