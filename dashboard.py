@@ -1100,19 +1100,13 @@ if authentication_status:
             fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
 
-            # --- Configuración columnas ---
-            cols_per_row = 4
+            # --- Columnas para todos los meses en una sola fila ---
+            cols = st.columns(len(meses))
+
             bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
 
-            # --- Loop para mostrar cada mes ---
-            row_cols = []
-            for i in range(0, len(meses), cols_per_row):
-                row_cols.append(st.columns(min(cols_per_row, len(meses)-i)))
-
             for idx, m in enumerate(meses):
-                row_idx = idx // cols_per_row
-                col_idx = idx % cols_per_row
-                with row_cols[row_idx][col_idx]:
+                with cols[idx]:
                     cal = calendar.Calendar(firstweekday=0)
                     month_matrix = cal.monthdatescalendar(m.year, m.month)
 
@@ -1144,10 +1138,10 @@ if authentication_status:
                                     font=dict(size=12, color="black")
                                 )
 
-                    # Nombre del mes
+                    # Nombre del mes (separado más arriba)
                     fig.add_annotation(
                         x=3.5,
-                        y=1.5,
+                        y=2.0,
                         text=f"{calendar.month_name[m.month]} {m.year}",
                         showarrow=False,
                         font=dict(size=14, color="black")
@@ -1157,24 +1151,24 @@ if authentication_status:
                     for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
                         fig.add_annotation(
                             x=i + 0.5,
-                            y=1.2,  # un poco más arriba
+                            y=1.5,
                             text=day_name,
                             showarrow=False,
                             font=dict(size=10, color="black")
                         )
 
                     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
-                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,1.5], scaleanchor="x")  # relación 1:1
+                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,2], scaleanchor="x")  # 1:1
 
                     fig.update_layout(
-                        width=250,
-                        height=250,
+                        width=200,
+                        height=200,
                         plot_bgcolor=bg_color,
                         paper_bgcolor=bg_color,
                         margin=dict(t=40, b=10, l=10, r=10)
                     )
 
-                    st.plotly_chart(fig, use_container_width=False)  # NO usar container width para evitar deformación
+                    st.plotly_chart(fig, use_container_width=False)  # Tamaño fijo para evitar deformación
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
