@@ -251,6 +251,7 @@ if authentication_status:
     # ============================= ESTADO DE CUENTA ============================================================
     # ==========================================================================================================
     if opcion == "Estado de cuenta":
+
         st.title("Cuadro de estado de cuenta")
         
         df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
@@ -258,6 +259,57 @@ if authentication_status:
             st.warning("No hay datos de estado de cuenta.")
         else:
             st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
+
+            # ------------------ Cargar configuración ------------------
+            with open("config_colores.json", "r", encoding="utf-8") as f:
+                config = json.load(f)
+
+            divisiones = config["divisiones"]
+            colores_sucursales = config["sucursales"]
+
+            # ------------------ Función para abreviatura ------------------
+            def obtener_abreviatura(codigo):
+                for division, info in divisiones.items():
+                    if codigo in info["codigos"]:
+                        return info["abreviatura"]
+                return ""
+            
+            # ------------------ Preparar DataFrame base ------------------
+            df = df_estado_cuenta.copy()
+
+            df["fecha_exigibilidad"] = pd.to_datetime(df["fecha_exigibilidad"], errors="coerce")
+            df["codigo"] = df["codigo_6digitos"].astype(str)
+            df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
+            df["abreviatura"] = df["codigo"].apply(obtener_abreviatura)
+            df["cuenta_sucursal"] = df["codigo"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
+
+            meta = df[["cuenta_sucursal", "codigo", "sucursal", "abreviatura"]].drop_duplicates()
+
+            tabla = df.pivot_table(
+                index="fecha_exigibilidad",
+                columns="cuenta_sucursal",
+                values="total",
+                aggfunc="sum"
+            )
+
+            fechas = sorted(df["fecha_exigibilidad"].dropna().unique())
+            tabla = tabla.reindex(fechas).fillna(0)
+
+            df_completo = tabla.stack(dropna=False).reset_index(name="total")
+            df_completo = df_completo.rename(columns={"level_2": "cuenta_sucursal"})
+            df_completo = df_completo.merge(meta, on="cuenta_sucursal", how="left")
+
+            df_completo[["sucursal","codigo","abreviatura"]] = df_completo[["sucursal","codigo","abreviatura"]].fillna({
+                "sucursal":"Desconocida",
+                "codigo":"Desconocido",
+                "abreviatura":""
+            })
+
+            df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+            fechas_ordenadas = sorted(
+                df_completo["fecha_exigibilidad_str"].unique(),
+                key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
+            )
             # ------------------------------------- TARJETAS DE CRÉDITO DISPONIBLE --------------------------------------------------
             # Límite de crédito
             CREDITO_MAX = 180_000_000
@@ -309,460 +361,17 @@ if authentication_status:
             for col, (titulo, valor) in zip([col1, col2, col3], valores_vencimiento):
                 col.metric(titulo, valor)
 
-            #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
-            # ------------------ Cargar configuración de colores y divisiones ------------------
-            with open("config_colores.json", "r", encoding="utf-8") as f:
-                config = json.load(f)
-
-            divisiones = config["divisiones"]
-            colores_sucursales = config["sucursales"]
-
-            # ------------------ Función para abreviatura ------------------
-            def obtener_abreviatura(codigo):
-                for division, info in divisiones.items():
-                    if codigo in info["codigos"]:
-                        return info["abreviatura"]
-                return ""
-
-            # ------------------ Preparar DataFrame base ------------------
-            df = df_estado_cuenta.copy()
-
-            # Tipos correctos
-            df["fecha_exigibilidad"] = pd.to_datetime(df["fecha_exigibilidad"], errors="coerce")
-            df["codigo"] = df["codigo_6digitos"].astype(str)
-
-            # Limpieza de total a numérico (por si viene como texto con comas)
-            df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
-
-            # Etiquetas
-            df["abreviatura"] = df["codigo"].apply(obtener_abreviatura)
-            df["cuenta_sucursal"] = (
-                df["codigo"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
-            )
-
-            # Meta por cuenta (para merge posterior y mapa de color)
-            meta = df[["cuenta_sucursal", "codigo", "sucursal", "abreviatura"]].drop_duplicates()
-
-            # ------------------ Construir universo de fechas y rellenar huecos a 0 ------------------
-            # 1) pivot sumando por si hay duplicados (fecha, cuenta)
-            tabla = (
-                df.pivot_table(
-                    index="fecha_exigibilidad",
-                    columns="cuenta_sucursal",
-                    values="total",
-                    aggfunc="sum",  # suma si hay varias filas por la misma fecha/cuenta
-                )
-            )
-
-            # 2) Reindexar al conjunto de fechas observadas (ordenado) y rellenar con 0
-            fechas = sorted(df["fecha_exigibilidad"].dropna().unique())
-            tabla = tabla.reindex(fechas).fillna(0)
-
-            # 3) Volver a formato largo
-            df_completo = tabla.stack(dropna=False).reset_index(name="total")
-            df_completo = df_completo.rename(columns={"level_2": "cuenta_sucursal"})
-
-            # 4) Anexar meta (sucursal, código, abreviatura)
-            df_completo = df_completo.merge(meta, on="cuenta_sucursal", how="left")
-
-            # Rellenar posibles NaN en las columnas que se usan en custom_data
-            df_completo[["sucursal","codigo","abreviatura"]] = df_completo[["sucursal","codigo","abreviatura"]].fillna({
-                "sucursal":"Desconocida",
-                "codigo":"Desconocido",
-                "abreviatura":""
-            })
-
-            # 5) Cadena de fecha para eje categórico ordenado
-            df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
-            fechas_ordenadas = sorted(
-                df_completo["fecha_exigibilidad_str"].unique(),
-                key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
-            )
-
-            # ------------------ Colores por cuenta (usando color de la sucursal) ------------------
-            color_cuentas = {
-                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
-                for _, row in meta.iterrows()
-            }
-
-            # ------------------ Gráfico ------------------
-            fig = px.line(
-                df_completo,
-                x="fecha_exigibilidad_str",
-                y="total",
-                color="cuenta_sucursal",
-                color_discrete_map=color_cuentas,
-                category_orders={"fecha_exigibilidad_str": fechas_ordenadas},
-                custom_data=["sucursal", "codigo", "abreviatura"]
-            )
-
-            fig.update_traces(
-                mode="lines+markers",          # puntos en cada fecha
-                marker=dict(size=6, symbol="circle"),
-                connectgaps=False,             # no unir huecos (defensivo)
-                hovertemplate=(
-                    "<b>Fecha:</b> %{x}<br>"
-                    "<b>Código:</b> %{customdata[1]}<br>"
-                    "<b>Sucursal:</b> %{customdata[0]}<br>"
-                    "<b>División:</b> %{customdata[2]}<br>"
-                    "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
-                )
-            )
-
-            fig.update_layout(
-                xaxis_title="Fecha de exigibilidad",
-                yaxis_title="Monto",
-                hovermode="closest",
-                template="plotly_white"
-            )
-
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                config={
-                    "scrollZoom": True,
-                    "modeBarButtonsToKeep": [
-                        "toImage",
-                        "zoom2d",
-                        "autoScale2d",
-                        "toggleFullscreen"
-                    ],
-                    "displaylogo": False
-                }
-            )
-
-
-            #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
-            # --- Datos ---
-            hoy = datetime.today()
-            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
-
-            def clasificar_estado(fecha, hoy):
-                diff = (fecha - hoy).days
-                if diff < 0:
-                    return "Vencido"
-                elif diff <= 30:
-                    return "0-30 días"
-                elif diff <= 60:
-                    return "31-60 días"
-                elif diff <= 90:
-                    return "61-90 días"
-                else:
-                    return "91+ días"
-
-            df_estado_cuenta["estado"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: clasificar_estado(f, hoy))
-
-            color_map = {
-                "Vencido": "#ff6666",
-                "0-30 días": "#ffcc66",
-                "31-60 días": "#ffff99",
-                "61-90 días": "#ccff99",
-                "91+ días": "#99ff99",
-                None: "#ffffff"
-            }
-
-            # --- Meses ---
-            fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
-            fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
-            meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
-
-            # --- Configuración columnas ---
-            cols_per_row = 4
-            bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
-
-            # --- Loop para mostrar cada mes ---
-            row_cols = []
-            for i in range(0, len(meses), cols_per_row):
-                row_cols.append(st.columns(min(cols_per_row, len(meses)-i)))
-
-            for idx, m in enumerate(meses):
-                row_idx = idx // cols_per_row
-                col_idx = idx % cols_per_row
-                with row_cols[row_idx][col_idx]:
-                    cal = calendar.Calendar(firstweekday=0)
-                    month_matrix = cal.monthdatescalendar(m.year, m.month)
-
-                    fig = go.Figure()
-
-                    # Dibujar celdas
-                    for week_idx, week in enumerate(month_matrix):
-                        for day_idx, day in enumerate(week):
-                            if day.month == m.month:
-                                estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
-                                estado = estado.values[0] if len(estado) > 0 else None
-                                color = color_map[estado]
-
-                                x0, x1 = day_idx, day_idx + 1
-                                y0, y1 = -week_idx, -week_idx + 1
-
-                                fig.add_shape(
-                                    type="rect",
-                                    x0=x0, x1=x1, y0=y0, y1=y1,
-                                    line=dict(color="black", width=1),
-                                    fillcolor=color
-                                )
-
-                                fig.add_annotation(
-                                    x=(x0 + x1)/2,
-                                    y=(y0 + y1)/2,
-                                    text=str(day.day),
-                                    showarrow=False,
-                                    font=dict(size=12, color="black")
-                                )
-
-                    # Nombre del mes
-                    fig.add_annotation(
-                        x=3.5,
-                        y=1.5,
-                        text=f"{calendar.month_name[m.month]} {m.year}",
-                        showarrow=False,
-                        font=dict(size=14, color="black")
-                    )
-
-                    # Nombres de días
-                    for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
-                        fig.add_annotation(
-                            x=i + 0.5,
-                            y=0.5,
-                            text=day_name,
-                            showarrow=False,
-                            font=dict(size=10, color="black")
-                        )
-
-                    fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
-                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,2])
-                    fig.update_layout(
-                        width=200,
-                        height=200,
-                        plot_bgcolor=bg_color,
-                        paper_bgcolor=bg_color,
-                        margin=dict(t=30, b=10, l=10, r=10)
-                    )
-
-                    st.plotly_chart(fig, use_container_width=True)
-            #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
-
-            hoy = datetime.today()
-
-            # --- Cargar JSON de configuración ---
-            with open("config_colores.json", "r") as f:
-                config = json.load(f)
-
-            # --- Limpiar nombres de sucursal y códigos ---
-            df_estado_cuenta["sucursal"] = df_estado_cuenta["sucursal"].str.strip()
-            df_estado_cuenta["codigo_6digitos"] = df_estado_cuenta["codigo_6digitos"].astype(str).str.strip()
-
-            # --- Aplicar abreviaturas ---
-            df_estado_cuenta["sucursal_abrev"] = df_estado_cuenta["sucursal"].apply(
-                lambda x: config["sucursales"].get(x, {}).get("abreviatura", x)
-            )
-
-            def agregar_abrev_division(codigo):
-                for div, info in config["divisiones"].items():
-                    if codigo in info["codigos"]:
-                        return info['abreviatura']
-                return codigo
-
-            df_estado_cuenta["codigo_abrev"] = df_estado_cuenta["codigo_6digitos"].apply(agregar_abrev_division)
-
-            # --- Clasificar cada fila en bucket ---
-            def bucket_vencimiento(fecha, hoy):
-                diff = (fecha - hoy).days
-                if diff < 0:
-                    return "Vencido"
-                elif diff <= 30:
-                    return "0-30 días"
-                elif diff <= 60:
-                    return "31-60 días"
-                elif diff <= 90:
-                    return "61-90 días"
-                else:
-                    return "91+ días"
-
-            df_estado_cuenta["bucket_venc"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: bucket_vencimiento(f, hoy))
-            df_estado_cuenta["codigo_original"] = df_estado_cuenta["codigo_6digitos"]
-
-            # --- Pivot usando sucursal_abrev y codigo_abrev ---
-            df_pivot_bucket = df_estado_cuenta.pivot_table(
-                index=["sucursal_abrev", "codigo_abrev", "codigo_original"],
-                columns="bucket_venc",
-                values="total",
-                aggfunc="sum",
-                fill_value=0,
-                margins=True,
-                margins_name="Total"
-            )
-
-            # --- Ordenar columnas ---
-            orden_buckets = ["Vencido", "0-30 días", "31-60 días", "61-90 días", "91+ días"]
-            cols_presentes = [c for c in orden_buckets if c in df_pivot_bucket.columns]
-            if "Total" in df_pivot_bucket.columns:
-                cols_presentes.append("Total")
-            df_pivot_bucket = df_pivot_bucket[cols_presentes]
-            df_pivot_bucket.index = df_pivot_bucket.index.set_names(["sucursal_abrev", "codigo_abrev", "codigo_original"])
-            df_reset = df_pivot_bucket.reset_index()
-
-            # --- Separar fila total ---
-            mascara_total = (
-                df_reset["codigo_original"].str.strip().str.lower() == "total"
-            ) | (
-                df_reset["sucursal_abrev"].str.strip().str.lower() == "total"
-            )
-            total_row = df_reset[mascara_total].copy()
-            data_sin_total = df_reset[~mascara_total].copy()
-
-            # --- Crear columna combinada ---
-            data_sin_total["codigo_sucursal"] = (
-                data_sin_total["codigo_original"] + " - " +
-                data_sin_total["codigo_abrev"] + " - " +
-                data_sin_total["sucursal_abrev"]
-            )
-
-            # --- Asegurarse de no tener columnas duplicadas ---
-            data_sin_total = data_sin_total.loc[:, ~data_sin_total.columns.duplicated()]
-
-            # --- Columnas numéricas para gradient, excluyendo Total explícitamente ---
-            numeric_cols_sin_total = [c for c in data_sin_total.select_dtypes(include='number').columns if c != "Total"]
-
-            if numeric_cols_sin_total:
-                min_val = data_sin_total[numeric_cols_sin_total].min().min()
-                max_val = data_sin_total[numeric_cols_sin_total].max().max()
-            else:
-                min_val = 0
-                max_val = 1
-
-            # --- Buckets para gradiente ---
-            buckets_cols = numeric_cols_sin_total.copy()  # no incluye Total
-
-            # --- Formatter JS para números ---
-            value_formatter = JsCode("""
-            function(params) { 
-                if (params.value == null) return '0.00';
-                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            }
-            """)
-
-            # --- Crear lista JS de columnas con gradiente ---
-            buckets_cols_js_str = str(buckets_cols)
-
-            gradient_renderer = JsCode(f"""
-            function(params) {{
-                let gradientCols = {buckets_cols_js_str};
-                let style = {{
-                    color: params.node.rowPinned ? 'white':'black',
-                    fontWeight: params.node.rowPinned ? 'bold':'normal',
-                    textAlign:'left',
-                    paddingLeft:'4px',
-                    paddingRight:'4px',
-                    borderRadius: '2px'
-                }};
-                if(!params.node.rowPinned && params.data && gradientCols.includes(params.colDef.field)) {{
-                    let val = params.value;
-                    let min = {min_val};
-                    let max = {max_val};
-                    let bgColor = '#ffffff';
-                    if(!isNaN(val) && max > min){{
-                        let ratio = (val - min)/(max - min);
-                        let r,g,b;
-                        if(ratio<=0.5){{
-                            let t = ratio/0.5;
-                            r = Math.round(117+t*(232-117));
-                            g = Math.round(222+t*(229-222));
-                            b = Math.round(84+t*(70-84));
-                        }} else {{
-                            let t=(ratio-0.5)/0.5;
-                            r=232;
-                            g=Math.round(229+t*(96-229));
-                            b=70;
-                        }}
-                        bgColor = 'rgb('+r+','+g+','+b+')';
-                    }}
-                    style.backgroundColor = bgColor;
-                }} else {{
-                    style.backgroundColor = '#0B083D';  // azul para Total y filas pinned
-                }}
-                return style;
-            }}
-            """)
-
-            # --- Reordenar columnas ---
-            columnas_iniciales = ["codigo_sucursal"]
-            otras_columnas = [c for c in data_sin_total.columns if c not in columnas_iniciales]
-            data_sin_total = data_sin_total[columnas_iniciales + otras_columnas]
-
-            # --- Columnas finales ---
-            columnas_finales = ["codigo_sucursal"] + [c for c in numeric_cols_sin_total if c not in ["codigo_original","codigo_abrev","sucursal_abrev"]]
-            if "Total" in data_sin_total.columns:
-                columnas_finales.append("Total")
-
-            data_sin_total = data_sin_total[columnas_finales]
-
-            # --- Configuración AgGrid ---
-            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
-            gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
-
-            # Columna combinada azul
-            gb.configure_column(
-                "codigo_sucursal",
-                headerName="Codigo - Sucursal",
-                pinned="left",
-                minWidth=140,
-                cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
-            )
-
-            # Buckets numéricos (gradiente)
-            for col in buckets_cols:
-                if col in data_sin_total.columns:
-                    header_class = f"header-{col.replace(' ', '').replace('+','')}"
-                    gb.configure_column(
-                        col,
-                        minWidth=70,
-                        headerClass=header_class,
-                        cellStyle=gradient_renderer,
-                        valueFormatter=value_formatter
-                    )
-
-            # Columna Total (solo azul)
-            gb.configure_column(
-                "Total",
-                minWidth=70,
-                headerClass='header-total',
-                valueFormatter=value_formatter,
-                cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
-            )
-
-            # --- Custom CSS para headers ---
-            custom_css = {
-                ".header-Vencido": {"border-bottom": "4px solid red", "text-align": "left"},
-                ".header-0-30días": {"border-bottom": "4px solid orange", "text-align": "left"},
-                ".header-31-60días": {"border-bottom": "4px solid yellow", "text-align": "left"},
-                ".header-61-90días": {"border-bottom": "4px solid lightgreen", "text-align": "left"},
-                ".header-91+días": {"border-bottom": "4px solid green", "text-align": "left"},
-                ".header-total": {"border-bottom": "4px solid #0B083D", "text-align": "left"},
-                ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
-                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
-            }
-
-            grid_options = gb.build()
-            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
-
-            AgGrid(
-                data_sin_total,
-                gridOptions=grid_options,
-                custom_css=custom_css,
-                height=500,
-                allow_unsafe_jscode=True,
-                theme=AgGridTheme.ALPINE,
-                fit_columns_on_grid_load=False,
-                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-                enable_enterprise_modules=False
-            )
 
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
             # --- Preparar fechas y pivote ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
             hoy_str = pd.Timestamp(datetime.today().date()).strftime("%Y-%m-%d")  # para JS
+            def obtener_abreviatura(codigo):
+                for division, info in divisiones.items():
+                    if codigo in info["codigos"]:
+                        return info["abreviatura"]
+                return ""
             # --- Enriquecer código con abreviatura ---
             df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
             df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
@@ -1095,6 +704,333 @@ if authentication_status:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
+
+            #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
+            # --- Datos ---
+            hoy = datetime.today()
+            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
+
+            def clasificar_estado(fecha, hoy):
+                diff = (fecha - hoy).days
+                if diff < 0:
+                    return "Vencido"
+                elif diff <= 30:
+                    return "0-30 días"
+                elif diff <= 60:
+                    return "31-60 días"
+                elif diff <= 90:
+                    return "61-90 días"
+                else:
+                    return "91+ días"
+
+            df_estado_cuenta["estado"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: clasificar_estado(f, hoy))
+
+            color_map = {
+                "Vencido": "#ff6666",
+                "0-30 días": "#ffcc66",
+                "31-60 días": "#ffff99",
+                "61-90 días": "#ccff99",
+                "91+ días": "#99ff99",
+                None: "#ffffff"
+            }
+
+            # --- Meses ---
+            fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
+            fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
+            meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
+
+            # --- Configuración columnas ---
+            cols_per_row = 4
+            bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
+
+            # --- Loop para mostrar cada mes ---
+            row_cols = []
+            for i in range(0, len(meses), cols_per_row):
+                row_cols.append(st.columns(min(cols_per_row, len(meses)-i)))
+
+            for idx, m in enumerate(meses):
+                row_idx = idx // cols_per_row
+                col_idx = idx % cols_per_row
+                with row_cols[row_idx][col_idx]:
+                    cal = calendar.Calendar(firstweekday=0)
+                    month_matrix = cal.monthdatescalendar(m.year, m.month)
+
+                    fig = go.Figure()
+
+                    # Dibujar celdas
+                    for week_idx, week in enumerate(month_matrix):
+                        for day_idx, day in enumerate(week):
+                            if day.month == m.month:
+                                estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
+                                estado = estado.values[0] if len(estado) > 0 else None
+                                color = color_map[estado]
+
+                                x0, x1 = day_idx, day_idx + 1
+                                y0, y1 = -week_idx, -week_idx + 1
+
+                                fig.add_shape(
+                                    type="rect",
+                                    x0=x0, x1=x1, y0=y0, y1=y1,
+                                    line=dict(color="black", width=1),
+                                    fillcolor=color
+                                )
+
+                                fig.add_annotation(
+                                    x=(x0 + x1)/2,
+                                    y=(y0 + y1)/2,
+                                    text=str(day.day),
+                                    showarrow=False,
+                                    font=dict(size=12, color="black")
+                                )
+
+                    # Nombre del mes
+                    fig.add_annotation(
+                        x=3.5,
+                        y=1.5,
+                        text=f"{calendar.month_name[m.month]} {m.year}",
+                        showarrow=False,
+                        font=dict(size=14, color="black")
+                    )
+
+                    # Nombres de días
+                    for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
+                        fig.add_annotation(
+                            x=i + 0.5,
+                            y=0.5,
+                            text=day_name,
+                            showarrow=False,
+                            font=dict(size=10, color="black")
+                        )
+
+                    fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
+                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,2])
+                    fig.update_layout(
+                        width=200,
+                        height=200,
+                        plot_bgcolor=bg_color,
+                        paper_bgcolor=bg_color,
+                        margin=dict(t=30, b=10, l=10, r=10)
+                    )
+
+                    st.plotly_chart(fig, use_container_width=True)
+            #----------------------------------------- TABLA DE FECHA DE VENCIMIENTO -------------------------------------------------------------------------------
+
+            hoy = datetime.today()
+
+            # --- Cargar JSON de configuración ---
+            with open("config_colores.json", "r") as f:
+                config = json.load(f)
+
+            # --- Limpiar nombres de sucursal y códigos ---
+            df_estado_cuenta["sucursal"] = df_estado_cuenta["sucursal"].str.strip()
+            df_estado_cuenta["codigo_6digitos"] = df_estado_cuenta["codigo_6digitos"].astype(str).str.strip()
+
+            # --- Aplicar abreviaturas ---
+            df_estado_cuenta["sucursal_abrev"] = df_estado_cuenta["sucursal"].apply(
+                lambda x: config["sucursales"].get(x, {}).get("abreviatura", x)
+            )
+
+            def agregar_abrev_division(codigo):
+                for div, info in config["divisiones"].items():
+                    if codigo in info["codigos"]:
+                        return info['abreviatura']
+                return codigo
+
+            df_estado_cuenta["codigo_abrev"] = df_estado_cuenta["codigo_6digitos"].apply(agregar_abrev_division)
+
+            # --- Clasificar cada fila en bucket ---
+            def bucket_vencimiento(fecha, hoy):
+                diff = (fecha - hoy).days
+                if diff < 0:
+                    return "Vencido"
+                elif diff <= 30:
+                    return "0-30 días"
+                elif diff <= 60:
+                    return "31-60 días"
+                elif diff <= 90:
+                    return "61-90 días"
+                else:
+                    return "91+ días"
+
+            df_estado_cuenta["bucket_venc"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: bucket_vencimiento(f, hoy))
+            df_estado_cuenta["codigo_original"] = df_estado_cuenta["codigo_6digitos"]
+
+            # --- Pivot usando sucursal_abrev y codigo_abrev ---
+            df_pivot_bucket = df_estado_cuenta.pivot_table(
+                index=["sucursal_abrev", "codigo_abrev", "codigo_original"],
+                columns="bucket_venc",
+                values="total",
+                aggfunc="sum",
+                fill_value=0,
+                margins=True,
+                margins_name="Total"
+            )
+
+            # --- Ordenar columnas ---
+            orden_buckets = ["Vencido", "0-30 días", "31-60 días", "61-90 días", "91+ días"]
+            cols_presentes = [c for c in orden_buckets if c in df_pivot_bucket.columns]
+            if "Total" in df_pivot_bucket.columns:
+                cols_presentes.append("Total")
+            df_pivot_bucket = df_pivot_bucket[cols_presentes]
+            df_pivot_bucket.index = df_pivot_bucket.index.set_names(["sucursal_abrev", "codigo_abrev", "codigo_original"])
+            df_reset = df_pivot_bucket.reset_index()
+
+            # --- Separar fila total ---
+            mascara_total = (
+                df_reset["codigo_original"].str.strip().str.lower() == "total"
+            ) | (
+                df_reset["sucursal_abrev"].str.strip().str.lower() == "total"
+            )
+            total_row = df_reset[mascara_total].copy()
+            data_sin_total = df_reset[~mascara_total].copy()
+
+            # --- Crear columna combinada ---
+            data_sin_total["codigo_sucursal"] = (
+                data_sin_total["codigo_original"] + " - " +
+                data_sin_total["codigo_abrev"] + " - " +
+                data_sin_total["sucursal_abrev"]
+            )
+
+            # --- Asegurarse de no tener columnas duplicadas ---
+            data_sin_total = data_sin_total.loc[:, ~data_sin_total.columns.duplicated()]
+
+            # --- Columnas numéricas para gradient, excluyendo Total explícitamente ---
+            numeric_cols_sin_total = [c for c in data_sin_total.select_dtypes(include='number').columns if c != "Total"]
+
+            if numeric_cols_sin_total:
+                min_val = data_sin_total[numeric_cols_sin_total].min().min()
+                max_val = data_sin_total[numeric_cols_sin_total].max().max()
+            else:
+                min_val = 0
+                max_val = 1
+
+            # --- Buckets para gradiente ---
+            buckets_cols = numeric_cols_sin_total.copy()  # no incluye Total
+
+            # --- Formatter JS para números ---
+            value_formatter = JsCode("""
+            function(params) { 
+                if (params.value == null) return '0.00';
+                return params.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            """)
+
+            # --- Crear lista JS de columnas con gradiente ---
+            buckets_cols_js_str = str(buckets_cols)
+
+            gradient_renderer = JsCode(f"""
+            function(params) {{
+                let gradientCols = {buckets_cols_js_str};
+                let style = {{
+                    color: params.node.rowPinned ? 'white':'black',
+                    fontWeight: params.node.rowPinned ? 'bold':'normal',
+                    textAlign:'left',
+                    paddingLeft:'4px',
+                    paddingRight:'4px',
+                    borderRadius: '2px'
+                }};
+                if(!params.node.rowPinned && params.data && gradientCols.includes(params.colDef.field)) {{
+                    let val = params.value;
+                    let min = {min_val};
+                    let max = {max_val};
+                    let bgColor = '#ffffff';
+                    if(!isNaN(val) && max > min){{
+                        let ratio = (val - min)/(max - min);
+                        let r,g,b;
+                        if(ratio<=0.5){{
+                            let t = ratio/0.5;
+                            r = Math.round(117+t*(232-117));
+                            g = Math.round(222+t*(229-222));
+                            b = Math.round(84+t*(70-84));
+                        }} else {{
+                            let t=(ratio-0.5)/0.5;
+                            r=232;
+                            g=Math.round(229+t*(96-229));
+                            b=70;
+                        }}
+                        bgColor = 'rgb('+r+','+g+','+b+')';
+                    }}
+                    style.backgroundColor = bgColor;
+                }} else {{
+                    style.backgroundColor = '#0B083D';  // azul para Total y filas pinned
+                }}
+                return style;
+            }}
+            """)
+
+            # --- Reordenar columnas ---
+            columnas_iniciales = ["codigo_sucursal"]
+            otras_columnas = [c for c in data_sin_total.columns if c not in columnas_iniciales]
+            data_sin_total = data_sin_total[columnas_iniciales + otras_columnas]
+
+            # --- Columnas finales ---
+            columnas_finales = ["codigo_sucursal"] + [c for c in numeric_cols_sin_total if c not in ["codigo_original","codigo_abrev","sucursal_abrev"]]
+            if "Total" in data_sin_total.columns:
+                columnas_finales.append("Total")
+
+            data_sin_total = data_sin_total[columnas_finales]
+
+            # --- Configuración AgGrid ---
+            gb = GridOptionsBuilder.from_dataframe(data_sin_total)
+            gb.configure_default_column(resizable=True, filter=False, valueFormatter=value_formatter)
+
+            # Columna combinada azul
+            gb.configure_column(
+                "codigo_sucursal",
+                headerName="Codigo - Sucursal",
+                pinned="left",
+                minWidth=140,
+                cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
+            )
+
+            # Buckets numéricos (gradiente)
+            for col in buckets_cols:
+                if col in data_sin_total.columns:
+                    header_class = f"header-{col.replace(' ', '').replace('+','')}"
+                    gb.configure_column(
+                        col,
+                        minWidth=70,
+                        headerClass=header_class,
+                        cellStyle=gradient_renderer,
+                        valueFormatter=value_formatter
+                    )
+
+            # Columna Total (solo azul)
+            gb.configure_column(
+                "Total",
+                minWidth=70,
+                headerClass='header-total',
+                valueFormatter=value_formatter,
+                cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
+            )
+
+            # --- Custom CSS para headers ---
+            custom_css = {
+                ".header-Vencido": {"border-bottom": "4px solid red", "text-align": "left"},
+                ".header-0-30días": {"border-bottom": "4px solid orange", "text-align": "left"},
+                ".header-31-60días": {"border-bottom": "4px solid yellow", "text-align": "left"},
+                ".header-61-90días": {"border-bottom": "4px solid lightgreen", "text-align": "left"},
+                ".header-91+días": {"border-bottom": "4px solid green", "text-align": "left"},
+                ".header-total": {"border-bottom": "4px solid #0B083D", "text-align": "left"},
+                ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
+                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
+            }
+
+            grid_options = gb.build()
+            grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
+
+            AgGrid(
+                data_sin_total,
+                gridOptions=grid_options,
+                custom_css=custom_css,
+                height=500,
+                allow_unsafe_jscode=True,
+                theme=AgGridTheme.ALPINE,
+                fit_columns_on_grid_load=False,
+                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                enable_enterprise_modules=False
+            )
+
             #----------------------------------- GRAFICO DE ANILLOS ------------------------------------------------------------------------------------------------------------------------
             # --- helper para formato moneda ---
             def fmt(v):
@@ -1106,6 +1042,11 @@ if authentication_status:
             # Asegura que estas columnas existan y tipos correctos
             df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
             df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
+
+            fechas_ordenadas = sorted(
+                df_completo["fecha_exigibilidad_str"].unique(),
+                key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
+            )
 
             # Loop: 2 gráficos por fila
             for i in range(0, len(fechas_ordenadas), 2):
@@ -1212,7 +1153,236 @@ if authentication_status:
 
                     col.plotly_chart(fig, use_container_width=True)
 
+            #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
+            # --- Datos ---
+            hoy = datetime.today()
+            df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
+            def clasificar_estado(fecha, hoy):
+                diff = (fecha - hoy).days
+                if diff < 0:
+                    return "Vencido"
+                elif diff <= 30:
+                    return "0-30 días"
+                elif diff <= 60:
+                    return "31-60 días"
+                elif diff <= 90:
+                    return "61-90 días"
+                else:
+                    return "91+ días"
+
+            df_estado_cuenta["estado"] = df_estado_cuenta["fecha_exigibilidad"].apply(lambda f: clasificar_estado(f, hoy))
+
+            color_map = {
+                "Vencido": "#ff6666",
+                "0-30 días": "#ffcc66",
+                "31-60 días": "#ffff99",
+                "61-90 días": "#ccff99",
+                "91+ días": "#99ff99",
+                None: "#ffffff"
+            }
+
+            # --- Meses ---
+            fecha_min = df_estado_cuenta["fecha_exigibilidad"].min().replace(day=1)
+            fecha_max = df_estado_cuenta["fecha_exigibilidad"].max().replace(day=28) + pd.offsets.MonthEnd(1)
+            meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
+
+            # --- Configuración columnas ---
+            cols_per_row = 4
+            bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
+
+            # --- Loop para mostrar cada mes ---
+            row_cols = []
+            for i in range(0, len(meses), cols_per_row):
+                row_cols.append(st.columns(min(cols_per_row, len(meses)-i)))
+
+            for idx, m in enumerate(meses):
+                row_idx = idx // cols_per_row
+                col_idx = idx % cols_per_row
+                with row_cols[row_idx][col_idx]:
+                    cal = calendar.Calendar(firstweekday=0)
+                    month_matrix = cal.monthdatescalendar(m.year, m.month)
+
+                    fig = go.Figure()
+
+                    # Dibujar celdas
+                    for week_idx, week in enumerate(month_matrix):
+                        for day_idx, day in enumerate(week):
+                            if day.month == m.month:
+                                estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
+                                estado = estado.values[0] if len(estado) > 0 else None
+                                color = color_map[estado]
+
+                                x0, x1 = day_idx, day_idx + 1
+                                y0, y1 = -week_idx, -week_idx + 1
+
+                                fig.add_shape(
+                                    type="rect",
+                                    x0=x0, x1=x1, y0=y0, y1=y1,
+                                    line=dict(color="black", width=1),
+                                    fillcolor=color
+                                )
+
+                                fig.add_annotation(
+                                    x=(x0 + x1)/2,
+                                    y=(y0 + y1)/2,
+                                    text=str(day.day),
+                                    showarrow=False,
+                                    font=dict(size=12, color="black")
+                                )
+
+                    # Nombre del mes
+                    fig.add_annotation(
+                        x=3.5,
+                        y=1.5,
+                        text=f"{calendar.month_name[m.month]} {m.year}",
+                        showarrow=False,
+                        font=dict(size=14, color="black")
+                    )
+
+                    # Nombres de días
+                    for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
+                        fig.add_annotation(
+                            x=i + 0.5,
+                            y=0.5,
+                            text=day_name,
+                            showarrow=False,
+                            font=dict(size=10, color="black")
+                        )
+
+                    fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
+                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,2])
+                    fig.update_layout(
+                        width=200,
+                        height=200,
+                        plot_bgcolor=bg_color,
+                        paper_bgcolor=bg_color,
+                        margin=dict(t=30, b=10, l=10, r=10)
+                    )
+
+                    st.plotly_chart(fig, use_container_width=True)
+
+            #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
+            # ------------------ Cargar configuración de colores y divisiones ------------------
+            with open("config_colores.json", "r", encoding="utf-8") as f:
+                config = json.load(f)
+
+            divisiones = config["divisiones"]
+            colores_sucursales = config["sucursales"]
+
+            # ------------------ Función para abreviatura ------------------
+            def obtener_abreviatura(codigo):
+                for division, info in divisiones.items():
+                    if codigo in info["codigos"]:
+                        return info["abreviatura"]
+                return ""
+
+            # ------------------ Preparar DataFrame base ------------------
+            df = df_estado_cuenta.copy()
+
+            # Tipos correctos
+            df["fecha_exigibilidad"] = pd.to_datetime(df["fecha_exigibilidad"], errors="coerce")
+            df["codigo"] = df["codigo_6digitos"].astype(str)
+
+            # Limpieza de total a numérico (por si viene como texto con comas)
+            df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
+
+            # Etiquetas
+            df["abreviatura"] = df["codigo"].apply(obtener_abreviatura)
+            df["cuenta_sucursal"] = (
+                df["codigo"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
+            )
+
+            # Meta por cuenta (para merge posterior y mapa de color)
+            meta = df[["cuenta_sucursal", "codigo", "sucursal", "abreviatura"]].drop_duplicates()
+
+            # ------------------ Construir universo de fechas y rellenar huecos a 0 ------------------
+            # 1) pivot sumando por si hay duplicados (fecha, cuenta)
+            tabla = (
+                df.pivot_table(
+                    index="fecha_exigibilidad",
+                    columns="cuenta_sucursal",
+                    values="total",
+                    aggfunc="sum",  # suma si hay varias filas por la misma fecha/cuenta
+                )
+            )
+
+            # 2) Reindexar al conjunto de fechas observadas (ordenado) y rellenar con 0
+            fechas = sorted(df["fecha_exigibilidad"].dropna().unique())
+            tabla = tabla.reindex(fechas).fillna(0)
+
+            # 3) Volver a formato largo
+            df_completo = tabla.stack(dropna=False).reset_index(name="total")
+            df_completo = df_completo.rename(columns={"level_2": "cuenta_sucursal"})
+
+            # 4) Anexar meta (sucursal, código, abreviatura)
+            df_completo = df_completo.merge(meta, on="cuenta_sucursal", how="left")
+
+            # Rellenar posibles NaN en las columnas que se usan en custom_data
+            df_completo[["sucursal","codigo","abreviatura"]] = df_completo[["sucursal","codigo","abreviatura"]].fillna({
+                "sucursal":"Desconocida",
+                "codigo":"Desconocido",
+                "abreviatura":""
+            })
+
+            # 5) Cadena de fecha para eje categórico ordenado
+            df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+            fechas_ordenadas = sorted(
+                df_completo["fecha_exigibilidad_str"].unique(),
+                key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
+            )
+
+            # ------------------ Colores por cuenta (usando color de la sucursal) ------------------
+            color_cuentas = {
+                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
+                for _, row in meta.iterrows()
+            }
+
+            # ------------------ Gráfico ------------------
+            fig = px.line(
+                df_completo,
+                x="fecha_exigibilidad_str",
+                y="total",
+                color="cuenta_sucursal",
+                color_discrete_map=color_cuentas,
+                category_orders={"fecha_exigibilidad_str": fechas_ordenadas},
+                custom_data=["sucursal", "codigo", "abreviatura"]
+            )
+
+            fig.update_traces(
+                mode="lines+markers",          # puntos en cada fecha
+                marker=dict(size=6, symbol="circle"),
+                connectgaps=False,             # no unir huecos (defensivo)
+                hovertemplate=(
+                    "<b>Fecha:</b> %{x}<br>"
+                    "<b>Código:</b> %{customdata[1]}<br>"
+                    "<b>Sucursal:</b> %{customdata[0]}<br>"
+                    "<b>División:</b> %{customdata[2]}<br>"
+                    "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+                )
+            )
+
+            fig.update_layout(
+                xaxis_title="Fecha de exigibilidad",
+                yaxis_title="Monto",
+                hovermode="closest",
+                template="plotly_white"
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True,
+                config={
+                    "scrollZoom": True,
+                    "modeBarButtonsToKeep": [
+                        "toImage",
+                        "zoom2d",
+                        "autoScale2d",
+                        "toggleFullscreen"
+                    ],
+                    "displaylogo": False
+                }
+            )
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
     # ==========================================================================================================
