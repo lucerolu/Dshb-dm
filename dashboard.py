@@ -1117,7 +1117,7 @@ if authentication_status:
 
                     fig = go.Figure()
 
-                    # Obtener estados presentes en el mes
+                    # Estados presentes en el mes
                     dias_mes = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"].dt.month == m.month]
                     estados_presentes = dias_mes["estado"].unique()
                     leyenda = [(estado, color_map[estado]) for estado in estados_presentes]
@@ -1148,10 +1148,10 @@ if authentication_status:
                                     font=dict(size=12, color="black")
                                 )
 
-                    # Nombre del mes (más separado)
+                    # Nombre del mes (más separado del calendario)
                     fig.add_annotation(
                         x=3.5,
-                        y=2.8,
+                        y=2.9,
                         text=f"{meses_es[m.month-1]} {m.year}",
                         showarrow=False,
                         font=dict(size=14, color="black")
@@ -1161,7 +1161,7 @@ if authentication_status:
                     for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
                         fig.add_annotation(
                             x=i + 0.5,
-                            y=1.5,
+                            y=1.6,
                             text=day_name,
                             showarrow=False,
                             font=dict(size=10, color="black")
@@ -1171,16 +1171,17 @@ if authentication_status:
                     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
                     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
 
+                    # Layout con tamaño fijo para cada calendario
                     fig.update_layout(
-                        width=200,
-                        height=240,
+                        width=220,
+                        height=260,
                         plot_bgcolor=bg_color,
                         paper_bgcolor=bg_color,
                         margin=dict(t=5, b=5, l=5, r=5),
                         showlegend=False
                     )
 
-                    # --- Leyenda de colores centrada debajo del calendario ---
+                    # --- Leyenda centrada debajo del calendario ---
                     leyenda_y = -6.5
                     if leyenda:
                         total_width = len(leyenda) * 1.2
@@ -1207,7 +1208,7 @@ if authentication_status:
                                 yanchor="middle"
                             )
 
-                    # --- Mostrar gráfico ---
+                    # --- Mostrar gráfico sin barra de herramientas ---
                     st.plotly_chart(fig, use_container_width=False, config={'displayModeBar': False})
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
