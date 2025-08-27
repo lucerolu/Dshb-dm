@@ -1173,12 +1173,18 @@ if authentication_status:
 
                     # Layout con tamaño fijo para cada calendario
                     fig.update_layout(
-                        width=220,
-                        height=260,
-                        plot_bgcolor=bg_color,
-                        paper_bgcolor=bg_color,
-                        margin=dict(t=5, b=5, l=5, r=5),
-                        showlegend=False
+                        margin=dict(l=40, r=40, t=60, b=80),  # márgenes fijos
+                        height=700,                           # altura fija
+                        autosize=True,                        # que se ajuste pero dentro del límite
+                        legend=dict(
+                            orientation="h",
+                            yanchor="top",
+                            y=-0.15,        # con número negativo pero pequeño, siempre dentro
+                            xanchor="center",
+                            x=0.5,
+                            font=dict(size=12),
+                            bgcolor="rgba(255,255,255,0.6)",  # fondo semitransparente para legibilidad
+                        )
                     )
 
                     # --- Leyenda centrada debajo del calendario ---
