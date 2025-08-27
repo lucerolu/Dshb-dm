@@ -864,7 +864,7 @@ if authentication_status:
                 "codigo_sucursal",
                 headerName="Codigo - Sucursal",
                 pinned="left",
-                minWidth=160,
+                minWidth=170,
                 cellStyle={'backgroundColor': '#0B083D','color': 'white','fontWeight': 'bold','textAlign':'left'}
             )
 
