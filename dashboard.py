@@ -1153,27 +1153,28 @@ if authentication_status:
                         font=dict(size=14, color="black")
                     )
 
-                    # Nombres de días
+                    # Nombres de días (arriba del primer recuadro)
                     for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
                         fig.add_annotation(
                             x=i + 0.5,
-                            y=0.5,
+                            y=1.2,  # un poco más arriba
                             text=day_name,
                             showarrow=False,
                             font=dict(size=10, color="black")
                         )
 
                     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
-                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,2])
+                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,1.5], scaleanchor="x")  # relación 1:1
+
                     fig.update_layout(
-                        width=200,
-                        height=200,
+                        width=250,
+                        height=250,
                         plot_bgcolor=bg_color,
                         paper_bgcolor=bg_color,
-                        margin=dict(t=30, b=10, l=10, r=10)
+                        margin=dict(t=40, b=10, l=10, r=10)
                     )
 
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=False)  # NO usar container width para evitar deformación
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
