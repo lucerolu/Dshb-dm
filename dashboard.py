@@ -1075,10 +1075,11 @@ if authentication_status:
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
-            # Colores según tema
+            # --- Colores según tema ---
             line_color = "#ffffff" if modo == "dark" else "#000000"   # bordes de las celdas
             day_text_color = "#ffffff" if modo == "dark" else "#000000"  # números de los días
-            bg_color = "#0e1117" if modo == "dark" else "#ffffff"        # fondo general
+            bg_color = "rgba(0,0,0,0.6)" if modo == "dark" else "rgba(255,255,255,0.6)"  # semitransparente
+            text_color = "#ffffff" if modo == "dark" else "#000000"
 
             def clasificar_estado(fecha, hoy):
                 diff = (fecha - hoy).days
@@ -1110,10 +1111,6 @@ if authentication_status:
             meses = pd.date_range(start=fecha_min, end=fecha_max, freq="MS")
             meses_es = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                         "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
-
-            # --- Fondo según tema ---
-            bg_color = "#0e1117" if st.get_option("theme.base") == "dark" else "#ffffff"
-            text_color = "#ffffff" if st.get_option("theme.base") == "dark" else "#000000"
 
             # --- Columnas por fila ---
             cols_per_row = 4
@@ -1188,8 +1185,8 @@ if authentication_status:
 
                     fig.update_layout(
                         template=template,
-                        paper_bgcolor=bg_color,   # fondo fuera del gráfico
-                        plot_bgcolor=bg_color,    # fondo dentro del gráfico
+                        paper_bgcolor=bg_color,
+                        plot_bgcolor=bg_color,
                         margin=dict(l=40, r=40, t=60, b=80),
                         height=700,
                         autosize=True,
@@ -1199,8 +1196,8 @@ if authentication_status:
                             y=-0.15,
                             xanchor="center",
                             x=0.5,
-                            font=dict(size=12),
-                            bgcolor="rgba(255,255,255,0.6)" if modo=="light" else "rgba(0,0,0,0.6)",
+                            font=dict(size=12, color=text_color),
+                            bgcolor=bg_color,
                         )
                     )
 
