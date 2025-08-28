@@ -1164,7 +1164,7 @@ if authentication_status:
                         y=2.9,
                         text=f"{meses_es[m.month-1]} {m.year}",
                         showarrow=False,
-                        font=dict(size=14, color=text_color)
+                        font=dict(size=14)
                     )
 
                     # Nombres de los días
