@@ -1075,6 +1075,11 @@ if authentication_status:
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
 
+            # Colores según tema
+            line_color = "#ffffff" if modo == "dark" else "#000000"   # bordes de las celdas
+            day_text_color = "#ffffff" if modo == "dark" else "#000000"  # números de los días
+            bg_color = "#0e1117" if modo == "dark" else "#ffffff"        # fondo general
+
             def clasificar_estado(fecha, hoy):
                 diff = (fecha - hoy).days
                 if diff < 0:
@@ -1146,7 +1151,7 @@ if authentication_status:
                                 fig.add_shape(
                                     type="rect",
                                     x0=x0, x1=x1, y0=y0, y1=y1,
-                                    line=dict(color="black", width=1),
+                                    line=dict(color=line_color, width=1),   # antes "black"
                                     fillcolor=color
                                 )
 
@@ -1155,7 +1160,7 @@ if authentication_status:
                                     y=(y0 + y1)/2,
                                     text=str(day.day),
                                     showarrow=False,
-                                    font=dict(size=12)
+                                    font=dict(size=12, color=day_text_color)   # antes sin color
                                 )
 
                     # Nombre del mes (más separado del calendario)
@@ -1183,6 +1188,8 @@ if authentication_status:
 
                     fig.update_layout(
                         template=template,
+                        paper_bgcolor=bg_color,   # fondo fuera del gráfico
+                        plot_bgcolor=bg_color,    # fondo dentro del gráfico
                         margin=dict(l=40, r=40, t=60, b=80),
                         height=700,
                         autosize=True,
