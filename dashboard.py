@@ -1078,7 +1078,7 @@ if authentication_status:
             # --- Colores según tema ---
             line_color = "#ffffff" if modo == "dark" else "#000000"   # bordes de las celdas
             day_text_color = "#ffffff" if modo == "dark" else "#000000"  # números de los días
-            bg_color = "rgba(0,0,0,0.6)" if modo == "dark" else "rgba(255,255,255,0.6)"  # semitransparente
+            bg_color = "#0e1117" if modo == "dark" else "#ffffff"  # s
             text_color = "#ffffff" if modo == "dark" else "#000000"
 
             def clasificar_estado(fecha, hoy):
