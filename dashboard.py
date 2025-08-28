@@ -1113,11 +1113,11 @@ if authentication_status:
                         "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
 
             # --- Columnas por fila ---
-            cols_per_row = 4
-            total_rows = math.ceil(len(meses)/cols_per_row)
-            row_cols = []
-            for i in range(total_rows):
-                row_cols.append(st.columns(cols_per_row))
+            #cols_per_row = 4
+            #total_rows = math.ceil(len(meses)/cols_per_row)
+            #row_cols = []
+            #for i in range(total_rows):
+            #    row_cols.append(st.columns(cols_per_row))
 
             # --- Columnas para todos los meses en una fila ---
             #cols = st.columns(len(meses))
