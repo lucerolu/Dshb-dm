@@ -654,10 +654,6 @@ if authentication_status:
             }
             """)     
             
-            grid_options = gb.build()
-            hoy_py = datetime.today()
-            total_row_styles = {}
-
             # Inicializar estado del toggle si no existe
             if "expandir_columnas" not in st.session_state:
                 st.session_state.expandir_columnas = False
@@ -667,6 +663,10 @@ if authentication_status:
             with col2:
                 if st.button("🔎", help="Expandir columnas al contenido"):
                     st.session_state.expandir_columnas = not st.session_state.expandir_columnas
+            
+            grid_options = gb.build()
+            hoy_py = datetime.today()
+            total_row_styles = {}
 
             for col in numeric_cols_sin_total:
                 color = color_por_vencimiento(col, hoy_py)
