@@ -1113,135 +1113,123 @@ if authentication_status:
                         "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
 
             # --- Columnas por fila ---
-            #cols_per_row = 4
-            #total_rows = math.ceil(len(meses)/cols_per_row)
-            #row_cols = []
-            #for i in range(total_rows):
-            #    row_cols.append(st.columns(cols_per_row))
+            cols_per_row = 4
+            total_rows = math.ceil(len(meses)/cols_per_row)
+            row_cols = []
+            for i in range(total_rows):
+                row_cols.append(st.columns(cols_per_row))
 
             # --- Columnas para todos los meses en una fila ---
-            #cols = st.columns(len(meses))
-
-            # --- CSS para el contenedor de calendarios ---
-            st.markdown("""
-                <style>
-                .calendar-container {
-                    display: flex;
-                    flex-wrap: wrap;              /* Si no caben, bajan */
-                    justify-content: center;      /* Centrar horizontalmente */
-                    gap: 20px;                    /* Espacio entre calendarios */
-                    max-width: 100%;
-                }
-                .calendar-item {
-                    flex: 1 1 280px;              /* Mínimo 280px, pueden crecer */
-                    max-width: 400px;             /* Máximo 400px para no deformar */
-                }
-                </style>
-            """, unsafe_allow_html=True)
-
-            # --- Crear lista de figuras en vez de plotear directo ---
-            lista_de_figs = []
+            cols = st.columns(len(meses))
 
             for idx, m in enumerate(meses):
-                cal = calendar.Calendar(firstweekday=0)
-                month_matrix = cal.monthdatescalendar(m.year, m.month)
+                with cols[idx]:
+                    cal = calendar.Calendar(firstweekday=0)
+                    month_matrix = cal.monthdatescalendar(m.year, m.month)
 
-                fig = go.Figure()
+                    fig = go.Figure()
 
-                # Estados presentes en el mes
-                dias_mes = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"].dt.month == m.month]
-                estados_presentes = dias_mes["estado"].unique()
-                leyenda = [(estado, color_map[estado]) for estado in estados_presentes]
+                    # Estados presentes en el mes
+                    dias_mes = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"].dt.month == m.month]
+                    estados_presentes = dias_mes["estado"].unique()
+                    leyenda = [(estado, color_map[estado]) for estado in estados_presentes]
 
-                # Dibujar celdas de cada día
-                for week_idx, week in enumerate(month_matrix):
-                    for day_idx, day in enumerate(week):
-                        if day.month == m.month:
-                            estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
-                            estado = estado.values[0] if len(estado) > 0 else None
-                            color = color_map[estado]
+                    # Dibujar celdas de cada día
+                    for week_idx, week in enumerate(month_matrix):
+                        for day_idx, day in enumerate(week):
+                            if day.month == m.month:
+                                estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
+                                estado = estado.values[0] if len(estado) > 0 else None
+                                color = color_map[estado]
 
-                            x0, x1 = day_idx, day_idx + 1
-                            y0, y1 = -week_idx, -week_idx + 1
+                                x0, x1 = day_idx, day_idx + 1
+                                y0, y1 = -week_idx, -week_idx + 1
 
-                            fig.add_shape(
-                                type="rect",
-                                x0=x0, x1=x1, y0=y0, y1=y1,
-                                line=dict(color=line_color, width=1),
-                                fillcolor=color
-                            )
+                                fig.add_shape(
+                                    type="rect",
+                                    x0=x0, x1=x1, y0=y0, y1=y1,
+                                    line=dict(color=line_color, width=1),   # antes "black"
+                                    fillcolor=color
+                                )
 
-                            fig.add_annotation(
-                                x=(x0 + x1)/2,
-                                y=(y0 + y1)/2,
-                                text=str(day.day),
-                                showarrow=False,
-                                font=dict(size=12, color=day_text_color)
-                            )
+                                fig.add_annotation(
+                                    x=(x0 + x1)/2,
+                                    y=(y0 + y1)/2,
+                                    text=str(day.day),
+                                    showarrow=False,
+                                    font=dict(size=12, color=day_text_color)   # antes sin color
+                                )
 
-                # Nombre del mes
-                fig.add_annotation(
-                    x=3.5, y=2.9,
-                    text=f"{meses_es[m.month-1]} {m.year}",
-                    showarrow=False,
-                    font=dict(size=14, color=text_color)
-                )
-
-                # Nombres de los días
-                for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
+                    # Nombre del mes (más separado del calendario)
                     fig.add_annotation(
-                        x=i + 0.5, y=1.6,
-                        text=day_name,
+                        x=3.5,
+                        y=2.9,
+                        text=f"{meses_es[m.month-1]} {m.year}",
                         showarrow=False,
-                        font=dict(size=10, color=text_color)
+                        font=dict(size=14)
                     )
 
-                # Ejes
-                fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
-                fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
-
-                fig.update_layout(
-                    template=template,
-                    paper_bgcolor=bg_color,
-                    plot_bgcolor=bg_color,
-                    margin=dict(l=20, r=20, t=40, b=60),
-                    height=400,
-                    autosize=True
-                )
-
-                # Leyenda debajo
-                leyenda_y = -6.5
-                if leyenda:
-                    total_width = len(leyenda) * 1.2
-                    start_x = (7 - total_width)/2
-                    for i, (estado, color) in enumerate(leyenda):
-                        fig.add_shape(
-                            type="rect",
-                            x0=start_x + i*1.2, x1=start_x + i*1.2 + 0.5,
-                            y0=leyenda_y, y1=leyenda_y+0.3,
-                            fillcolor=color,
-                            line=dict(color="black")
-                        )
+                    # Nombres de los días
+                    for i, day_name in enumerate(["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]):
                         fig.add_annotation(
-                            x=start_x + i*1.2 + 0.6,
-                            y=leyenda_y + 0.15,
-                            text=estado,
+                            x=i + 0.5,
+                            y=1.6,
+                            text=day_name,
                             showarrow=False,
-                            font=dict(size=9, color=text_color),
-                            xanchor="left",
-                            yanchor="middle"
+                            font=dict(size=10)
                         )
 
-                lista_de_figs.append(fig)
+                    # Ejes sin ticks ni controles, escala cuadrada
+                    fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False, range=[0,7])
+                    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False, range=[-6,3], scaleanchor="x")
 
-            # --- Render responsivo ---
-            st.markdown('<div class="calendar-container">', unsafe_allow_html=True)
-            for fig in lista_de_figs:
-                st.markdown('<div class="calendar-item">', unsafe_allow_html=True)
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+                    fig.update_layout(
+                        template=template,
+                        paper_bgcolor=bg_color,
+                        plot_bgcolor=bg_color,
+                        margin=dict(l=40, r=40, t=60, b=80),
+                        height=700,
+                        autosize=True,
+                        legend=dict(
+                            orientation="h",
+                            yanchor="top",
+                            y=-0.15,
+                            xanchor="center",
+                            x=0.5,
+                            font=dict(size=12, color=text_color),
+                            bgcolor=bg_color,
+                        )
+                    )
 
+                    # --- Leyenda centrada debajo del calendario ---
+                    leyenda_y = -6.5
+                    if leyenda:
+                        total_width = len(leyenda) * 1.2
+                        start_x = (7 - total_width)/2
+                        for i, (estado, color) in enumerate(leyenda):
+                            # Cuadrito
+                            x0 = start_x + i*1.2
+                            x1 = x0 + 0.5
+                            fig.add_shape(
+                                type="rect",
+                                x0=x0, x1=x1,
+                                y0=leyenda_y, y1=leyenda_y+0.3,
+                                fillcolor=color,
+                                line=dict(color="black")
+                            )
+                            # Texto al lado del cuadrito
+                            fig.add_annotation(
+                                x=x1 + 0.1,
+                                y=leyenda_y + 0.15,
+                                text=estado,
+                                showarrow=False,
+                                font=dict(size=9),
+                                xanchor="left",
+                                yanchor="middle"
+                            )
+
+                    # --- Mostrar gráfico sin barra de herramientas ---
+                    st.plotly_chart(fig, use_container_width=False, config={'displayModeBar': False})
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
