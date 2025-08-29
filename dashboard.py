@@ -1203,7 +1203,7 @@ if authentication_status:
                     )
 
                     # --- Leyenda centrada debajo del calendario ---
-                    leyenda_y = -6.5
+                    leyenda_y = -4.5
                     if leyenda:
                         total_width = len(leyenda) * 1.2
                         start_x = (7 - total_width)/2
