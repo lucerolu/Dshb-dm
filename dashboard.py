@@ -652,11 +652,21 @@ if authentication_status:
                     ro.observe(gridDiv);
                 }
             }
-            """)
-
+            """)     
+            
             grid_options = gb.build()
             hoy_py = datetime.today()
             total_row_styles = {}
+
+            # Inicializar estado del toggle si no existe
+            if "expandir_columnas" not in st.session_state:
+                st.session_state.expandir_columnas = False
+
+            # Botón toggle arriba de la tabla
+            col1, col2 = st.columns([8,1])
+            with col2:
+                if st.button("🔎", help="Expandir columnas al contenido"):
+                    st.session_state.expandir_columnas = not st.session_state.expandir_columnas
 
             for col in numeric_cols_sin_total:
                 color = color_por_vencimiento(col, hoy_py)
@@ -679,6 +689,15 @@ if authentication_status:
             grid_options["onGridReady"] = on_grid_ready
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
+            if st.session_state.expandir_columnas:
+                grid_options["onFirstDataRendered"] = JsCode("""
+                function(params) {
+                    params.api.sizeColumnsToFit();  
+                    setTimeout(() => {
+                        params.columnApi.autoSizeAllColumns();
+                    }, 200);
+                }
+                """)
 
             # --- Renderizado final ---
             AgGrid(
