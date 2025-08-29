@@ -633,36 +633,82 @@ if authentication_status:
                 }
             }
 
-            # --- Script para scroll horizontal en móviles ---
-            on_grid_ready = JsCode("""
-            function(params) {
-                function ajustarColumnas() {
-                    if (window.innerWidth <= 768) {
-                        params.api.resetColumnState();
-                    } else {
-                        params.api.sizeColumnsToFit();
-                    }
-                }
-                ajustarColumnas();
-                setTimeout(ajustarColumnas, 300);
-                window.addEventListener('resize', ajustarColumnas);
-                const gridDiv = params.api.gridBodyCtrl.eGridBody;
-                if (window.ResizeObserver) {
-                    const ro = new ResizeObserver(() => ajustarColumnas());
-                    ro.observe(gridDiv);
-                }
-            }
-            """)     
-            
-            # Inicializar estado del toggle si no existe
+            # --- Toggle arriba de la tabla (antes de construir grid_options) ---
             if "expandir_columnas" not in st.session_state:
                 st.session_state.expandir_columnas = False
 
-            # Botón toggle arriba de la tabla
             col1, col2 = st.columns([8,1])
             with col2:
                 if st.button("🔎", help="Expandir columnas al contenido"):
                     st.session_state.expandir_columnas = not st.session_state.expandir_columnas
+
+            expandir = st.session_state.expandir_columnas  # ← bandera en Python
+
+            # --- Script para scroll horizontal en móviles ---
+            on_grid_ready = JsCode(f"""
+            function(params) {{
+                const expandir = {str(expandir).lower()};
+
+                // Helpers globales para poder limpiar en re-renders
+                function clearHandlers() {{
+                    try {{
+                        if (window.__agResizeHandler) {{
+                            window.removeEventListener('resize', window.__agResizeHandler);
+                            window.__agResizeHandler = null;
+                        }}
+                        if (window.__agRO) {{
+                            window.__agRO.disconnect();
+                            window.__agRO = null;
+                        }}
+                    }} catch(e) {{}}
+                }}
+
+                // Siempre limpia lo que hubiera de una corrida anterior
+                clearHandlers();
+
+                function ajustarColumnas() {{
+                    if (expandir) return;  // si el toggle está activo, NO toques los anchos
+                    if (window.innerWidth <= 768) {{
+                        params.api.resetColumnState();
+                    }} else {{
+                        params.api.sizeColumnsToFit();
+                    }}
+                }}
+
+                if (!expandir) {{
+                    ajustarColumnas();
+                    setTimeout(ajustarColumnas, 300);
+
+                    // Guarda el handler globalmente para poder removerlo en la próxima corrida
+                    window.__agResizeHandler = ajustarColumnas;
+                    window.addEventListener('resize', window.__agResizeHandler);
+
+                    // Observa cambios de tamaño del grid
+                    const gridBody = params.api.gridBodyCtrl ? params.api.gridBodyCtrl.eGridBody : null;
+                    if (window.ResizeObserver && gridBody) {{
+                        window.__agRO = new ResizeObserver(() => ajustarColumnas());
+                        window.__agRO.observe(gridBody);
+                    }}
+                }} else {{
+                    // Expandir activo: auto-size lo haremos aparte y no registramos nada
+                    clearHandlers();
+                }}
+            }}
+            """)     
+
+            # --- onFirstDataRendered solo cuando expandir = True (para autosize real) ---
+            on_first_render = None
+            if expandir:
+                on_first_render = JsCode("""
+                function(params) {
+                    // Primero ajusta al contenedor para tener una base, luego auto-size por contenido
+                    // (el setTimeout asegura que ocurra después de cualquier reflow inicial)
+                    setTimeout(() => {
+                        try { params.api.sizeColumnsToFit(); } catch(e) {}
+                        try { params.columnApi.autoSizeAllColumns(); } catch(e) {}
+                    }, 50);
+                }
+                """)
             
             grid_options = gb.build()
             hoy_py = datetime.today()
@@ -687,6 +733,8 @@ if authentication_status:
             }
 
             grid_options["onGridReady"] = on_grid_ready
+            if on_first_render:
+                 grid_options["onFirstDataRendered"] = on_first_render
             grid_options['pinnedBottomRowData'] = total_row.to_dict('records')
 
             if st.session_state.expandir_columnas:
@@ -699,7 +747,8 @@ if authentication_status:
                 }
                 """)
 
-            # --- Renderizado final ---
+            # --- Render del grid ---
+            # clave distinta para forzar re-montaje cuando cambies el toggle y limpiar listeners viejos
             AgGrid(
                 data_sin_total,
                 gridOptions=grid_options,
@@ -709,7 +758,8 @@ if authentication_status:
                 theme=AgGridTheme.ALPINE,
                 fit_columns_on_grid_load=False,
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-                enable_enterprise_modules=False
+                enable_enterprise_modules=False,
+                key=f"grid-estado-cuenta-{'expand' if expandir else 'fit'}"
             )
 
             #--------------------- BOTON DE DESCARGA -----------
