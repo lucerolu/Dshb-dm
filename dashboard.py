@@ -903,16 +903,22 @@ if authentication_status:
                 ".header-91+dias": {"border-bottom": "4px solid green"},
                 ".header-total": {"border-bottom": "4px solid #0B083D"},
                 ".ag-center-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
-                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"},
+                ".ag-pinned-left-cols-container .ag-row": {"height": "20px", "line-height": "16px"}
                 # --- Ajuste ancho del contenedor ---
-                ".ag-root-wrapper": {"width": f"{ancho_final}px", "margin": "auto"}
+                #".ag-root-wrapper": {"width": f"{ancho_final}px", "margin": "auto"}
             }
 
             grid_options = gb.build()
             grid_options['pinnedBottomRowData'] = total_row_bucket.to_dict('records')
 
             st.markdown("### Tabla de estado de cuenta agrupada por fecha de vencimiento")
-            # --- AgGrid ---
+            # --- AgGrid con scroll horizontal ---
+            st.markdown("""
+            <div style="overflow-x: auto; width: 100%;">
+                <div id="grid-container"></div>
+            </div>
+            """, unsafe_allow_html=True)
+
             grid_response = AgGrid(
                 data_sin_total_bucket,
                 gridOptions=grid_options,
