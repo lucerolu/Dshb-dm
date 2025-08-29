@@ -1072,6 +1072,18 @@ if authentication_status:
 
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
             st.markdown("### Calendario de fechas de exigibilidad")
+            # --- Leyenda de colores arriba ---
+            st.markdown("""
+            <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:14px;">
+            <div><span style="background-color:#ff6666; padding:4px 12px; border-radius:4px; color:white;">Vencido</span></div>
+            <div><span style="background-color:#ffcc66; padding:4px 12px; border-radius:4px;">0-30 días</span></div>
+            <div><span style="background-color:#ffff99; padding:4px 12px; border-radius:4px;">31-60 días</span></div>
+            <div><span style="background-color:#ccff99; padding:4px 12px; border-radius:4px;">61-90 días</span></div>
+            <div><span style="background-color:#99ff99; padding:4px 12px; border-radius:4px;">91+ días</span></div>
+            <div><span style="background-color:#66b3ff; padding:4px 12px; border-radius:4px; color:white;">Día actual</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+            
             # --- Datos ---
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
@@ -1142,6 +1154,9 @@ if authentication_status:
                                 estado = df_estado_cuenta.loc[df_estado_cuenta["fecha_exigibilidad"].dt.date == day, "estado"]
                                 estado = estado.values[0] if len(estado) > 0 else None
                                 color = color_map[estado]
+
+                                if day == hoy.date():
+                                    color = "#66b3ff"   # Azul especial para día actual
 
                                 x0, x1 = day_idx, day_idx + 1
                                 y0, y1 = -week_idx, -week_idx + 1
