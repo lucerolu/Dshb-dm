@@ -1083,7 +1083,7 @@ if authentication_status:
             <div><span style="background-color:#66b3ff; padding:4px 12px; border-radius:4px; color:white;">Día actual</span></div>
             </div>
             """, unsafe_allow_html=True)
-            
+
             # --- Datos ---
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
