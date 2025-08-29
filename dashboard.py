@@ -1189,7 +1189,7 @@ if authentication_status:
                         paper_bgcolor=bg_color,
                         plot_bgcolor=bg_color,
                         margin=dict(l=40, r=40, t=60, b=80),
-                        height=700,
+                        height=500,
                         autosize=True,
                         legend=dict(
                             orientation="h",
