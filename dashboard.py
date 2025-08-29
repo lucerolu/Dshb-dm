@@ -947,7 +947,7 @@ if authentication_status:
                     header_class = f"header-{col.replace(' ', '').replace('+','')}"
                     gb.configure_column(
                         col,
-                        minWidth=100,
+                        minWidth=130,
                         headerClass=header_class,
                         cellStyle=gradient_renderer,
                         valueFormatter=value_formatter
@@ -957,7 +957,7 @@ if authentication_status:
             if "Total" in data_sin_total_bucket.columns:
                 gb.configure_column(
                     "Total",
-                    minWidth=100,
+                    minWidth=140,
                     headerClass='header-total',
                     valueFormatter=value_formatter,
                     cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
