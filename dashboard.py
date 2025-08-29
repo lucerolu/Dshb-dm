@@ -1205,6 +1205,7 @@ if authentication_status:
                         margin=dict(l=10, r=10, t=6, b=8),
                         height=400,
                         autosize=True,
+                        dragmode=False,
                         legend=dict(
                             orientation="h",
                             yanchor="top",
