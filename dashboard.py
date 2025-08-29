@@ -1074,16 +1074,15 @@ if authentication_status:
             st.markdown("### Calendario de fechas de exigibilidad")
             # --- Leyenda de colores arriba ---
             st.markdown("""
-            <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:14px;">
-            <div><span style="background-color:#ff6666; padding:4px 12px; border-radius:4px; color:white;">Vencido</span></div>
-            <div><span style="background-color:#ffcc66; padding:4px 12px; border-radius:4px;">0-30 días</span></div>
-            <div><span style="background-color:#ffff99; padding:4px 12px; border-radius:4px;">31-60 días</span></div>
-            <div><span style="background-color:#ccff99; padding:4px 12px; border-radius:4px;">61-90 días</span></div>
-            <div><span style="background-color:#99ff99; padding:4px 12px; border-radius:4px;">91+ días</span></div>
-            <div><span style="background-color:#66b3ff; padding:4px 12px; border-radius:4px; color:white;">Día actual</span></div>
+            <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:14px; color:black;">
+            <div><span style="background-color:#ff6666; padding:4px 12px; border-radius:4px; color:black;">Vencido</span></div>
+            <div><span style="background-color:#ffcc66; padding:4px 12px; border-radius:4px; color:black;">0-30 días</span></div>
+            <div><span style="background-color:#ffff99; padding:4px 12px; border-radius:4px; color:black;">31-60 días</span></div>
+            <div><span style="background-color:#ccff99; padding:4px 12px; border-radius:4px; color:black;">61-90 días</span></div>
+            <div><span style="background-color:#99ff99; padding:4px 12px; border-radius:4px; color:black;">91+ días</span></div>
+            <div><span style="background-color:#66b3ff; padding:4px 12px; border-radius:4px; color:black;">Día actual</span></div>
             </div>
             """, unsafe_allow_html=True)
-
             # --- Datos ---
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
