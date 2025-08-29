@@ -591,7 +591,7 @@ if authentication_status:
             # Columna Total (solo estilo)
             gb.configure_column(
                 ultima_col,
-                minWidth=120,
+                minWidth=130,
                 headerClass='header-left',
                 valueFormatter=value_formatter,
                 cellStyle={'backgroundColor': '#0B083D','color':'white','fontWeight':'bold','textAlign':'left'}
