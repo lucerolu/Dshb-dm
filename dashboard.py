@@ -1071,6 +1071,7 @@ if authentication_status:
                     st.markdown("<br><br>", unsafe_allow_html=True)
 
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
+            st.markdown("### Calendario de fechas de exigibilidad")
             # --- Datos ---
             hoy = datetime.today()
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
