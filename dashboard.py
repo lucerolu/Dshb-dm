@@ -1407,22 +1407,24 @@ if authentication_status:
 
             # Botones por sucursal
             st.markdown("#### Por Sucursal")
-            cols = st.columns(5)
 
-            for i, (suc, info) in enumerate(colores_sucursales.items()):
+            # Contenedor flexbox
+            st.markdown("<div style='display:flex;flex-wrap:wrap;gap:8px;'>", unsafe_allow_html=True)
+
+            for suc, info in colores_sucursales.items():
                 color = info["color"]
                 abre = info["abreviatura"]
 
-                if cols[i % 5].button(f"{abre}", key=f"btn_suc_{suc}"):
+                if st.button(f"{abre}", key=f"btn_suc_{suc}"):
                     st.session_state["filtro_tipo"] = "Sucursal"
                     st.session_state["filtro_valor"] = suc
                     st.session_state["filtro_cuenta"] = None
 
-                # Estilo global al último botón creado en esa celda
-                cols[i % 5].markdown(
+                # Aquí solo pintamos el último botón generado en esa iteración
+                st.markdown(
                     f"""
                     <style>
-                    div[data-testid="stVerticalBlock"] div.stButton > button {{
+                    div[data-testid="stVerticalBlock"]:has(button[kind="secondary"][data-testid="stBaseButton-secondary"][aria-label="{abre}"]) button {{
                         background-color: {color} !important;
                         color: white !important;
                         border-radius: 8px !important;
@@ -1434,6 +1436,8 @@ if authentication_status:
                     """,
                     unsafe_allow_html=True
                 )
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # Botones por cuenta
             st.markdown("#### Por Cuenta")
