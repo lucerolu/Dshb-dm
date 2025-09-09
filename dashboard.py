@@ -1404,30 +1404,30 @@ if authentication_status:
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # ------------------ Leer query params ------------------
-            params = st.query_params
-            if "filtro_tipo" in params and "filtro_valor" in params:
-                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
-                st.session_state["filtro_valor"] = params["filtro_valor"][0]
-
             # ------------------ Función para renderizar botones HTML ------------------
             def render_boton(nombre, color, filtro_tipo, filtro_valor):
-                return f"""<button
-                    style="
-                        background-color: {color};
-                        color: white;
-                        border: none;
-                        border-radius: 8px;
-                        padding: 6px 14px;
-                        margin: 4px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        min-width: 120px;
-                    "
-                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
-                >{nombre}</button>"""
+                if st.button(nombre, key=f"{filtro_tipo}_{filtro_valor}"):
+                    # Actualizar query params y session_state
+                    st.experimental_set_query_params(filtro_tipo=filtro_tipo, filtro_valor=filtro_valor)
+                    st.session_state["filtro_tipo"] = filtro_tipo
+                    st.session_state["filtro_valor"] = filtro_valor
 
-            # ------------------ Botones ------------------
+                # Retornar HTML para el estilo
+                return f"""
+                    <style>
+                    div.stButton > button:first-child {{
+                        background-color: {color} !important;
+                        color: white !important;
+                        border-radius: 8px !important;
+                        padding: 6px 14px !important;
+                        margin: 4px !important;
+                        font-weight: bold !important;
+                        min-width: 120px !important;
+                        cursor: pointer;
+                    }}
+                    </style>
+                """
+            # ------------------ Renderizar botones ------------------
             html_bots = "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
             html_bots += "</div>"
@@ -1456,7 +1456,7 @@ if authentication_status:
                 df_filtrado = df_completo[df_completo["cuenta_sucursal"] == st.session_state["filtro_valor"]]
             else:
                 df_filtrado = df_completo.copy()
-                
+
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
                 row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
