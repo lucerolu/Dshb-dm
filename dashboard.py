@@ -1374,27 +1374,6 @@ if authentication_status:
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # ------------------ Función para botones interactivos ------------------
-            def boton_interactivo(nombre, color, filtro_tipo, filtro_valor):
-                if st.button(nombre, key=f"{filtro_tipo}_{filtro_valor}"):
-                    st.session_state["filtro_tipo"] = filtro_tipo
-                    st.session_state["filtro_valor"] = filtro_valor
-                # Estilo del botón
-                st.markdown(f"""
-                    <style>
-                    div[data-testid="stVerticalBlock"] div.stButton > button[key="{filtro_tipo}_{filtro_valor}"] {{
-                        background-color: {color} !important;
-                        color: white !important;
-                        border-radius: 8px !important;
-                        padding: 6px 14px !important;
-                        margin: 4px !important;
-                        font-weight: bold !important;
-                        min-width: 120px !important;
-                        cursor: pointer;
-                    }}
-                    </style>
-                    """, unsafe_allow_html=True)
-
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
