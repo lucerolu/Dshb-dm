@@ -1374,67 +1374,30 @@ if authentication_status:
                 return str(s).strip().lower()
 
             # Inicializar session_state
-            if "filtro_tipo" not in st.session_state:
-                st.session_state["filtro_tipo"] = "Todas"
-            if "filtro_valor" not in st.session_state:
-                st.session_state["filtro_valor"] = "Todas"
+            if "filtro_sucursal" not in st.session_state:
+                st.session_state["filtro_sucursal"] = "Todas"
 
-            # ------------------ Construir botones como HTML (flex-wrap) ------------------
-            def render_boton(display, color, filtro_tipo, filtro_val, key):
-                activo = False
-                if st.session_state.get("filtro_tipo") == filtro_tipo:
-                    if filtro_tipo == "Sucursal":
-                        activo = (_normalize(st.session_state.get("filtro_valor", "")) == _normalize(filtro_val))
-                    else:
-                        activo = (str(st.session_state.get("filtro_valor", "")) == str(filtro_val))
-                outline = "3px solid rgba(0,0,0,0.12);" if activo else ""
-                
-                btn_html = (
-                    f"<button style='background-color:{color}; color:white; border:none; border-radius:6px;"
-                    f"padding:4px 10px; margin:2px; font-weight:600; min-width:110px; height:32px; white-space:nowrap; {outline}' "
-                    f"onclick=\"window.streamlitSend({{'filtro_tipo':'{filtro_tipo}','filtro_valor':'{filtro_val}'}})\">{html.escape(display)}</button>"
-                )
-                return btn_html
+            # ------------------ Renderizar botones de sucursal ------------------
+            st.markdown("### Filtrar por Sucursal")
 
-            # ------------------ Preparar listas de botones ------------------
-            suc_buttons = [("🔄 Ver todas", "#555555", "Todas")]
-            for suc, info in colores_sucursales.items():
-                suc_buttons.append((suc, info.get("color", "#808080"), suc))
+            sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
-            cta_buttons = [("🔄 Ver todas", "#555555", "Todas")]
-            for _, r in meta.iterrows():
-                color = colores_sucursales.get(r["sucursal"], {}).get("color", "#808080")
-                cta_buttons.append((r["cuenta_sucursal"], color, str(r["codigo"])))
+            cols = st.columns(len(sucursales))
+            for i, suc in enumerate(sucursales):
+                if cols[i].button(suc):
+                    st.session_state["filtro_sucursal"] = suc
 
-            # ------------------ Renderizar botones como HTML seguro (flex-wrap) ------------------
-            html_suc = "<div style='display:flex; flex-wrap:wrap; gap:6px'>"
-            for i, (display, color, filtro_val) in enumerate(suc_buttons):
-                html_suc += render_boton(display, color, "Sucursal", filtro_val, key=f"suc_{i}")
-            html_suc += "</div>"
-
-            html_cta = "<div style='display:flex; flex-wrap:wrap; gap:6px; margin-top:6px'>"
-            for i, (display, color, filtro_val) in enumerate(cta_buttons):
-                html_cta += render_boton(display, color, "Cuenta", filtro_val, key=f"cta_{i}")
-            html_cta += "</div>"
-
-            st.markdown(html_suc, unsafe_allow_html=True)
-            st.markdown(html_cta, unsafe_allow_html=True)
-
-            # ------------------ Aplicar filtro al DataFrame ------------------
-            f_tipo = st.session_state.get("filtro_tipo", "Todas")
-            f_valor = st.session_state.get("filtro_valor", "Todas")
-
-            if f_tipo == "Todas":
+            # ------------------ Aplicar filtro ------------------
+            if st.session_state["filtro_sucursal"] == "Todas":
                 df_filtrado = df_completo.copy()
-            elif f_tipo == "Sucursal":
-                df_filtrado = df_completo[df_completo["sucursal"].fillna("").str.strip() == f_valor]
-            elif f_tipo == "Cuenta":
-                df_filtrado = df_completo[df_completo["codigo"].astype(str) == f_valor]
             else:
-                df_filtrado = df_completo.copy()
+                df_filtrado = df_completo[df_completo["sucursal"].fillna("") == st.session_state["filtro_sucursal"]]
 
             # ------------------ Colores por cuenta ------------------
-            color_cuentas = {row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080") for _, row in meta.iterrows()}
+            color_cuentas = {
+                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
+                for _, row in meta.iterrows()
+            }
 
             # ------------------ Gráfico ------------------
             fig = px.line(
