@@ -1379,123 +1379,86 @@ if authentication_status:
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # Leer query params (defensivo: pueden venir como list o str)
-            qp = st.query_params
-            if "filtro_tipo" in qp and "filtro_valor" in qp:
-                val_tipo = qp.get("filtro_tipo")
-                val_valor = qp.get("filtro_valor")
-                # tomar primer elemento si es lista
-                if isinstance(val_tipo, (list, tuple)):
-                    val_tipo = val_tipo[0]
-                if isinstance(val_valor, (list, tuple)):
-                    val_valor = val_valor[0]
-                # asignar sólo si no vacíos
-                if val_tipo:
-                    st.session_state["filtro_tipo"] = val_tipo
-                if val_valor:
-                    st.session_state["filtro_valor"] = val_valor
-
-            # Preparar listas de botones (display_name, color, filtro_val)
-            # Para Sucursal: usamos filtro_val = normalized(sucursal)
-            suc_buttons = []
-            for suc, info in colores_sucursales.items():
-                display = suc
-                color = info.get("color", "#808080")
-                filtro_val = suc
-                suc_buttons.append((display, color, filtro_val))
-
-            # Para Cuenta: usar el codigo (único, robusto) como filtro_val
-            cta_buttons = []
-            # meta tiene columnas: 'cuenta_sucursal', 'codigo', 'sucursal', ...
-            for _, r in meta.iterrows():
-                display = r["cuenta_sucursal"]
-                codigo = str(r["codigo"])
-                suc = r["sucursal"]
-                color = colores_sucursales.get(suc, {}).get("color", "#808080")
-                cta_buttons.append((display, color, codigo))
-
-            st.write("QP:", st.query_params)
-            st.write("SESSION:", st.session_state.get("filtro_tipo"), st.session_state.get("filtro_valor"))
-
-            # Helper: construir botón HTML en UNA línea (sin indentaciones)
-            def boton_html(display, color, filtro_tipo, filtro_val):
-                # escapar ' en display y filtro_val para no romper la string JS
-                dsp = html.escape(str(display))
-                fv = str(filtro_val).replace("'", "\\'")
-                # si este botón está activo, añadir estilo extra
+            # --- Función para renderizar un botón "HTML-like" nativo ---
+            def render_boton(display, color, filtro_tipo, filtro_val):
+                # comprobar si está activo
                 activo = False
                 if st.session_state.get("filtro_tipo") == filtro_tipo:
-                    # para sucursal, las qp vienen normalizadas (si usamos normalized), comparo normalizado
                     if filtro_tipo == "Sucursal":
-                        activo = (_normalize(st.session_state.get("filtro_valor", "")) == str(fv).lower().strip())
+                        activo = (_normalize(st.session_state.get("filtro_valor", "")) == _normalize(filtro_val))
                     else:
-                        activo = (str(st.session_state.get("filtro_valor", "")) == str(fv))
-                extra_style = "outline:3px solid rgba(0,0,0,0.12);" if activo else ""
-                # botón con JS que actualiza searchParams y recarga (searchParams se encoda bien)
-                btn = (
-                    "<button style='background-color:" + color + ";color:white;border:none;border-radius:6px;"
-                    "padding:4px 10px;margin:4px;font-weight:600;min-width:110px;height:32px;white-space:nowrap;"
-                    + extra_style +
-                    "cursor:pointer' "
-                    'onclick="(function(){const u=new URL(window.location.href);'
-                    f"u.searchParams.set('filtro_tipo','{filtro_tipo}');"
-                    f"u.searchParams.set('filtro_valor','{fv}');"
-                    "window.location.href=u.pathname+'?'+u.searchParams.toString();})()\""
-                    ">" + dsp + "</button>"
-                )
-                return btn
+                        activo = (str(st.session_state.get("filtro_valor", "")) == str(filtro_val))
+                outline = "3px solid rgba(0,0,0,0.12);" if activo else ""
+                # columnas para botones en línea
+                col1, col2 = st.columns([1, 20])  # solo para centrar un poco
+                with col2:
+                    if st.button(display):
+                        st.session_state["filtro_tipo"] = filtro_tipo
+                        st.session_state["filtro_valor"] = filtro_val
+                    # aplicar estilo CSS
+                    st.markdown(
+                        f"""
+                        <style>
+                        div.stButton > button:first-child {{
+                            background-color: {color};
+                            color: white;
+                            border-radius: 6px;
+                            font-weight: 600;
+                            min-width: 110px;
+                            height: 32px;
+                            margin: 2px;
+                            outline: {outline};
+                        }}
+                        </style>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
-            # Construir HTML total (dos contenedores separados: sucursales y cuentas)
-            html_out = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px'>"
-            html_out += boton_html("🔄 Ver todas", "#555555", "Todas", "Todas")
-            # Sucursales
+            # --- Preparar listas de botones ---
+            suc_buttons = [("🔄 Ver todas", "#555555", "Todas")]
+            for suc, info in colores_sucursales.items():
+                suc_buttons.append((suc, info.get("color", "#808080"), suc))
+
+            cta_buttons = [("🔄 Ver todas", "#555555", "Todas")]
+            for _, r in meta.iterrows():
+                color = colores_sucursales.get(r["sucursal"], {}).get("color", "#808080")
+                cta_buttons.append((r["cuenta_sucursal"], color, str(r["codigo"])))
+
+            # --- Renderizar botones ---
+            st.markdown("#### Sucursales")
             for display, color, filtro_val in suc_buttons:
-                html_out += boton_html(display, color, "Sucursal", filtro_val)
-            html_out += "</div>"
+                render_boton(display, color, "Sucursal", filtro_val)
 
-            # Cuentas en su propio contenedor (separado)
-            html_out += "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
+            st.markdown("#### Cuentas")
             for display, color, filtro_val in cta_buttons:
-                html_out += boton_html(display, color, "Cuenta", filtro_val)
-            html_out += "</div>"
+                render_boton(display, color, "Cuenta", filtro_val)
 
-            # Renderizar HTML (sin indentaciones que generen bloques de código)
-            st.markdown(html_out, unsafe_allow_html=True)
-
-            # ------------------ Aplicar filtro al DataFrame (robusto) ------------------
+            # ------------------ Aplicar filtro al DataFrame ------------------
             f_tipo = st.session_state.get("filtro_tipo", "Todas")
             f_valor = st.session_state.get("filtro_valor", "Todas")
-
-            st.write("Filtro tipo:", f_tipo)
-            st.write("Filtro valor:", f_valor)
-            st.write("Sucursales únicas en df:", df_completo["sucursal"].unique().tolist())
 
             if f_tipo == "Todas":
                 df_filtrado = df_completo.copy()
             elif f_tipo == "Sucursal":
-                df_filtrado = df_completo[
-                    df_completo["sucursal"].fillna("").str.strip() == str(f_valor).strip()
-                ]
+                df_filtrado = df_completo[df_completo["sucursal"].fillna("").str.strip() == f_valor]
             elif f_tipo == "Cuenta":
-                # f_valor es el codigo de cuenta
-                df_filtrado = df_completo[df_completo["codigo"].astype(str) == str(f_valor)]
+                df_filtrado = df_completo[df_completo["codigo"].astype(str) == f_valor]
             else:
                 df_filtrado = df_completo.copy()
 
-            # ------------------ Colores por cuenta (usar color de sucursal) ------------------
+            # ------------------ Colores por cuenta ------------------
             color_cuentas = {
                 row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
                 for _, row in meta.iterrows()
             }
 
-            # ------------------ Gráfico de líneas ------------------
+            # ------------------ Gráfico ------------------
             fig = px.line(
                 df_filtrado,
                 x="fecha_exigibilidad_str",
                 y="total",
                 color="cuenta_sucursal",
                 color_discrete_map=color_cuentas,
-                category_orders={"fecha_exigibilidad_str": fechas_ordenadas},
                 custom_data=["sucursal", "codigo", "abreviatura"]
             )
 
