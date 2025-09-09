@@ -1418,16 +1418,17 @@ if authentication_status:
                     st.session_state["filtro_valor"] = suc
                     st.session_state["filtro_cuenta"] = None
 
-                # Estilizar el botón recién creado
+                # Estilo global al último botón creado en esa celda
                 cols[i % 5].markdown(
                     f"""
                     <style>
-                    div[data-testid="stButton"] button[kind="secondary"][key="btn_suc_{suc}"] {{
-                        background-color: {color};
-                        color: white;
-                        border-radius: 8px;
-                        padding: 6px 12px;
-                        font-weight: bold;
+                    div[data-testid="stVerticalBlock"] div.stButton > button {{
+                        background-color: {color} !important;
+                        color: white !important;
+                        border-radius: 8px !important;
+                        padding: 6px 12px !important;
+                        font-weight: bold !important;
+                        border: none !important;
                     }}
                     </style>
                     """,
@@ -1451,12 +1452,13 @@ if authentication_status:
                 cols_cuentas[j % 4].markdown(
                     f"""
                     <style>
-                    div[data-testid="stButton"] button[kind="secondary"][key="btn_cta_{j}"] {{
-                        background-color: {color};
-                        color: white;
-                        border-radius: 6px;
-                        padding: 5px 10px;
-                        font-size: 0.9rem;
+                    div[data-testid="stVerticalBlock"] div.stButton > button {{
+                        background-color: {color} !important;
+                        color: white !important;
+                        border-radius: 6px !important;
+                        padding: 5px 10px !important;
+                        font-size: 0.9rem !important;
+                        border: none !important;
                     }}
                     </style>
                     """,
