@@ -1377,21 +1377,42 @@ if authentication_status:
             if "filtro_sucursal" not in st.session_state:
                 st.session_state["filtro_sucursal"] = "Todas"
 
-            # ------------------ Renderizar botones de sucursal ------------------
+            # ------------------ Botones estilo HTML ------------------
             st.markdown("### Filtrar por Sucursal")
 
+            # Agregar "Todas" + sucursales únicas
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
-            cols = st.columns(len(sucursales))
-            for i, suc in enumerate(sucursales):
-                if cols[i].button(suc):
-                    st.session_state["filtro_sucursal"] = suc
+            # Construir HTML
+            html_out = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
+            for suc in sucursales:
+                # comprobar si es el activo
+                activo = st.session_state["filtro_sucursal"] == suc
+                outline = "3px solid rgba(0,0,0,0.12);" if activo else ""
+                color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
+                dsp = html.escape(suc)
+                
+                # botón con JS que actualiza query param y recarga
+                html_out += (
+                    f"<button style='background-color:{color};color:white;border:none;border-radius:6px;"
+                    f"padding:4px 10px;margin:2px;font-weight:600;min-width:110px;height:32px;white-space:nowrap;"
+                    f"outline:{outline};cursor:pointer'"
+                    f" onclick=\"(function(){{const u=new URL(window.location.href);"
+                    f"u.searchParams.set('filtro_sucursal','{suc}');"
+                    f"window.location.href=u.pathname+'?'+u.searchParams.toString();}})()\">{dsp}</button>"
+                )
+            html_out += "</div>"
+
+            st.markdown(html_out, unsafe_allow_html=True)
 
             # ------------------ Aplicar filtro ------------------
-            if st.session_state["filtro_sucursal"] == "Todas":
+            filtro = st.experimental_get_query_params().get("filtro_sucursal", [st.session_state["filtro_sucursal"]])[0]
+            st.session_state["filtro_sucursal"] = filtro
+
+            if filtro == "Todas":
                 df_filtrado = df_completo.copy()
             else:
-                df_filtrado = df_completo[df_completo["sucursal"].fillna("") == st.session_state["filtro_sucursal"]]
+                df_filtrado = df_completo[df_completo["sucursal"].fillna("") == filtro]
 
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
