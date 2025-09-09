@@ -1414,6 +1414,9 @@ if authentication_status:
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
                 cta_buttons.append((display, color, codigo))
 
+            st.write("QP:", st.query_params)
+            st.write("SESSION:", st.session_state.get("filtro_tipo"), st.session_state.get("filtro_valor"))
+
             # Helper: construir botón HTML en UNA línea (sin indentaciones)
             def boton_html(display, color, filtro_tipo, filtro_val):
                 # escapar ' en display y filtro_val para no romper la string JS
