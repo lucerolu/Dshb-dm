@@ -1398,19 +1398,19 @@ if authentication_status:
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
-            # Inicializar filtros
+            # ---------------- Inicializar filtros ----------------
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # Leer query params
+            # ---------------- Leer query params ----------------
             params = st.query_params
             if "filtro_tipo" in params and "filtro_valor" in params:
                 st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
                 st.session_state["filtro_valor"] = params["filtro_valor"][0]
 
-            # Función para renderizar botones HTML
+            # ---------------- Función para renderizar botones HTML ----------------
             def render_boton(nombre, color, filtro_tipo, filtro_valor):
                 return f"""
                     <button
@@ -1422,8 +1422,8 @@ if authentication_status:
                             padding: 4px 10px;
                             margin: 2px;
                             font-weight: bold;
-                            min-width: 100px;
-                            height: 32px;
+                            min-width: 120px;
+                            height: 34px;
                             cursor: pointer;
                             white-space: nowrap;
                         "
@@ -1431,20 +1431,23 @@ if authentication_status:
                     >{nombre}</button>
                 """
 
-            # Contenedor horizontal
-            html_bots = "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
+            # ---------------- Construcción del contenedor de botones ----------------
+            html_bots = "<div style='display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;'>"
             html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
 
+            # Botones por sucursal
             for suc, info in colores_sucursales.items():
                 html_bots += render_boton(suc, info["color"], "Sucursal", suc)
 
-            for cuenta in meta["cuenta_sucursal"]:
+            # Botones por cuenta
+            for cuenta in meta["cuenta_sucursal"].tolist():
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
                 html_bots += render_boton(cuenta, color, "Cuenta", cuenta)
 
-            html_bots += "</div>"
+            html_bots += "</div>"   # 🔹 Cerrar el DIV
 
+            # ---------------- Mostrar botones ----------------
             st.markdown(html_bots, unsafe_allow_html=True)
 
             # Aplicar filtro al DataFrame
