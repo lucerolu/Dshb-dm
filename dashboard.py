@@ -1398,7 +1398,7 @@ if authentication_status:
                     cursor:pointer;
                     white-space:nowrap;"
                     onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'">
-                    {nombre}</button>""")
+                    {nombre}</button>"""
 
             # Contenedor flex para todos los botones
             html_bots = "<div style='display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px;margin-bottom:16px;'>"
