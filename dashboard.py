@@ -1401,7 +1401,7 @@ if authentication_status:
             for suc, info in colores_sucursales.items():
                 display = suc
                 color = info.get("color", "#808080")
-                filtro_val = _normalize(suc)
+                filtro_val = suc
                 suc_buttons.append((display, color, filtro_val))
 
             # Para Cuenta: usar el codigo (único, robusto) como filtro_val
