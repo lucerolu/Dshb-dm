@@ -1418,8 +1418,19 @@ if authentication_status:
                     st.session_state["filtro_valor"] = suc
                     st.session_state["filtro_cuenta"] = None
 
+                # Estilizar el botón recién creado
                 cols[i % 5].markdown(
-                    f"<div style='background-color:{color};color:white;padding:6px;border-radius:8px;text-align:center'>{suc}</div>",
+                    f"""
+                    <style>
+                    div[data-testid="stButton"] button[kind="secondary"][key="btn_suc_{suc}"] {{
+                        background-color: {color};
+                        color: white;
+                        border-radius: 8px;
+                        padding: 6px 12px;
+                        font-weight: bold;
+                    }}
+                    </style>
+                    """,
                     unsafe_allow_html=True
                 )
 
@@ -1436,8 +1447,19 @@ if authentication_status:
                     st.session_state["filtro_tipo"] = "Cuenta"
                     st.session_state["filtro_valor"] = cuenta
 
+                # Estilizar el botón recién creado
                 cols_cuentas[j % 4].markdown(
-                    f"<div style='background-color:{color};color:white;padding:5px;border-radius:6px;text-align:center'>{cuenta}</div>",
+                    f"""
+                    <style>
+                    div[data-testid="stButton"] button[kind="secondary"][key="btn_cta_{j}"] {{
+                        background-color: {color};
+                        color: white;
+                        border-radius: 6px;
+                        padding: 5px 10px;
+                        font-size: 0.9rem;
+                    }}
+                    </style>
+                    """,
                     unsafe_allow_html=True
                 )
 
