@@ -1371,61 +1371,45 @@ if authentication_status:
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
-            # ------------------ Inicializar session_state para filtros ------------------
+            # Estado inicial
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # ------------------ Leer query params ------------------
-            params = st.query_params
+            # Sincronizar con query params (son strings, no listas)
+            qp = st.query_params
+            if "filtro_tipo" in qp and "filtro_valor" in qp:
+                st.session_state["filtro_tipo"] = qp["filtro_tipo"]
+                st.session_state["filtro_valor"] = qp["filtro_valor"]
 
-            if "filtro_tipo" in params and "filtro_valor" in params:
-                # ✅ Los query_params ya son strings, no listas
-                st.session_state["filtro_tipo"] = params["filtro_tipo"]
-                st.session_state["filtro_valor"] = params["filtro_valor"]
+            # Botón HTML en UNA sola línea (sin sangrías) para que no se convierta en código
+            def boton_html(nombre, color, filtro_tipo, filtro_valor):
+                return (
+                    f"<button style='background-color:{color};color:white;border:none;border-radius:6px;"
+                    f"padding:4px 10px;margin:4px;font-weight:600;min-width:110px;height:32px;"
+                    f"white-space:nowrap;cursor:pointer' "
+                    f"onclick=\"(function(){{const u=new URL(window.location.href);u.searchParams.set('filtro_tipo','{filtro_tipo}');"
+                    f"u.searchParams.set('filtro_valor','{filtro_valor}');window.location.href=u.pathname+'?'+u.searchParams.toString();}})()\""
+                    f">{nombre}</button>"
+                )
 
-            # ------------------ Función para renderizar botones HTML ------------------
-            def render_boton(nombre, color, filtro_tipo, filtro_valor):
-                return f"""
-                    <button
-                        style="
-                            background-color: {color};
-                            color: white;
-                            border: none;
-                            border-radius: 6px;
-                            padding: 4px 10px;
-                            margin: 4px;
-                            font-weight: bold;
-                            min-width: 110px;
-                            height: 32px;
-                            cursor: pointer;
-                            white-space: nowrap;
-                        "
-                        onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
-                    >{nombre}</button>
-                """
-
-            # ------------------ Contenedor flex para los botones ------------------
-            html_bots = "<div style='display:flex; flex-wrap:wrap; align-items:flex-start; gap:4px; margin-bottom:16px;'>"
-
-            # Botón general
-            html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
-
-            # Botones por sucursal
+            # Contenedor flex de TODOS los botones
+            html = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
+            html += boton_html("🔄 Ver todas", "#555555", "Todas", "Todas")
+            # Sucursales
             for suc, info in colores_sucursales.items():
-                html_bots += render_boton(suc, info["color"], "Sucursal", suc)
+                html += boton_html(suc, info["color"], "Sucursal", suc)
+            html += "</div>"
 
-            # Botones por cuenta
-            for cuenta in meta["cuenta_sucursal"].tolist():
-                suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
+            # Cuentas
+            html += "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
+            for cuenta, suc in meta[["cuenta_sucursal", "sucursal"]].values:
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
-                html_bots += render_boton(cuenta, color, "Cuenta", cuenta)
+                html += boton_html(cuenta, color, "Cuenta", cuenta)
+            html += "</div>"
 
-            html_bots += "</div>"
-
-            # Mostrar los botones en el dashboard
-            st.markdown(html_bots, unsafe_allow_html=True)
+            st.markdown(html, unsafe_allow_html=True)
 
             # ------------------ Aplicar filtro al DataFrame ------------------
             if st.session_state["filtro_tipo"] == "Todas":
