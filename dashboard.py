@@ -1396,23 +1396,35 @@ if authentication_status:
             # ------------------ Filtros tipo Power BI ------------------
             st.markdown("### Segmentadores visuales")
 
+            # Inicializar filtros
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            if st.button("🔄 Ver todas", key="btn_todas"):
-                st.session_state["filtro_tipo"] = "Todas"
-                st.session_state["filtro_valor"] = "Todas"
+            # ------------------ Botón General ------------------
+            html_general = f"""
+            <button style="
+                background-color: #555555;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 14px;
+                margin: 4px;
+                cursor: pointer;
+                font-weight: bold;
+            " onclick="window.location.href='?filtro=Todas'">
+                🔄 Ver todas
+            </button>
+            """
+            st.markdown(f"<div style='display:flex;flex-wrap:wrap;'>{html_general}</div>", unsafe_allow_html=True)
 
+            # ------------------ Botones por sucursal ------------------
             st.markdown("#### Por Sucursal")
-            # Contenedor flexbox para los botones
-            html_buttons = ""
+            html_sucursales = ""
             for suc, info in colores_sucursales.items():
                 color = info["color"]
-                # Mostrar el nombre completo de la sucursal
-                nombre = suc  
-                html_buttons += f"""
+                html_sucursales += f"""
                 <button style="
                     background-color: {color};
                     color: white;
@@ -1422,43 +1434,36 @@ if authentication_status:
                     margin: 4px;
                     cursor: pointer;
                     font-weight: bold;
-                " onclick="window.location.href='?sucursal={nombre}'">
-                    {nombre}
+                " onclick="window.location.href='?filtro_tipo=Sucursal&filtro_valor={suc}'">
+                    {suc}
                 </button>
                 """
+            st.markdown(f"<div style='display:flex;flex-wrap:wrap;'>{html_sucursales}</div>", unsafe_allow_html=True)
 
-            # Renderizar todos los botones en un contenedor horizontal
-            st.markdown(f"<div style='display:flex;flex-wrap:wrap;'>{html_buttons}</div>", unsafe_allow_html=True)
-
-            # Botones por cuenta
+            # ------------------ Botones por cuenta ------------------
             st.markdown("#### Por Cuenta")
+            html_cuentas = ""
             cuentas_unicas = meta["cuenta_sucursal"].tolist()
-            cols_cuentas = st.columns(4)
-
-            for j, cuenta in enumerate(cuentas_unicas):
+            for cuenta in cuentas_unicas:
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
+                html_cuentas += f"""
+                <button style="
+                    background-color: {color};
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    margin: 4px;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                    font-weight: bold;
+                " onclick="window.location.href='?filtro_tipo=Cuenta&filtro_valor={cuenta}'">
+                    {cuenta}
+                </button>
+                """
+            st.markdown(f"<div style='display:flex;flex-wrap:wrap;'>{html_cuentas}</div>", unsafe_allow_html=True)
 
-                if cols_cuentas[j % 4].button(cuenta, key=f"btn_cta_{j}"):
-                    st.session_state["filtro_tipo"] = "Cuenta"
-                    st.session_state["filtro_valor"] = cuenta
-
-                # Estilizar el botón recién creado
-                cols_cuentas[j % 4].markdown(
-                    f"""
-                    <style>
-                    div[data-testid="stVerticalBlock"] div.stButton > button {{
-                        background-color: {color} !important;
-                        color: white !important;
-                        border-radius: 6px !important;
-                        padding: 5px 10px !important;
-                        font-size: 0.9rem !important;
-                        border: none !important;
-                    }}
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
 
             # Aplicar filtro
             if st.session_state["filtro_tipo"] == "Todas":
