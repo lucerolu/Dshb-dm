@@ -1396,58 +1396,58 @@ if authentication_status:
             # ------------------ Filtros tipo Power BI estilo HTML ------------------
             st.markdown("### Segmentadores visuales")
 
-            # Inicializar filtros en session_state
+            # Inicializar filtros
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # Función para crear botones HTML que actualizan session_state
-            def boton_html(nombre, color, filtro_tipo, filtro_valor):
-                # Cada botón tiene un formulario propio
-                with st.form(key=f"form_{filtro_tipo}_{filtro_valor}", clear_on_submit=False):
-                    submitted = st.form_submit_button(nombre)
-                    if submitted:
-                        st.session_state["filtro_tipo"] = filtro_tipo
-                        st.session_state["filtro_valor"] = filtro_valor
-                    # Render HTML del botón
-                    st.markdown(
-                        f"""
-                        <style>
-                        div[data-testid="stForm"] > div > button[kind="secondary"] {{
-                            background-color: {color} !important;
-                            color: white !important;
-                            border-radius: 8px !important;
-                            padding: 6px 14px !important;
-                            margin: 4px !important;
-                            font-weight: bold !important;
-                            min-width: 120px !important;
-                            cursor: pointer;
-                        }}
-                        </style>
-                        """,
-                        unsafe_allow_html=True
-                    )
+            # Función para renderizar botones HTML
+            def render_boton(nombre, color, filtro_tipo, filtro_valor):
+                return f"""
+                <button
+                    style="
+                        background-color: {color};
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 6px 14px;
+                        margin: 4px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        min-width: 120px;
+                    "
+                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
+                >
+                    {nombre}
+                </button>
+                """
 
             # ------------------ Botón General ------------------
-            boton_html("🔄 Ver todas", "#555555", "Todas", "Todas")
+            html_bots = "<div style='display:flex; flex-wrap:wrap;'>"
+            html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
 
             # ------------------ Botones por Sucursal ------------------
-            st.markdown("#### Por Sucursal")
-            st.markdown("<div style='display:flex; flex-wrap:wrap;'>", unsafe_allow_html=True)
             for suc, info in colores_sucursales.items():
-                boton_html(suc, info["color"], "Sucursal", suc)
-            st.markdown("</div>", unsafe_allow_html=True)
+                html_bots += render_boton(suc, info["color"], "Sucursal", suc)
 
             # ------------------ Botones por Cuenta ------------------
-            st.markdown("#### Por Cuenta")
-            st.markdown("<div style='display:flex; flex-wrap:wrap;'>", unsafe_allow_html=True)
             cuentas_unicas = meta["cuenta_sucursal"].tolist()
             for cuenta in cuentas_unicas:
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
-                boton_html(cuenta, color, "Cuenta", cuenta)
-            st.markdown("</div>", unsafe_allow_html=True)
+                html_bots += render_boton(cuenta, color, "Cuenta", cuenta)
+
+            html_bots += "</div>"
+
+            # Renderizar todos los botones en un contenedor horizontal
+            st.markdown(html_bots, unsafe_allow_html=True)
+
+            # ------------------ Leer query params para actualizar session_state ------------------
+            params = st.experimental_get_query_params()
+            if "filtro_tipo" in params and "filtro_valor" in params:
+                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
+                st.session_state["filtro_valor"] = params["filtro_valor"][0]
 
             # ------------------ Aplicar filtro al DataFrame ------------------
             if st.session_state["filtro_tipo"] == "Todas":
@@ -1458,6 +1458,7 @@ if authentication_status:
                 df_filtrado = df_completo[df_completo["cuenta_sucursal"] == st.session_state["filtro_valor"]]
             else:
                 df_filtrado = df_completo.copy()
+
 
 
             # ------------------ Colores por cuenta (usando color de la sucursal) ------------------
