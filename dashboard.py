@@ -1385,30 +1385,23 @@ if authentication_status:
 
             # ------------------ Función para renderizar botones HTML ------------------
             def render_boton(nombre, color, filtro_tipo, filtro_valor):
-                return f"""
-                    <button
-                        style="
-                            background-color: {color};
-                            color: white;
-                            border: none;
-                            border-radius: 6px;
-                            padding: 4px 10px;
-                            margin: 4px;
-                            font-weight: bold;
-                            min-width: 110px;
-                            height: 32px;
-                            cursor: pointer;
-                            white-space: nowrap;
-                        "
-                        onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
-                    >{nombre}</button>
-                """
-
-            # ------------------ Segmentadores visuales ------------------
-            st.markdown("### Segmentadores visuales")
+                return f"""<button style="
+                    background-color:{color};
+                    color:white;
+                    border:none;
+                    border-radius:6px;
+                    padding:4px 10px;
+                    margin:4px;
+                    font-weight:bold;
+                    min-width:110px;
+                    height:32px;
+                    cursor:pointer;
+                    white-space:nowrap;"
+                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'">
+                    {nombre}</button>""")
 
             # Contenedor flex para todos los botones
-            html_bots = "<div style='display:flex; flex-wrap:wrap; align-items:flex-start; gap:4px; margin-bottom:16px;'>"
+            html_bots = "<div style='display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px;margin-bottom:16px;'>"
 
             # Botón general
             html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
@@ -1427,7 +1420,6 @@ if authentication_status:
 
             # Mostrar los botones en el dashboard
             st.markdown(html_bots, unsafe_allow_html=True)
-
 
             # Aplicar filtro al DataFrame
             if st.session_state["filtro_tipo"] == "Todas":
