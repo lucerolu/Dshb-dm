@@ -1379,29 +1379,35 @@ if authentication_status:
 
             # ------------------ Leer query params ------------------
             params = st.query_params
+
             if "filtro_tipo" in params and "filtro_valor" in params:
-                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
-                st.session_state["filtro_valor"] = params["filtro_valor"][0]
+                # ✅ Los query_params ya son strings, no listas
+                st.session_state["filtro_tipo"] = params["filtro_tipo"]
+                st.session_state["filtro_valor"] = params["filtro_valor"]
 
             # ------------------ Función para renderizar botones HTML ------------------
             def render_boton(nombre, color, filtro_tipo, filtro_valor):
-                return f"""<button style="
-                    background-color:{color};
-                    color:white;
-                    border:none;
-                    border-radius:6px;
-                    padding:4px 10px;
-                    margin:4px;
-                    font-weight:bold;
-                    min-width:110px;
-                    height:32px;
-                    cursor:pointer;
-                    white-space:nowrap;"
-                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'">
-                    {nombre}</button>"""
+                return f"""
+                    <button
+                        style="
+                            background-color: {color};
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 4px 10px;
+                            margin: 4px;
+                            font-weight: bold;
+                            min-width: 110px;
+                            height: 32px;
+                            cursor: pointer;
+                            white-space: nowrap;
+                        "
+                        onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
+                    >{nombre}</button>
+                """
 
-            # Contenedor flex para todos los botones
-            html_bots = "<div style='display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px;margin-bottom:16px;'>"
+            # ------------------ Contenedor flex para los botones ------------------
+            html_bots = "<div style='display:flex; flex-wrap:wrap; align-items:flex-start; gap:4px; margin-bottom:16px;'>"
 
             # Botón general
             html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
@@ -1421,7 +1427,7 @@ if authentication_status:
             # Mostrar los botones en el dashboard
             st.markdown(html_bots, unsafe_allow_html=True)
 
-            # Aplicar filtro al DataFrame
+            # ------------------ Aplicar filtro al DataFrame ------------------
             if st.session_state["filtro_tipo"] == "Todas":
                 df_filtrado = df_completo.copy()
             elif st.session_state["filtro_tipo"] == "Sucursal":
