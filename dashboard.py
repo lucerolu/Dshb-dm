@@ -1404,8 +1404,7 @@ if authentication_status:
 
             # Función para renderizar botones HTML
             def render_boton(nombre, color, filtro_tipo, filtro_valor):
-                return f"""
-                <button
+                return f"""<button
                     style="
                         background-color: {color};
                         color: white;
@@ -1418,10 +1417,7 @@ if authentication_status:
                         min-width: 120px;
                     "
                     onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
-                >
-                    {nombre}
-                </button>
-                """
+                >{nombre}</button>"""
 
             # ------------------ Botón General ------------------
             html_bots = "<div style='display:flex; flex-wrap:wrap;'>"
@@ -1444,7 +1440,7 @@ if authentication_status:
             st.markdown(html_bots, unsafe_allow_html=True)
 
             # ------------------ Leer query params para actualizar session_state ------------------
-            params = st.experimental_get_query_params()
+            params = st.query_params
             if "filtro_tipo" in params and "filtro_valor" in params:
                 st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
                 st.session_state["filtro_valor"] = params["filtro_valor"][0]
