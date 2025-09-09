@@ -1340,113 +1340,83 @@ if authentication_status:
 
             # ------------------ Preparar DataFrame base ------------------
             df = df_estado_cuenta.copy()
-
-            # Tipos correctos
             df["fecha_exigibilidad"] = pd.to_datetime(df["fecha_exigibilidad"], errors="coerce")
             df["codigo"] = df["codigo_6digitos"].astype(str)
-
-            # Limpieza de total a numérico (por si viene como texto con comas)
             df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
-
-            # Etiquetas
             df["abreviatura"] = df["codigo"].apply(obtener_abreviatura)
-            df["cuenta_sucursal"] = (
-                df["codigo"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
-            )
+            df["cuenta_sucursal"] = df["codigo"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
 
-            # Meta por cuenta (para merge posterior y mapa de color)
             meta = df[["cuenta_sucursal", "codigo", "sucursal", "abreviatura"]].drop_duplicates()
 
             # ------------------ Construir universo de fechas y rellenar huecos a 0 ------------------
-            # 1) pivot sumando por si hay duplicados (fecha, cuenta)
-            tabla = (
-                df.pivot_table(
-                    index="fecha_exigibilidad",
-                    columns="cuenta_sucursal",
-                    values="total",
-                    aggfunc="sum",  # suma si hay varias filas por la misma fecha/cuenta
-                )
+            tabla = df.pivot_table(
+                index="fecha_exigibilidad",
+                columns="cuenta_sucursal",
+                values="total",
+                aggfunc="sum"
             )
-
-            # 2) Reindexar al conjunto de fechas observadas (ordenado) y rellenar con 0
             fechas = sorted(df["fecha_exigibilidad"].dropna().unique())
             tabla = tabla.reindex(fechas).fillna(0)
-
-            # 3) Volver a formato largo
-            df_completo = tabla.stack(dropna=False).reset_index(name="total")
-            df_completo = df_completo.rename(columns={"level_2": "cuenta_sucursal"})
-
-            # 4) Anexar meta (sucursal, código, abreviatura)
+            df_completo = tabla.stack(dropna=False).reset_index(name="total").rename(columns={"level_2": "cuenta_sucursal"})
             df_completo = df_completo.merge(meta, on="cuenta_sucursal", how="left")
-
-            # Rellenar posibles NaN en las columnas que se usan en custom_data
             df_completo[["sucursal","codigo","abreviatura"]] = df_completo[["sucursal","codigo","abreviatura"]].fillna({
                 "sucursal":"Desconocida",
                 "codigo":"Desconocido",
                 "abreviatura":""
             })
-
-            # 5) Cadena de fecha para eje categórico ordenado
             df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
-            fechas_ordenadas = sorted(
-                df_completo["fecha_exigibilidad_str"].unique(),
-                key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
-            )
+            fechas_ordenadas = sorted(df_completo["fecha_exigibilidad_str"].unique(),
+                                    key=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
 
-            # ------------------ Filtros tipo Power BI estilo HTML ------------------
-            st.markdown("### Segmentadores visuales")
-
-            # Inicializar filtros
+            # ------------------ Inicializar session_state para filtros ------------------
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # Función para renderizar botones HTML
-            def render_boton(nombre, color, filtro_tipo, filtro_valor):
-                return f"""<button
-                    style="
-                        background-color: {color};
-                        color: white;
-                        border: none;
-                        border-radius: 8px;
-                        padding: 6px 14px;
-                        margin: 4px;
-                        font-weight: bold;
+            # ------------------ Función para botones interactivos ------------------
+            def boton_interactivo(nombre, color, filtro_tipo, filtro_valor):
+                if st.button(nombre, key=f"{filtro_tipo}_{filtro_valor}"):
+                    st.session_state["filtro_tipo"] = filtro_tipo
+                    st.session_state["filtro_valor"] = filtro_valor
+                # Estilo del botón
+                st.markdown(f"""
+                    <style>
+                    div[data-testid="stVerticalBlock"] div.stButton > button[key="{filtro_tipo}_{filtro_valor}"] {{
+                        background-color: {color} !important;
+                        color: white !important;
+                        border-radius: 8px !important;
+                        padding: 6px 14px !important;
+                        margin: 4px !important;
+                        font-weight: bold !important;
+                        min-width: 120px !important;
                         cursor: pointer;
-                        min-width: 120px;
-                    "
-                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
-                >{nombre}</button>"""
+                    }}
+                    </style>
+                    """, unsafe_allow_html=True)
 
-            # ------------------ Botón General ------------------
-            html_bots = "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
-            html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
-            html_bots += "</div>"
+            # ------------------ Renderizar botones ------------------
+            st.markdown("### Segmentadores visuales")
 
-            # ------------------ Botones por Sucursal ------------------
-            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
+            # Botón General
+            st.markdown("<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>", unsafe_allow_html=True)
+            boton_interactivo("🔄 Ver todas", "#555555", "Todas", "Todas")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # Botones por Sucursal
+            st.markdown("<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>", unsafe_allow_html=True)
             for suc, info in colores_sucursales.items():
-                html_bots += render_boton(suc, info["color"], "Sucursal", suc)
-            html_bots += "</div>"
+                boton_interactivo(suc, info["color"], "Sucursal", suc)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-            # ------------------ Botones por Cuenta ------------------
-            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
+            # Botones por Cuenta
+            st.markdown("<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>", unsafe_allow_html=True)
             cuentas_unicas = meta["cuenta_sucursal"].tolist()
             for cuenta in cuentas_unicas:
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
-                html_bots += render_boton(cuenta, color, "Cuenta", cuenta)
-            html_bots += "</div>"
-
-            # Renderizar todos los botones
-            st.markdown(html_bots, unsafe_allow_html=True)
-
-            # ------------------ Leer query params para actualizar session_state ------------------
-            params = st.query_params
-            if "filtro_tipo" in params and "filtro_valor" in params:
-                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
-                st.session_state["filtro_valor"] = params["filtro_valor"][0]
+                boton_interactivo(cuenta, color, "Cuenta", cuenta)
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # ------------------ Aplicar filtro al DataFrame ------------------
             if st.session_state["filtro_tipo"] == "Todas":
@@ -1458,12 +1428,9 @@ if authentication_status:
             else:
                 df_filtrado = df_completo.copy()
 
-
-            # ------------------ Colores por cuenta (usando color de la sucursal) ------------------
-            color_cuentas = {
-                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
-                for _, row in meta.iterrows()
-            }
+            # ------------------ Colores por cuenta ------------------
+            color_cuentas = {row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
+                            for _, row in meta.iterrows()}
 
             # ------------------ Gráfico ------------------
             fig = px.line(
@@ -1477,9 +1444,9 @@ if authentication_status:
             )
 
             fig.update_traces(
-                mode="lines+markers",          # puntos en cada fecha
+                mode="lines+markers",
                 marker=dict(size=6, symbol="circle"),
-                connectgaps=False,             # no unir huecos (defensivo)
+                connectgaps=False,
                 hovertemplate=(
                     "<b>Fecha:</b> %{x}<br>"
                     "<b>Código:</b> %{customdata[1]}<br>"
@@ -1510,6 +1477,7 @@ if authentication_status:
                     "displaylogo": False
                 }
             )
+
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
     # ==========================================================================================================
