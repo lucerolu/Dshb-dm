@@ -1466,11 +1466,16 @@ if authentication_status:
             f_tipo = st.session_state.get("filtro_tipo", "Todas")
             f_valor = st.session_state.get("filtro_valor", "Todas")
 
+            st.write("Filtro tipo:", f_tipo)
+            st.write("Filtro valor:", f_valor)
+            st.write("Sucursales únicas en df:", df_completo["sucursal"].unique().tolist())
+
             if f_tipo == "Todas":
                 df_filtrado = df_completo.copy()
             elif f_tipo == "Sucursal":
-                # comparamos normalizado
-                df_filtrado = df_completo[df_completo["sucursal"].fillna("").str.strip().str.lower() == _normalize(f_valor)]
+                df_filtrado = df_completo[
+                    df_completo["sucursal"].fillna("").str.strip() == str(f_valor).strip()
+                ]
             elif f_tipo == "Cuenta":
                 # f_valor es el codigo de cuenta
                 df_filtrado = df_completo[df_completo["codigo"].astype(str) == str(f_valor)]
