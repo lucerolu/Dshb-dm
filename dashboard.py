@@ -1368,12 +1368,6 @@ if authentication_status:
             fechas_ordenadas = sorted(df_completo["fecha_exigibilidad_str"].unique(),
                                     key=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
 
-            # ------------------ Inicializar session_state para filtros ------------------
-            if "filtro_tipo" not in st.session_state:
-                st.session_state["filtro_tipo"] = "Todas"
-            if "filtro_valor" not in st.session_state:
-                st.session_state["filtro_valor"] = "Todas"
-
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
