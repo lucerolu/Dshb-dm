@@ -1404,61 +1404,51 @@ if authentication_status:
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # ------------------ Leer query params actuales ------------------
-            params = st.session_state.get("query_params", st.query_params)
-            if "filtro_tipo" in params and "filtro_valor" in params:
-                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
-                st.session_state["filtro_valor"] = params["filtro_valor"][0]
+            # ------------------ Función para crear botones de Streamlit con estilo ------------------
+            def boton_coloreado(nombre, color, filtro_tipo, filtro_valor):
+                # Cada botón tiene key única
+                key = f"{filtro_tipo}_{filtro_valor}"
+                if st.button(nombre, key=key):
+                    st.session_state["filtro_tipo"] = filtro_tipo
+                    st.session_state["filtro_valor"] = filtro_valor
 
-            # ------------------ Función para botones HTML ------------------
-            def render_boton_html(nombre, color, filtro_tipo, filtro_valor):
-                # URL para mantener interactividad sin usar experimental
-                return f"""
-                <button
-                    style="
-                        background-color: {color};
-                        color: white;
-                        border: none;
-                        border-radius: 6px;
-                        padding: 4px 10px;
-                        margin: 2px;
-                        font-weight: bold;
-                        min-width: 100px;
-                        height: 32px;
+                # CSS para darle color y tamaño
+                st.markdown(f"""
+                    <style>
+                    div.stButton > button[key="{key}"] {{
+                        background-color: {color} !important;
+                        color: white !important;
+                        border-radius: 6px !important;
+                        padding: 4px 10px !important;
+                        margin: 2px !important;
+                        font-weight: bold !important;
+                        min-width: 100px !important;
+                        height: 32px !important;
                         cursor: pointer;
                         white-space: nowrap;
-                    "
-                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
-                >{nombre}</button>
-                """
+                    }}
+                    </style>
+                """, unsafe_allow_html=True)
 
-            # ------------------ Contenedor horizontal de botones ------------------
-            html_bots = "<div style='display:flex; flex-wrap:wrap; gap:2px;'>"
+            # ------------------ Contenedor horizontal ------------------
+            st.markdown("<div style='display:flex; flex-wrap:wrap;'>", unsafe_allow_html=True)
 
-            # Botón General
-            html_bots += render_boton_html("🔄 Ver todas", "#555555", "Todas", "Todas")
+            # Botón general
+            boton_coloreado("🔄 Ver todas", "#555555", "Todas", "Todas")
 
             # Botones por Sucursal
             for suc, info in colores_sucursales.items():
-                html_bots += render_boton_html(suc, info["color"], "Sucursal", suc)
+                boton_coloreado(suc, info["color"], "Sucursal", suc)
 
             # Botones por Cuenta
             for cuenta in meta["cuenta_sucursal"]:
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
-                html_bots += render_boton_html(cuenta, color, "Cuenta", cuenta)
+                boton_coloreado(cuenta, color, "Cuenta", cuenta)
 
-            html_bots += "</div>"
-
-            # Renderizar botones
-            st.markdown(html_bots, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # ------------------ Aplicar filtro al DataFrame ------------------
-            params = st.query_params
-            if "filtro_tipo" in params and "filtro_valor" in params:
-                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
-                st.session_state["filtro_valor"] = params["filtro_valor"][0]
-
             if st.session_state["filtro_tipo"] == "Todas":
                 df_filtrado = df_completo.copy()
             elif st.session_state["filtro_tipo"] == "Sucursal":
