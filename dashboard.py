@@ -1393,6 +1393,64 @@ if authentication_status:
                 key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
             )
 
+            # ------------------ Filtros tipo Power BI ------------------
+            st.markdown("### Segmentadores visuales")
+
+            if "filtro_tipo" not in st.session_state:
+                st.session_state["filtro_tipo"] = "Todas"
+            if "filtro_valor" not in st.session_state:
+                st.session_state["filtro_valor"] = "Todas"
+
+            if st.button("🔄 Ver todas", key="btn_todas"):
+                st.session_state["filtro_tipo"] = "Todas"
+                st.session_state["filtro_valor"] = "Todas"
+
+            # Botones por sucursal
+            st.markdown("#### Por Sucursal")
+            cols = st.columns(5)
+
+            for i, (suc, info) in enumerate(colores_sucursales.items()):
+                color = info["color"]
+                abre = info["abreviatura"]
+
+                if cols[i % 5].button(f"{abre}", key=f"btn_suc_{suc}"):
+                    st.session_state["filtro_tipo"] = "Sucursal"
+                    st.session_state["filtro_valor"] = suc
+                    st.session_state["filtro_cuenta"] = None
+
+                cols[i % 5].markdown(
+                    f"<div style='background-color:{color};color:white;padding:6px;border-radius:8px;text-align:center'>{suc}</div>",
+                    unsafe_allow_html=True
+                )
+
+            # Botones por cuenta
+            st.markdown("#### Por Cuenta")
+            cuentas_unicas = meta["cuenta_sucursal"].tolist()
+            cols_cuentas = st.columns(4)
+
+            for j, cuenta in enumerate(cuentas_unicas):
+                suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
+                color = colores_sucursales.get(suc, {}).get("color", "#808080")
+
+                if cols_cuentas[j % 4].button(cuenta, key=f"btn_cta_{j}"):
+                    st.session_state["filtro_tipo"] = "Cuenta"
+                    st.session_state["filtro_valor"] = cuenta
+
+                cols_cuentas[j % 4].markdown(
+                    f"<div style='background-color:{color};color:white;padding:5px;border-radius:6px;text-align:center'>{cuenta}</div>",
+                    unsafe_allow_html=True
+                )
+
+            # Aplicar filtro
+            if st.session_state["filtro_tipo"] == "Todas":
+                df_filtrado = df_completo.copy()
+            elif st.session_state["filtro_tipo"] == "Sucursal":
+                df_filtrado = df_completo[df_completo["sucursal"] == st.session_state["filtro_valor"]]
+            elif st.session_state["filtro_tipo"] == "Cuenta":
+                df_filtrado = df_completo[df_completo["cuenta_sucursal"] == st.session_state["filtro_valor"]]
+            else:
+                df_filtrado = df_completo.copy()
+
             # ------------------ Colores por cuenta (usando color de la sucursal) ------------------
             color_cuentas = {
                 row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
@@ -1401,7 +1459,7 @@ if authentication_status:
 
             # ------------------ Gráfico ------------------
             fig = px.line(
-                df_completo,
+                df_filtrado,
                 x="fecha_exigibilidad_str",
                 y="total",
                 color="cuenta_sucursal",
