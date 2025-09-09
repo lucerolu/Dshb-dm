@@ -1395,48 +1395,52 @@ if authentication_status:
                     </style>
                     """, unsafe_allow_html=True)
 
-            # ------------------ Renderizar botones ------------------
+            # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
-            # ------------------ Inicializar filtros ------------------
+            # Inicializar filtros
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # ------------------ Función para renderizar botones HTML ------------------
-            def render_boton(nombre, color, filtro_tipo, filtro_valor):
-                if st.button(nombre, key=f"{filtro_tipo}_{filtro_valor}"):
-                    # Actualizar query params y session_state
-                    st.experimental_set_query_params(filtro_tipo=filtro_tipo, filtro_valor=filtro_valor)
-                    st.session_state["filtro_tipo"] = filtro_tipo
-                    st.session_state["filtro_valor"] = filtro_valor
+            # Leer query params para actualizar filtros
+            params = st.query_params
+            if "filtro_tipo" in params and "filtro_valor" in params:
+                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
+                st.session_state["filtro_valor"] = params["filtro_valor"][0]
 
-                # Retornar HTML para el estilo
+            # Función para renderizar botón con HTML
+            def render_boton(nombre, color, filtro_tipo, filtro_valor):
                 return f"""
-                    <style>
-                    div.stButton > button:first-child {{
-                        background-color: {color} !important;
-                        color: white !important;
-                        border-radius: 8px !important;
-                        padding: 6px 14px !important;
-                        margin: 4px !important;
-                        font-weight: bold !important;
-                        min-width: 120px !important;
+                <button
+                    style="
+                        background-color: {color};
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 6px 14px;
+                        margin: 4px;
+                        font-weight: bold;
                         cursor: pointer;
-                    }}
-                    </style>
+                        min-width: 120px;
+                    "
+                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
+                >{nombre}</button>
                 """
-            # ------------------ Renderizar botones ------------------
+
+            # ------------------ Botón General ------------------
             html_bots = "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
             html_bots += "</div>"
 
+            # ------------------ Botones por Sucursal ------------------
             html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             for suc, info in colores_sucursales.items():
                 html_bots += render_boton(suc, info["color"], "Sucursal", suc)
             html_bots += "</div>"
 
+            # ------------------ Botones por Cuenta ------------------
             html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             cuentas_unicas = meta["cuenta_sucursal"].tolist()
             for cuenta in cuentas_unicas:
@@ -1445,6 +1449,7 @@ if authentication_status:
                 html_bots += render_boton(cuenta, color, "Cuenta", cuenta)
             html_bots += "</div>"
 
+            # Renderizar todos los botones
             st.markdown(html_bots, unsafe_allow_html=True)
 
             # ------------------ Aplicar filtro al DataFrame ------------------
@@ -1457,13 +1462,13 @@ if authentication_status:
             else:
                 df_filtrado = df_completo.copy()
 
-            # ------------------ Colores por cuenta ------------------
+            # ------------------ Colores por cuenta (usar color de sucursal) ------------------
             color_cuentas = {
                 row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
                 for _, row in meta.iterrows()
             }
 
-            # ------------------ Gráfico ------------------
+            # ------------------ Gráfico de líneas ------------------
             fig = px.line(
                 df_filtrado,
                 x="fecha_exigibilidad_str",
