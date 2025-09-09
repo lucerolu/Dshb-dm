@@ -1405,39 +1405,30 @@ if authentication_status:
                 st.session_state["filtro_tipo"] = "Todas"
                 st.session_state["filtro_valor"] = "Todas"
 
-            # Botones por sucursal
             st.markdown("#### Por Sucursal")
-
-            # Contenedor flexbox
-            st.markdown("<div style='display:flex;flex-wrap:wrap;gap:8px;'>", unsafe_allow_html=True)
-
+            # Contenedor flexbox para los botones
+            html_buttons = ""
             for suc, info in colores_sucursales.items():
                 color = info["color"]
-                abre = info["abreviatura"]
+                # Mostrar el nombre completo de la sucursal
+                nombre = suc  
+                html_buttons += f"""
+                <button style="
+                    background-color: {color};
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 8px 14px;
+                    margin: 4px;
+                    cursor: pointer;
+                    font-weight: bold;
+                " onclick="window.location.href='?sucursal={nombre}'">
+                    {nombre}
+                </button>
+                """
 
-                if st.button(f"{abre}", key=f"btn_suc_{suc}"):
-                    st.session_state["filtro_tipo"] = "Sucursal"
-                    st.session_state["filtro_valor"] = suc
-                    st.session_state["filtro_cuenta"] = None
-
-                # Aquí solo pintamos el último botón generado en esa iteración
-                st.markdown(
-                    f"""
-                    <style>
-                    div[data-testid="stVerticalBlock"]:has(button[kind="secondary"][data-testid="stBaseButton-secondary"][aria-label="{abre}"]) button {{
-                        background-color: {color} !important;
-                        color: white !important;
-                        border-radius: 8px !important;
-                        padding: 6px 12px !important;
-                        font-weight: bold !important;
-                        border: none !important;
-                    }}
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Renderizar todos los botones en un contenedor horizontal
+            st.markdown(f"<div style='display:flex;flex-wrap:wrap;'>{html_buttons}</div>", unsafe_allow_html=True)
 
             # Botones por cuenta
             st.markdown("#### Por Cuenta")
