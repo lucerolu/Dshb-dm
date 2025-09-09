@@ -1398,58 +1398,60 @@ if authentication_status:
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
-            # ------------------ Inicializar session_state ------------------
+            # Inicializar filtros
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # ------------------ Leer query params ------------------
-            params = st.query_params
-            if "filtro_tipo" in params and "filtro_valor" in params:
-                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
-                st.session_state["filtro_valor"] = params["filtro_valor"][0]
+            # ------------------ Aplicar CSS general para botones ------------------
+            st.markdown("""
+            <style>
+            div.stButton > button {
+                border-radius: 8px;
+                padding: 6px 14px;
+                margin: 4px;
+                font-weight: bold;
+                min-width: 120px;
+                cursor: pointer;
+                color: white;
+            }
+            </style>
+            """, unsafe_allow_html=True)
 
-            # ------------------ Función para renderizar botones HTML ------------------
-            def render_boton_html(nombre, color, filtro_tipo, filtro_valor):
-                # Pinta el botón y cambia la URL al hacer clic
-                return f"""
-                <button
-                    style="
-                        background-color: {color};
-                        color: white;
-                        border: none;
-                        border-radius: 8px;
-                        padding: 6px 14px;
-                        margin: 4px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        min-width: 120px;
-                    "
-                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
-                >{nombre}</button>
-                """
+            # ------------------ Contenedores horizontales ------------------
+            def render_botones_horizontal(opciones, tipo):
+                cols = st.columns(len(opciones))
+                for col, (nombre, color) in zip(cols, opciones):
+                    if col.button(nombre, key=f"{tipo}_{nombre}"):
+                        st.session_state["filtro_tipo"] = tipo
+                        st.session_state["filtro_valor"] = nombre
+                    # Aplicar color específico
+                    col.markdown(f"""
+                    <style>
+                    div.stButton > button[key="{tipo}_{nombre}"] {{
+                        background-color: {color} !important;
+                    }}
+                    </style>
+                    """, unsafe_allow_html=True)
 
-            # ------------------ Renderizar contenedores de botones ------------------
-            html_bots = "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
-            html_bots += render_boton_html("🔄 Ver todas", "#555555", "Todas", "Todas")
-            html_bots += "</div>"
+            # ------------------ Botones ------------------
+            # General
+            render_botones_horizontal([("🔄 Ver todas", "#555555")], "Todas")
 
-            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
-            for suc, info in colores_sucursales.items():
-                html_bots += render_boton_html(suc, info["color"], "Sucursal", suc)
-            html_bots += "</div>"
+            # Sucursales
+            opciones_suc = [(suc, info["color"]) for suc, info in colores_sucursales.items()]
+            render_botones_horizontal(opciones_suc, "Sucursal")
 
-            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
+            # Cuentas
+            opciones_cuentas = []
             for cuenta in meta["cuenta_sucursal"]:
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
-                html_bots += render_boton_html(cuenta, color, "Cuenta", cuenta)
-            html_bots += "</div>"
+                opciones_cuentas.append((cuenta, color))
+            render_botones_horizontal(opciones_cuentas, "Cuenta")
 
-            st.markdown(html_bots, unsafe_allow_html=True)
-
-            # ------------------ Aplicar filtro ------------------
+            # ------------------ Aplicar filtro al DataFrame ------------------
             if st.session_state["filtro_tipo"] == "Todas":
                 df_filtrado = df_completo.copy()
             elif st.session_state["filtro_tipo"] == "Sucursal":
