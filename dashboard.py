@@ -1404,7 +1404,7 @@ if authentication_status:
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # ------------------ Aplicar CSS general para botones ------------------
+            # CSS general para botones
             st.markdown("""
             <style>
             div.stButton > button {
@@ -1419,29 +1419,31 @@ if authentication_status:
             </style>
             """, unsafe_allow_html=True)
 
-            # ------------------ Contenedores horizontales ------------------
-            def render_botones_horizontal(opciones, tipo):
-                cols = st.columns(len(opciones))
-                for col, (nombre, color) in zip(cols, opciones):
-                    if col.button(nombre, key=f"{tipo}_{nombre}"):
-                        st.session_state["filtro_tipo"] = tipo
-                        st.session_state["filtro_valor"] = nombre
-                    # Aplicar color específico
-                    col.markdown(f"""
-                    <style>
-                    div.stButton > button[key="{tipo}_{nombre}"] {{
-                        background-color: {color} !important;
-                    }}
-                    </style>
-                    """, unsafe_allow_html=True)
+            # Función para renderizar botones en filas, máximo 'por_fila' por fila
+            def render_botones(opciones, tipo, por_fila=6):
+                for i in range(0, len(opciones), por_fila):
+                    fila = opciones[i:i+por_fila]
+                    cols = st.columns(len(fila))
+                    for col, (nombre, color) in zip(cols, fila):
+                        if col.button(nombre, key=f"{tipo}_{nombre}"):
+                            st.session_state["filtro_tipo"] = tipo
+                            st.session_state["filtro_valor"] = nombre
+                        # Aplicar color específico
+                        col.markdown(f"""
+                        <style>
+                        div.stButton > button[key="{tipo}_{nombre}"] {{
+                            background-color: {color} !important;
+                        }}
+                        </style>
+                        """, unsafe_allow_html=True)
 
             # ------------------ Botones ------------------
             # General
-            render_botones_horizontal([("🔄 Ver todas", "#555555")], "Todas")
+            render_botones([("🔄 Ver todas", "#555555")], "Todas")
 
             # Sucursales
             opciones_suc = [(suc, info["color"]) for suc, info in colores_sucursales.items()]
-            render_botones_horizontal(opciones_suc, "Sucursal")
+            render_botones(opciones_suc, "Sucursal")
 
             # Cuentas
             opciones_cuentas = []
@@ -1449,7 +1451,7 @@ if authentication_status:
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
                 opciones_cuentas.append((cuenta, color))
-            render_botones_horizontal(opciones_cuentas, "Cuenta")
+            render_botones(opciones_cuentas, "Cuenta")
 
             # ------------------ Aplicar filtro al DataFrame ------------------
             if st.session_state["filtro_tipo"] == "Todas":
