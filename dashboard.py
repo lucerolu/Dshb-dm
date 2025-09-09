@@ -1404,30 +1404,35 @@ if authentication_status:
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # Función para renderizar botones HTML en un contenedor horizontal
+            # ------------------ Leer query params actuales ------------------
+            params = st.session_state.get("query_params", st.query_params)
+            if "filtro_tipo" in params and "filtro_valor" in params:
+                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
+                st.session_state["filtro_valor"] = params["filtro_valor"][0]
+
+            # ------------------ Función para botones HTML ------------------
             def render_boton_html(nombre, color, filtro_tipo, filtro_valor):
-                # URL con query params para actualizar session_state al recargar
-                url = f"{st.experimental_get_query_params()}"
+                # URL para mantener interactividad sin usar experimental
                 return f"""
-                    <button
-                        style="
-                            background-color: {color};
-                            color: white;
-                            border: none;
-                            border-radius: 6px;
-                            padding: 4px 10px;
-                            margin: 2px;
-                            font-weight: bold;
-                            min-width: 100px;
-                            height: 32px;
-                            cursor: pointer;
-                            white-space: nowrap;
-                        "
-                        onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
-                    >{nombre}</button>
+                <button
+                    style="
+                        background-color: {color};
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        padding: 4px 10px;
+                        margin: 2px;
+                        font-weight: bold;
+                        min-width: 100px;
+                        height: 32px;
+                        cursor: pointer;
+                        white-space: nowrap;
+                    "
+                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
+                >{nombre}</button>
                 """
 
-            # Contenedor principal de botones (horizontal, flujo continuo)
+            # ------------------ Contenedor horizontal de botones ------------------
             html_bots = "<div style='display:flex; flex-wrap:wrap; gap:2px;'>"
 
             # Botón General
@@ -1445,10 +1450,11 @@ if authentication_status:
 
             html_bots += "</div>"
 
+            # Renderizar botones
             st.markdown(html_bots, unsafe_allow_html=True)
 
             # ------------------ Aplicar filtro al DataFrame ------------------
-            params = st.experimental_get_query_params()
+            params = st.query_params
             if "filtro_tipo" in params and "filtro_valor" in params:
                 st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
                 st.session_state["filtro_valor"] = params["filtro_valor"][0]
