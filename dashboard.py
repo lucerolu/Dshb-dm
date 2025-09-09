@@ -1420,24 +1420,24 @@ if authentication_status:
                 >{nombre}</button>"""
 
             # ------------------ Botón General ------------------
-            html_bots = "<div style='display:flex; flex-wrap:wrap; margin-bottom:8px;'>"
+            html_bots = "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
-            html_bots += "</div>"  # cierre del contenedor general
+            html_bots += "</div>"
 
             # ------------------ Botones por Sucursal ------------------
-            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:8px;'>"
+            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             for suc, info in colores_sucursales.items():
                 html_bots += render_boton(suc, info["color"], "Sucursal", suc)
-            html_bots += "</div>"  # cierre del contenedor de sucursales
+            html_bots += "</div>"
 
             # ------------------ Botones por Cuenta ------------------
-            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:8px;'>"
+            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             cuentas_unicas = meta["cuenta_sucursal"].tolist()
             for cuenta in cuentas_unicas:
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
                 html_bots += render_boton(cuenta, color, "Cuenta", cuenta)
-            html_bots += "</div>"  # cierre del contenedor de cuentas
+            html_bots += "</div>"
 
             # Renderizar todos los botones
             st.markdown(html_bots, unsafe_allow_html=True)
