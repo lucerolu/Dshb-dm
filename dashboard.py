@@ -29,8 +29,7 @@ from yaml.loader import SafeLoader
 import time 
 from plotly.subplots import make_subplots
 from io import BytesIO
-
-
+import html
 
 
 # Cargar configuración desde secrets y convertirla a dict normal
@@ -1371,53 +1370,107 @@ if authentication_status:
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
-            # Estado inicial
+            def _normalize(s):
+                return str(s).strip().lower()
+
+            # Inicializar session_state si falta
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # Sincronizar con query params (son strings, no listas)
+            # Leer query params (defensivo: pueden venir como list o str)
             qp = st.query_params
             if "filtro_tipo" in qp and "filtro_valor" in qp:
-                st.session_state["filtro_tipo"] = qp["filtro_tipo"]
-                st.session_state["filtro_valor"] = qp["filtro_valor"]
+                val_tipo = qp.get("filtro_tipo")
+                val_valor = qp.get("filtro_valor")
+                # tomar primer elemento si es lista
+                if isinstance(val_tipo, (list, tuple)):
+                    val_tipo = val_tipo[0]
+                if isinstance(val_valor, (list, tuple)):
+                    val_valor = val_valor[0]
+                # asignar sólo si no vacíos
+                if val_tipo:
+                    st.session_state["filtro_tipo"] = val_tipo
+                if val_valor:
+                    st.session_state["filtro_valor"] = val_valor
 
-            # Botón HTML en UNA sola línea (sin sangrías) para que no se convierta en código
-            def boton_html(nombre, color, filtro_tipo, filtro_valor):
-                return (
-                    f"<button style='background-color:{color};color:white;border:none;border-radius:6px;"
-                    f"padding:4px 10px;margin:4px;font-weight:600;min-width:110px;height:32px;"
-                    f"white-space:nowrap;cursor:pointer' "
-                    f"onclick=\"(function(){{const u=new URL(window.location.href);u.searchParams.set('filtro_tipo','{filtro_tipo}');"
-                    f"u.searchParams.set('filtro_valor','{filtro_valor}');window.location.href=u.pathname+'?'+u.searchParams.toString();}})()\""
-                    f">{nombre}</button>"
-                )
-
-            # Contenedor flex de TODOS los botones
-            html = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
-            html += boton_html("🔄 Ver todas", "#555555", "Todas", "Todas")
-            # Sucursales
+            # Preparar listas de botones (display_name, color, filtro_val)
+            # Para Sucursal: usamos filtro_val = normalized(sucursal)
+            suc_buttons = []
             for suc, info in colores_sucursales.items():
-                html += boton_html(suc, info["color"], "Sucursal", suc)
-            html += "</div>"
+                display = suc
+                color = info.get("color", "#808080")
+                filtro_val = _normalize(suc)
+                suc_buttons.append((display, color, filtro_val))
 
-            # Cuentas
-            html += "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
-            for cuenta, suc in meta[["cuenta_sucursal", "sucursal"]].values:
+            # Para Cuenta: usar el codigo (único, robusto) como filtro_val
+            cta_buttons = []
+            # meta tiene columnas: 'cuenta_sucursal', 'codigo', 'sucursal', ...
+            for _, r in meta.iterrows():
+                display = r["cuenta_sucursal"]
+                codigo = str(r["codigo"])
+                suc = r["sucursal"]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
-                html += boton_html(cuenta, color, "Cuenta", cuenta)
-            html += "</div>"
+                cta_buttons.append((display, color, codigo))
 
-            st.markdown(html, unsafe_allow_html=True)
+            # Helper: construir botón HTML en UNA línea (sin indentaciones)
+            def boton_html(display, color, filtro_tipo, filtro_val):
+                # escapar ' en display y filtro_val para no romper la string JS
+                dsp = html.escape(str(display))
+                fv = str(filtro_val).replace("'", "\\'")
+                # si este botón está activo, añadir estilo extra
+                activo = False
+                if st.session_state.get("filtro_tipo") == filtro_tipo:
+                    # para sucursal, las qp vienen normalizadas (si usamos normalized), comparo normalizado
+                    if filtro_tipo == "Sucursal":
+                        activo = (_normalize(st.session_state.get("filtro_valor", "")) == str(fv).lower().strip())
+                    else:
+                        activo = (str(st.session_state.get("filtro_valor", "")) == str(fv))
+                extra_style = "outline:3px solid rgba(0,0,0,0.12);" if activo else ""
+                # botón con JS que actualiza searchParams y recarga (searchParams se encoda bien)
+                btn = (
+                    "<button style='background-color:" + color + ";color:white;border:none;border-radius:6px;"
+                    "padding:4px 10px;margin:4px;font-weight:600;min-width:110px;height:32px;white-space:nowrap;"
+                    + extra_style +
+                    "cursor:pointer' "
+                    'onclick="(function(){const u=new URL(window.location.href);'
+                    f"u.searchParams.set('filtro_tipo','{filtro_tipo}');"
+                    f"u.searchParams.set('filtro_valor','{fv}');"
+                    "window.location.href=u.pathname+'?'+u.searchParams.toString();})()\""
+                    ">" + dsp + "</button>"
+                )
+                return btn
 
-            # ------------------ Aplicar filtro al DataFrame ------------------
-            if st.session_state["filtro_tipo"] == "Todas":
+            # Construir HTML total (dos contenedores separados: sucursales y cuentas)
+            html_out = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px'>"
+            html_out += boton_html("🔄 Ver todas", "#555555", "Todas", "Todas")
+            # Sucursales
+            for display, color, filtro_val in suc_buttons:
+                html_out += boton_html(display, color, "Sucursal", filtro_val)
+            html_out += "</div>"
+
+            # Cuentas en su propio contenedor (separado)
+            html_out += "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
+            for display, color, filtro_val in cta_buttons:
+                html_out += boton_html(display, color, "Cuenta", filtro_val)
+            html_out += "</div>"
+
+            # Renderizar HTML (sin indentaciones que generen bloques de código)
+            st.markdown(html_out, unsafe_allow_html=True)
+
+            # ------------------ Aplicar filtro al DataFrame (robusto) ------------------
+            f_tipo = st.session_state.get("filtro_tipo", "Todas")
+            f_valor = st.session_state.get("filtro_valor", "Todas")
+
+            if f_tipo == "Todas":
                 df_filtrado = df_completo.copy()
-            elif st.session_state["filtro_tipo"] == "Sucursal":
-                df_filtrado = df_completo[df_completo["sucursal"] == st.session_state["filtro_valor"]]
-            elif st.session_state["filtro_tipo"] == "Cuenta":
-                df_filtrado = df_completo[df_completo["cuenta_sucursal"] == st.session_state["filtro_valor"]]
+            elif f_tipo == "Sucursal":
+                # comparamos normalizado
+                df_filtrado = df_completo[df_completo["sucursal"].fillna("").str.strip().str.lower() == _normalize(f_valor)]
+            elif f_tipo == "Cuenta":
+                # f_valor es el codigo de cuenta
+                df_filtrado = df_completo[df_completo["codigo"].astype(str) == str(f_valor)]
             else:
                 df_filtrado = df_completo.copy()
 
