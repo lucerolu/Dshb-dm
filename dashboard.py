@@ -1371,19 +1371,19 @@ if authentication_status:
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
-            # ---------------- Inicializar filtros ----------------
+            # ------------------ Inicializar session_state para filtros ------------------
             if "filtro_tipo" not in st.session_state:
                 st.session_state["filtro_tipo"] = "Todas"
             if "filtro_valor" not in st.session_state:
                 st.session_state["filtro_valor"] = "Todas"
 
-            # ---------------- Leer query params ----------------
+            # ------------------ Leer query params ------------------
             params = st.query_params
             if "filtro_tipo" in params and "filtro_valor" in params:
                 st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
                 st.session_state["filtro_valor"] = params["filtro_valor"][0]
 
-            # ---------------- Función para renderizar botones HTML ----------------
+            # ------------------ Función para renderizar botones HTML ------------------
             def render_boton(nombre, color, filtro_tipo, filtro_valor):
                 return f"""
                     <button
@@ -1393,10 +1393,10 @@ if authentication_status:
                             border: none;
                             border-radius: 6px;
                             padding: 4px 10px;
-                            margin: 2px;
+                            margin: 4px;
                             font-weight: bold;
-                            min-width: 120px;
-                            height: 34px;
+                            min-width: 110px;
+                            height: 32px;
                             cursor: pointer;
                             white-space: nowrap;
                         "
@@ -1404,8 +1404,13 @@ if authentication_status:
                     >{nombre}</button>
                 """
 
-            # ---------------- Construcción del contenedor de botones ----------------
-            html_bots = "<div style='display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;'>"
+            # ------------------ Segmentadores visuales ------------------
+            st.markdown("### Segmentadores visuales")
+
+            # Contenedor flex para todos los botones
+            html_bots = "<div style='display:flex; flex-wrap:wrap; align-items:flex-start; gap:4px; margin-bottom:16px;'>"
+
+            # Botón general
             html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
 
             # Botones por sucursal
@@ -1418,10 +1423,11 @@ if authentication_status:
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
                 html_bots += render_boton(cuenta, color, "Cuenta", cuenta)
 
-            html_bots += "</div>"   # 🔹 Cerrar el DIV
+            html_bots += "</div>"
 
-            # ---------------- Mostrar botones ----------------
+            # Mostrar los botones en el dashboard
             st.markdown(html_bots, unsafe_allow_html=True)
+
 
             # Aplicar filtro al DataFrame
             if st.session_state["filtro_tipo"] == "Todas":
