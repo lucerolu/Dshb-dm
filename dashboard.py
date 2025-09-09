@@ -1398,25 +1398,57 @@ if authentication_status:
             # ------------------ Renderizar botones ------------------
             st.markdown("### Segmentadores visuales")
 
-            # Botón General
-            st.markdown("<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>", unsafe_allow_html=True)
-            boton_interactivo("🔄 Ver todas", "#555555", "Todas", "Todas")
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Inicializar filtros
+            if "filtro_tipo" not in st.session_state:
+                st.session_state["filtro_tipo"] = "Todas"
+            if "filtro_valor" not in st.session_state:
+                st.session_state["filtro_valor"] = "Todas"
 
-            # Botones por Sucursal
-            st.markdown("<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>", unsafe_allow_html=True)
+            # Función para renderizar botones HTML
+            def render_boton(nombre, color, filtro_tipo, filtro_valor):
+                return f"""<button
+                    style="
+                        background-color: {color};
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 6px 14px;
+                        margin: 4px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        min-width: 120px;
+                    "
+                    onclick="window.location.href=window.location.pathname+'?filtro_tipo={filtro_tipo}&filtro_valor={filtro_valor}'"
+                >{nombre}</button>"""
+
+            # ------------------ Botón General ------------------
+            html_bots = "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
+            html_bots += render_boton("🔄 Ver todas", "#555555", "Todas", "Todas")
+            html_bots += "</div>"
+
+            # ------------------ Botones por Sucursal ------------------
+            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             for suc, info in colores_sucursales.items():
-                boton_interactivo(suc, info["color"], "Sucursal", suc)
-            st.markdown("</div>", unsafe_allow_html=True)
+                html_bots += render_boton(suc, info["color"], "Sucursal", suc)
+            html_bots += "</div>"
 
-            # Botones por Cuenta
-            st.markdown("<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>", unsafe_allow_html=True)
+            # ------------------ Botones por Cuenta ------------------
+            html_bots += "<div style='display:flex; flex-wrap:wrap; margin-bottom:16px;'>"
             cuentas_unicas = meta["cuenta_sucursal"].tolist()
             for cuenta in cuentas_unicas:
                 suc = meta.loc[meta["cuenta_sucursal"] == cuenta, "sucursal"].values[0]
                 color = colores_sucursales.get(suc, {}).get("color", "#808080")
-                boton_interactivo(cuenta, color, "Cuenta", cuenta)
-            st.markdown("</div>", unsafe_allow_html=True)
+                html_bots += render_boton(cuenta, color, "Cuenta", cuenta)
+            html_bots += "</div>"
+
+            # Renderizar todos los botones
+            st.markdown(html_bots, unsafe_allow_html=True)
+
+            # ------------------ Leer query params y actualizar session_state ------------------
+            params = st.query_params
+            if "filtro_tipo" in params and "filtro_valor" in params:
+                st.session_state["filtro_tipo"] = params["filtro_tipo"][0]
+                st.session_state["filtro_valor"] = params["filtro_valor"][0]
 
             # ------------------ Aplicar filtro al DataFrame ------------------
             if st.session_state["filtro_tipo"] == "Todas":
@@ -1428,9 +1460,11 @@ if authentication_status:
             else:
                 df_filtrado = df_completo.copy()
 
-            # ------------------ Colores por cuenta ------------------
-            color_cuentas = {row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
-                            for _, row in meta.iterrows()}
+            # ------------------ Colores por cuenta (usando color de la sucursal) ------------------
+            color_cuentas = {
+                row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
+                for _, row in meta.iterrows()
+            }
 
             # ------------------ Gráfico ------------------
             fig = px.line(
