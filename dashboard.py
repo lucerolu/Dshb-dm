@@ -1378,19 +1378,65 @@ if authentication_status:
                     return "Todas"
                 return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
-            # ------------------ Selector de sucursales ------------------
+            # ------------------ Selector visual interactivo de sucursales ------------------
             sucursales_disponibles = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
-            sucursales_seleccionadas = st.multiselect(
-                "Selecciona sucursales a mostrar:",
-                sucursales_disponibles,
-                default=sucursales_disponibles
-            )
+            max_por_fila = 17  # ajustar según pantalla
 
-            # Filtrar el DataFrame según selección
-            if "Todas" in sucursales_seleccionadas:
+            # Inicializar el estado si no existe
+            if "sucursales_seleccionadas" not in st.session_state:
+                st.session_state["sucursales_seleccionadas"] = ["Todas"]
+
+            # Función para manejar toggle
+            def toggle_sucursal(suc):
+                if suc == "Todas":
+                    st.session_state["sucursales_seleccionadas"] = ["Todas"]
+                else:
+                    if "Todas" in st.session_state["sucursales_seleccionadas"]:
+                        st.session_state["sucursales_seleccionadas"] = []
+                    if suc in st.session_state["sucursales_seleccionadas"]:
+                        st.session_state["sucursales_seleccionadas"].remove(suc)
+                    else:
+                        st.session_state["sucursales_seleccionadas"].append(suc)
+                # Si no quedó ninguna seleccionada, marcar "Todas"
+                if len(st.session_state["sucursales_seleccionadas"]) == 0:
+                    st.session_state["sucursales_seleccionadas"] = ["Todas"]
+
+            # Crear filas de botones usando st.columns
+            for i in range(0, len(sucursales_disponibles), max_por_fila):
+                fila = sucursales_disponibles[i:i+max_por_fila]
+                cols = st.columns(len(fila))
+                for j, suc in enumerate(fila):
+                    color = get_color(suc)
+                    abrev = get_abrev(suc)
+                    activo = suc in st.session_state["sucursales_seleccionadas"]
+                    borde = "3px solid black" if activo else "1px solid #CCC"
+
+                    # Botón interactivo con estilo
+                    if cols[j].button(abrev, key=f"btn_{suc}"):
+                        toggle_sucursal(suc)
+
+                    # Poner estilo directamente con st.markdown
+                    cols[j].markdown(f"""
+                        <style>
+                        div[data-testid="stButton"] button[key="btn_{suc}"] {{
+                            background-color: {color};
+                            color: white;
+                            border-radius: 6px;
+                            border: {borde};
+                            min-width: 60px;
+                            height: 32px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        }}
+                        </style>
+                    """, unsafe_allow_html=True)
+
+            # ------------------ Filtrar DataFrame según selección ------------------
+            seleccionadas = st.session_state["sucursales_seleccionadas"]
+            if "Todas" in seleccionadas:
                 df_filtrado = df_completo.copy()
             else:
-                df_filtrado = df_completo[df_completo["sucursal"].isin(sucursales_seleccionadas)]
+                df_filtrado = df_completo[df_completo["sucursal"].isin(seleccionadas)]
 
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
