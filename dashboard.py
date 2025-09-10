@@ -1374,7 +1374,6 @@ if authentication_status:
                 st.session_state["filtro_sucursal"] = "Todas"
 
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
-            max_por_fila = 17  # ajustar según pantalla
 
             def get_color(suc):
                 if suc == "Todas":
@@ -1386,35 +1385,29 @@ if authentication_status:
                     return "Todas"
                 return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
-            for i in range(0, len(sucursales), max_por_fila):
-                fila = sucursales[i:i+max_por_fila]
-                cols = st.columns(len(fila))
-                
-                for j, suc in enumerate(fila):
-                    abrev = get_abrev(suc)
-                    color = get_color(suc)
-                    is_active = st.session_state["filtro_sucursal"] == suc
-                    borde = "3px solid black" if is_active else "none"
-                    
-                    with cols[j]:
-                        if st.button(abrev, key=f"btn_{suc}"):
-                            st.session_state["filtro_sucursal"] = suc
-                        
-                        # Aplica estilo al último botón renderizado
-                        st.markdown(f"""
-                        <style>
-                        div[data-testid="stButton"] button[key="btn_{suc}"] {{
-                            background-color: {color};
-                            color: white;
-                            border-radius: 4px;
-                            padding: 2px 6px;
-                            font-weight: 600;
-                            min-width: 60px;
-                            height: 28px;
-                            border: {borde};
-                        }}
-                        </style>
-                        """, unsafe_allow_html=True)
+            # Contenedor flex con wrap
+            st.markdown("<div style='display:flex;flex-wrap:wrap;gap:4px;'>", unsafe_allow_html=True)
+
+            for suc in sucursales:
+                color = get_color(suc)
+                abrev = get_abrev(suc)
+                is_active = st.session_state["filtro_sucursal"] == suc
+                borde = "3px solid black" if is_active else "none"
+
+                # Botón HTML visible con color
+                st.markdown(f"""
+                <div style='position:relative; display:inline-block;'>
+                    <button style='background-color:{color}; color:white; border-radius:4px;
+                        border:{borde}; min-width:60px; height:28px; font-weight:600;
+                        padding:2px 6px; cursor:pointer;'>{abrev}</button>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Botón real de Streamlit invisible, funcional
+                if st.button("", key=f"btn_{suc}"):
+                    st.session_state["filtro_sucursal"] = suc
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # ------------------ Filtro activo ------------------
             filtro = st.session_state["filtro_sucursal"]
