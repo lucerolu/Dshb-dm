@@ -1374,18 +1374,23 @@ if authentication_status:
             if "filtro_sucursal" not in st.session_state:
                 st.session_state["filtro_sucursal"] = "Todas"
 
-            st.markdown("### Filtrar por Sucursal")
+            st.markdown("### Filtrar por Sucursal (abreviaturas)")
 
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
-            # Número máximo de botones por fila (ajustable según tu pantalla)
-            max_por_fila = 6
+            # Número máximo de botones por fila (ajustable según pantalla)
+            max_por_fila = 17  # como son abreviaturas, caben más
 
-            # Función para obtener color
-            def color_sucursal(suc):
+            # Función para obtener color y abreviatura
+            def get_color(suc):
                 if suc == "Todas":
                     return "#555555"
                 return colores_sucursales.get(suc, {}).get("color", "#555555")
+
+            def get_abrev(suc):
+                if suc == "Todas":
+                    return "Todas"
+                return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
             # Crear filas con st.columns
             for i in range(0, len(sucursales), max_por_fila):
@@ -1393,28 +1398,29 @@ if authentication_status:
                 cols = st.columns(len(fila))
                 
                 for j, suc in enumerate(fila):
+                    abrev = get_abrev(suc)
+                    color = get_color(suc)
                     is_active = st.session_state["filtro_sucursal"] == suc
                     borde = "3px solid black" if is_active else "none"
-                    color = color_sucursal(suc)
-                    
-                    # Aplicar CSS de manera individual para cada botón
+
+                    # CSS individual para cada botón
                     button_style = f"""
                     <style>
                     div[data-testid="stButton"] button{{
                         background-color: {color};
                         color: white;
-                        border-radius: 6px;
-                        padding: 4px 10px;
+                        border-radius: 4px;
+                        padding: 2px 6px;
                         font-weight: 600;
-                        min-width: 110px;
-                        height: 32px;
+                        min-width: 70px;
+                        height: 28px;
                         border: {borde};
                     }}
                     </style>
                     """
                     st.markdown(button_style, unsafe_allow_html=True)
                     
-                    if cols[j].button(suc, key=f"btn_{suc}"):
+                    if cols[j].button(abrev, key=f"btn_{suc}"):
                         st.session_state["filtro_sucursal"] = suc
 
             # ------------------ Filtro activo ------------------
@@ -1461,7 +1467,7 @@ if authentication_status:
                 yaxis_title="Monto",
                 hovermode="closest",
                 template="plotly_white",
-                margin=dict(t=20, b=20)  # Reduce espacio arriba/abajo
+                margin=dict(t=20, b=20)
             )
 
             st.plotly_chart(fig, use_container_width=True)
