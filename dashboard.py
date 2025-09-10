@@ -1388,17 +1388,16 @@ if authentication_status:
                 color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
                 dsp = html.escape(suc)
                 
-                # botón con JS que actualiza query param y recarga toda la URL
+                # botón con JS que actualiza query param y recarga toda la URL con replace()
                 html_out += (
                     f"<button style='background-color:{color};color:white;border:none;border-radius:6px;"
                     f"padding:4px 10px;margin:2px;font-weight:600;min-width:110px;height:32px;white-space:nowrap;"
                     f"outline:{outline};cursor:pointer' "
                     f"onclick=\"(function(){{const u=new URL(window.location.href);"
                     f"u.searchParams.set('filtro_sucursal','{suc}');"
-                    f"window.location.href=u.toString();}})()\">{dsp}</button>"
+                    f"window.location.replace(u.toString());}})()\">{dsp}</button>"
                 )
             html_out += "</div>"
-
             st.markdown(html_out, unsafe_allow_html=True)
 
             # ------------------ Leer el filtro desde query_params ------------------
