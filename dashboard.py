@@ -1376,37 +1376,52 @@ if authentication_status:
             st.markdown("### Filtrar por Sucursal")
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
-            # Número máximo de botones por fila
-            max_por_fila = 16
+            # Contenedor flex para los botones
+            st.markdown("""
+                <style>
+                .botones-flex {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;            /* espacio entre botones */
+                    margin-bottom: 4px;  /* espacio vertical hacia el gráfico */
+                    justify-content: flex-start;  /* alineación izquierda */
+                }
+                .botones-flex button {
+                    min-width: 110px;
+                    height: 32px;
+                    font-weight: 600;
+                    border-radius: 6px;
+                    padding: 4px 10px;
+                    white-space: nowrap;
+                }
+                </style>
+            """, unsafe_allow_html=True)
 
-            for i in range(0, len(sucursales), max_por_fila):
-                fila = sucursales[i:i+max_por_fila]
-                cols = st.columns(len(fila), gap="small")  # columnas ajustadas a cantidad de botones en la fila
+            # Abrimos contenedor flex
+            st.markdown('<div class="botones-flex">', unsafe_allow_html=True)
 
-                for j, suc in enumerate(fila):
-                    color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
-                    is_active = st.session_state.get("filtro_sucursal", "Todas") == suc
-                    borde = "3px solid black" if is_active else "none"
+            for suc in sucursales:
+                color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
+                is_active = st.session_state.get("filtro_sucursal", "Todas") == suc
+                borde = "3px solid black" if is_active else "none"
 
-                    # Aplicar estilo CSS al botón
-                    st.markdown(f"""
-                        <style>
-                        div[data-testid="stButton"] button {{
-                            background-color: {color};
-                            color: white;
-                            border-radius: 6px;
-                            padding: 4px 10px;
-                            font-weight: 600;
-                            min-width: 110px;
-                            height: 32px;
-                            border: {borde};
-                            display: block;  /* fuerza que se alinee a la izquierda dentro de la columna */
-                        }}
-                        </style>
-                    """, unsafe_allow_html=True)
+                # Botón de Streamlit
+                if st.button(suc, key=f"btn_{suc}"):
+                    st.session_state["filtro_sucursal"] = suc
 
-                    if cols[j].button(suc, key=f"btn_{suc}"):
-                        st.session_state["filtro_sucursal"] = suc
+                # Estilo dinámico para cada botón activo
+                st.markdown(f"""
+                    <style>
+                    div[data-testid="stButton"] button[key="btn_{suc}"] {{
+                        background-color: {color};
+                        color: white;
+                        border: {borde};
+                    }}
+                    </style>
+                """, unsafe_allow_html=True)
+
+            # Cerramos contenedor flex
+            st.markdown('</div>', unsafe_allow_html=True)
 
             # Filtro activo
             filtro = st.session_state.get("filtro_sucursal", "Todas")
