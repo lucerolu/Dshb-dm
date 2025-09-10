@@ -1378,65 +1378,19 @@ if authentication_status:
                     return "Todas"
                 return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
-            # ------------------ Segmentadores visuales ------------------
-            st.markdown("### Segmentadores visuales")
+            # ------------------ Selector de sucursales ------------------
+            sucursales_disponibles = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
+            sucursales_seleccionadas = st.multiselect(
+                "Selecciona sucursales a mostrar:",
+                sucursales_disponibles,
+                default=sucursales_disponibles
+            )
 
-            # ------------------ Inicializar filtro ------------------
-            if "filtro_sucursal" not in st.session_state:
-                st.session_state["filtro_sucursal"] = "Todas"
-
-            # ------------------ Sucursales y configuración ------------------
-            sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
-            max_por_fila = 17  # ajustar según pantalla
-
-            def get_color(suc):
-                if suc == "Todas":
-                    return "#555555"
-                return colores_sucursales.get(suc, {}).get("color", "#555555")
-
-            def get_abrev(suc):
-                if suc == "Todas":
-                    return "Todas"
-                return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
-
-            # ------------------ Crear filas de botones ------------------
-            st.markdown("### Filtrar por Sucursal")
-
-            for i in range(0, len(sucursales), max_por_fila):
-                fila = sucursales[i:i+max_por_fila]
-                cols = st.columns(len(fila))
-                
-                for j, suc in enumerate(fila):
-                    abrev = get_abrev(suc)
-                    color = get_color(suc)
-                    is_active = st.session_state["filtro_sucursal"] == suc
-                    borde = "3px solid black" if is_active else "none"
-
-                    # CSS dinámico para colorear y bordear el botón
-                    st.markdown(f"""
-                        <style>
-                        div[data-testid="stButton"] button[key="btn_{suc}"] {{
-                            background-color: {color};
-                            color: white;
-                            border-radius: 6px;
-                            border: {borde};
-                            min-width: 60px;
-                            height: 32px;
-                            font-weight: 600;
-                        }}
-                        </style>
-                    """, unsafe_allow_html=True)
-
-                    if cols[j].button(abrev, key=f"btn_{suc}"):
-                        st.session_state["filtro_sucursal"] = suc
-
-            # ------------------ Aplicar filtro al DataFrame ------------------
-            filtro = st.session_state["filtro_sucursal"]
-
-            if filtro == "Todas":
+            # Filtrar el DataFrame según selección
+            if "Todas" in sucursales_seleccionadas:
                 df_filtrado = df_completo.copy()
             else:
-                df_filtrado = df_completo[df_completo["sucursal"].fillna("") == filtro]
+                df_filtrado = df_completo[df_completo["sucursal"].isin(sucursales_seleccionadas)]
 
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
@@ -1476,7 +1430,6 @@ if authentication_status:
             )
 
             st.plotly_chart(fig, use_container_width=True)
-
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
