@@ -1376,57 +1376,54 @@ if authentication_status:
             # ------------------ Botones estilo flex ------------------
             st.markdown("### Filtrar por Sucursal")
 
-            sucursales = ["Todas"] + list(colores_sucursales.keys())
+            sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
-            # CSS para organizar los botones en filas (flex-wrap)
+            # Contenedor flex con wrap
             st.markdown("""
                 <style>
-                .sucursales-container {
+                .sucursales-flex {
                     display: flex;
                     flex-wrap: wrap;
                     gap: 8px;
                     margin-bottom: 12px;
                 }
-                .sucursal-btn > button {
-                    color: white;
-                    border-radius: 6px;
-                    padding: 4px 10px;
-                    font-weight: 600;
-                    min-width: 110px;
-                    height: 32px;
-                    cursor: pointer;
+                .sucursales-flex > div {
+                    flex: 0 0 auto;  /* los botones no se estiren */
                 }
                 </style>
             """, unsafe_allow_html=True)
 
-            # Contenedor flex
-            st.markdown('<div class="sucursales-container">', unsafe_allow_html=True)
+            st.markdown('<div class="sucursales-flex">', unsafe_allow_html=True)
 
             for suc in sucursales:
-                color = "#555555" if suc == "Todas" else colores_sucursales[suc]["color"]
+                color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
                 is_active = st.session_state["filtro_sucursal"] == suc
 
-                # Estilo dinámico según estado
-                style = f"background-color:{color};border:3px solid black;" if is_active else f"background-color:{color};border:none;"
+                # Estilo dinámico para botón activo
+                border = "3px solid black" if is_active else "none"
 
-                # Cada botón en un contenedor para heredar estilo
-                with st.container():
-                    button_placeholder = st.empty()
-                    if button_placeholder.button(suc, key=f"btn_{suc}"):
-                        st.session_state["filtro_sucursal"] = suc
+                if st.button(suc, key=f"btn_{suc}"):
+                    st.session_state["filtro_sucursal"] = suc
 
-                    # CSS específico para cada botón
-                    st.markdown(f"""
-                        <style>
-                        div[data-testid="stButton"][key="btn_{suc}"] button {{
-                            {style}
-                        }}
-                        </style>
-                    """, unsafe_allow_html=True)
+                # CSS para colorear cada botón individual
+                st.markdown(f"""
+                    <style>
+                    div[data-testid="stButton"][key="btn_{suc}"] button {{
+                        background-color: {color};
+                        color: white;
+                        border-radius: 6px;
+                        padding: 4px 10px;
+                        font-weight: 600;
+                        min-width: 110px;
+                        height: 32px;
+                        border: {border};
+                    }}
+                    </style>
+                """, unsafe_allow_html=True)
 
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # ------------------ Usar filtro ------------------
+            # Aplicar filtro
             filtro = st.session_state["filtro_sucursal"]
             st.write("Filtro activo:", filtro)
 
