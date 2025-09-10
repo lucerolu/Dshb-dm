@@ -1403,7 +1403,7 @@ if authentication_status:
 
             # ------------------ Leer el filtro desde query_params ------------------
             qp = st.query_params
-            filtro = qp.get("filtro_sucursal", [st.session_state["filtro_sucursal"]])[0]
+            filtro = qp.get("filtro_sucursal", st.session_state["filtro_sucursal"])
             st.session_state["filtro_sucursal"] = filtro
 
             # ------------------ Aplicar filtro ------------------
