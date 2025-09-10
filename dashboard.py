@@ -1392,37 +1392,28 @@ if authentication_status:
                     return "Todas"
                 return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
-            # Crear filas con st.columns
+            # Crear filas con columnas
             for i in range(0, len(sucursales), max_por_fila):
                 fila = sucursales[i:i+max_por_fila]
                 cols = st.columns(len(fila))
                 
-                # CSS individual por key
                 for j, suc in enumerate(fila):
                     abrev = get_abrev(suc)
                     color = get_color(suc)
                     is_active = st.session_state["filtro_sucursal"] == suc
                     borde = "3px solid black" if is_active else "none"
-
-                    # Definir estilo solo para ese botón usando el key
-                    button_style = f"""
-                    <style>
-                    div[data-testid="stButton"] button[key="btn_{suc}"] {{
-                        background-color: {color};
-                        color: white;
-                        border-radius: 4px;
-                        padding: 2px 6px;
-                        font-weight: 600;
-                        min-width: 60px;
-                        height: 28px;
-                        border: {borde};
-                    }}
-                    </style>
-                    """
-                    st.markdown(button_style, unsafe_allow_html=True)
                     
-                    if cols[j].button(abrev, key=f"btn_{suc}"):
-                        st.session_state["filtro_sucursal"] = suc
+                    # Crear un contenedor con fondo del color deseado
+                    with cols[j]:
+                        st.markdown(f"""
+                        <div style='background-color:{color};border:{borde};border-radius:4px;
+                                    padding:2px 6px;text-align:center;'>
+                            {abrev}
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if st.button("", key=f"btn_{suc}"):
+                            st.session_state["filtro_sucursal"] = suc
 
             # ------------------ Filtro activo ------------------
             filtro = st.session_state["filtro_sucursal"]
