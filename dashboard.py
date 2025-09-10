@@ -1397,16 +1397,17 @@ if authentication_status:
                 fila = sucursales[i:i+max_por_fila]
                 cols = st.columns(len(fila))
                 
+                # CSS individual por key
                 for j, suc in enumerate(fila):
                     abrev = get_abrev(suc)
                     color = get_color(suc)
                     is_active = st.session_state["filtro_sucursal"] == suc
                     borde = "3px solid black" if is_active else "none"
 
-                    # CSS individual para cada botón
+                    # Definir estilo solo para ese botón usando el key
                     button_style = f"""
                     <style>
-                    div[data-testid="stButton"] button{{
+                    div[data-testid="stButton"] button[key="btn_{suc}"] {{
                         background-color: {color};
                         color: white;
                         border-radius: 4px;
@@ -1425,7 +1426,6 @@ if authentication_status:
 
             # ------------------ Filtro activo ------------------
             filtro = st.session_state["filtro_sucursal"]
-            st.write("Filtro activo:", filtro)
 
             # ------------------ Aplicar filtro al DataFrame ------------------
             if filtro == "Todas":
