@@ -1408,6 +1408,12 @@ if authentication_status:
 
             st.write("Filtro activo:", filtro)
 
+            # ------------------ Aplicar filtro ------------------
+            if filtro == "Todas":
+                df_filtrado = df_completo.copy()
+            else:
+                df_filtrado = df_completo[df_completo["sucursal"].fillna("") == filtro]
+
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
                 row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
