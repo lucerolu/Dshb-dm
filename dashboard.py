@@ -1377,7 +1377,7 @@ if authentication_status:
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
             # Número de botones por fila (ajustable)
-            max_por_fila = 5
+            max_por_fila = 16
             padding_horizontal = "4px"  # espacio entre botones
 
             for i in range(0, len(sucursales), max_por_fila):
