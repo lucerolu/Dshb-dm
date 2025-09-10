@@ -1376,6 +1376,8 @@ if authentication_status:
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
             max_por_fila = 17  # ajustar según pantalla
 
+            st.markdown("### Filtrar por Sucursal")
+            # Funciones auxiliares
             def get_color(suc):
                 if suc == "Todas":
                     return "#555555"
@@ -1386,32 +1388,38 @@ if authentication_status:
                     return "Todas"
                 return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
-            # Crear filas con columnas
-            for i in range(0, len(sucursales), max_por_fila):
-                fila = sucursales[i:i+max_por_fila]
-                cols = st.columns(len(fila))
-                
-                for j, suc in enumerate(fila):
-                    abrev = get_abrev(suc)
-                    color = get_color(suc)
-                    is_active = st.session_state["filtro_sucursal"] == suc
-                    borde = "3px solid black" if is_active else "none"
-                    
-                    with cols[j]:
-                        # Contenedor coloreado
-                        st.markdown(f"""
-                        <div style='position:relative; background-color:{color};
-                                    border:{borde}; border-radius:6px;
-                                    padding:4px 8px; text-align:center;
-                                    min-width:70px; height:32px; font-weight:600;
-                                    display:flex; align-items:center; justify-content:center;'>
-                            {abrev}
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Botón real transparente para capturar el click
-                        if st.button("", key=f"btn_{suc}", help=f"Filtrar por {suc}"):
-                            st.session_state["filtro_sucursal"] = suc
+            # Contenedor principal flex con wrap
+            st.markdown("""
+            <div style='display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-start;'>
+            """, unsafe_allow_html=True)
+
+            for suc in sucursales:
+                abrev = get_abrev(suc)
+                color = get_color(suc)
+                is_active = st.session_state.get("filtro_sucursal", "Todas") == suc
+                borde = "3px solid black" if is_active else "none"
+
+                st.markdown(f"""
+                <div style='position:relative; display:flex; flex-direction:column; align-items:center;
+                            min-width:70px; margin-bottom:4px;'>
+
+                    <!-- Div coloreado con abreviatura -->
+                    <div style='background-color:{color}; border:{borde}; border-radius:6px;
+                                width:100%; height:32px; display:flex; align-items:center;
+                                justify-content:center; font-weight:600;'>
+                        {abrev}
+                    </div>
+
+                    <!-- Botón transparente de Streamlit -->
+                    <div style='position:absolute; top:0; left:0; width:100%; height:100%;'>
+                """, unsafe_allow_html=True)
+
+                if st.button("", key=f"btn_{suc}", help=f"Filtrar por {suc}"):
+                    st.session_state["filtro_sucursal"] = suc
+
+                st.markdown("</div></div>", unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # ------------------ Filtro activo ------------------
             filtro = st.session_state["filtro_sucursal"]
