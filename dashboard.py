@@ -1377,7 +1377,7 @@ if authentication_status:
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
             # Número máximo de botones por fila
-            max_por_fila = 10
+            max_por_fila = 16
 
             for i in range(0, len(sucursales), max_por_fila):
                 fila = sucursales[i:i+max_por_fila]
