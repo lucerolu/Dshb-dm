@@ -1370,18 +1370,12 @@ if authentication_status:
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
-            # Inicializar filtro
             if "filtro_sucursal" not in st.session_state:
                 st.session_state["filtro_sucursal"] = "Todas"
 
-            st.markdown("## Filtrar por Sucursal")
-
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
+            max_por_fila = 17  # ajustar según pantalla
 
-            # Número máximo de botones por fila (ajustable según pantalla)
-            max_por_fila = 17  # como son abreviaturas, caben más
-
-            # Función para obtener color y abreviatura
             def get_color(suc):
                 if suc == "Todas":
                     return "#555555"
@@ -1392,7 +1386,6 @@ if authentication_status:
                     return "Todas"
                 return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
-            # Crear filas con columnas
             for i in range(0, len(sucursales), max_por_fila):
                 fila = sucursales[i:i+max_por_fila]
                 cols = st.columns(len(fila))
@@ -1403,17 +1396,25 @@ if authentication_status:
                     is_active = st.session_state["filtro_sucursal"] == suc
                     borde = "3px solid black" if is_active else "none"
                     
-                    # Crear un contenedor con fondo del color deseado
                     with cols[j]:
-                        st.markdown(f"""
-                        <div style='background-color:{color};border:{borde};border-radius:4px;
-                                    padding:2px 6px;text-align:center;'>
-                            {abrev}
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        if st.button("", key=f"btn_{suc}"):
+                        if st.button(abrev, key=f"btn_{suc}"):
                             st.session_state["filtro_sucursal"] = suc
+                        
+                        # Aplica estilo al último botón renderizado
+                        st.markdown(f"""
+                        <style>
+                        div[data-testid="stButton"] button[key="btn_{suc}"] {{
+                            background-color: {color};
+                            color: white;
+                            border-radius: 4px;
+                            padding: 2px 6px;
+                            font-weight: 600;
+                            min-width: 60px;
+                            height: 28px;
+                            border: {borde};
+                        }}
+                        </style>
+                        """, unsafe_allow_html=True)
 
             # ------------------ Filtro activo ------------------
             filtro = st.session_state["filtro_sucursal"]
