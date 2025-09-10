@@ -1385,40 +1385,44 @@ if authentication_status:
                 st.session_state["filtro_sucursal"] = "Todas"
 
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
-            max_por_fila = 17  # ajustar según pantalla
 
-            st.markdown("### Filtrar por Sucursal")
-            sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
+            # Funciones auxiliares
+            def get_color(suc):
+                if suc == "Todas":
+                    return "#555555"
+                return colores_sucursales.get(suc, {}).get("color", "#555555")
 
-            html_out = "<div style='display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-start;'>"
+            def get_abrev(suc):
+                if suc == "Todas":
+                    return "Todas"
+                return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
+
+            # Contenedor flex
+            st.markdown("<div style='display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-start;'>", unsafe_allow_html=True)
 
             for suc in sucursales:
-                color = get_color(suc)
                 abrev = get_abrev(suc)
-                activo = st.session_state.get("filtro_sucursal", "Todas") == suc
-                borde = "3px solid black" if activo else "none"
+                color = get_color(suc)
+                is_active = st.session_state["filtro_sucursal"] == suc
+                borde = "3px solid black" if is_active else "none"
 
-                # Todo el botón dentro de un form
-                html_out += f"""
-                <form action="" method="get" style="margin:0;">
-                    <input type="hidden" name="sucursal" value="{suc}">
-                    <button type="submit" 
-                            style='background-color:{color}; color:white; border:{borde}; border-radius:6px;
-                                min-width:70px; height:32px; font-weight:600; cursor:pointer;'>
+                st.markdown(f"""
+                <div style='position:relative; min-width:70px; height:32px; margin-bottom:4px;'>
+                    <!-- Div coloreado con abreviatura -->
+                    <div style='background-color:{color}; border:{borde}; border-radius:6px;
+                                width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+                                font-weight:600; color:white;'>
                         {abrev}
-                    </button>
-                </form>
-                """
+                    </div>
+                """, unsafe_allow_html=True)
 
-            html_out += "</div>"
+                # Botón transparente de Streamlit encima
+                if st.button("", key=f"btn_{suc}"):
+                    st.session_state["filtro_sucursal"] = suc
 
-            st.markdown(html_out, unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
 
-            # Capturar selección
-            sel = st.experimental_get_query_params().get("sucursal", None)
-            if sel:
-                st.session_state["filtro_sucursal"] = sel[0]
-
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # ------------------ Filtro activo ------------------
             filtro = st.session_state["filtro_sucursal"]
