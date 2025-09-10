@@ -1373,47 +1373,61 @@ if authentication_status:
             if "filtro_sucursal" not in st.session_state:
                 st.session_state["filtro_sucursal"] = "Todas"
 
-            # ------------------ Botones estilo Streamlit ------------------
+            # ------------------ Botones estilo flex ------------------
             st.markdown("### Filtrar por Sucursal")
 
-            sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
+            sucursales = ["Todas"] + list(colores_sucursales.keys())
 
-            html_out = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
+            # CSS para organizar los botones en filas (flex-wrap)
+            st.markdown("""
+                <style>
+                .sucursales-container {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-bottom: 12px;
+                }
+                .sucursal-btn > button {
+                    color: white;
+                    border-radius: 6px;
+                    padding: 4px 10px;
+                    font-weight: 600;
+                    min-width: 110px;
+                    height: 32px;
+                    cursor: pointer;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
+            # Contenedor flex
+            st.markdown('<div class="sucursales-container">', unsafe_allow_html=True)
+
             for suc in sucursales:
-                activo = st.session_state["filtro_sucursal"] == suc
-                outline = "3px solid rgba(0,0,0,0.12);" if activo else ""
-                color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
-                dsp = html.escape(suc)
+                color = "#555555" if suc == "Todas" else colores_sucursales[suc]["color"]
+                is_active = st.session_state["filtro_sucursal"] == suc
 
-                # botón que dispara un form para cambiar el session_state
-                html_out += f"""
-                <form action="" method="get">
-                    <input type="hidden" name="set_sucursal" value="{suc}">
-                    <button style='background-color:{color};color:white;border:none;border-radius:6px;
-                            padding:4px 10px;margin:2px;font-weight:600;min-width:110px;height:32px;
-                            white-space:nowrap;outline:{outline};cursor:pointer'>
-                        {dsp}
-                    </button>
-                </form>
-                """
-            html_out += "</div>"
+                # Estilo dinámico según estado
+                style = f"background-color:{color};border:3px solid black;" if is_active else f"background-color:{color};border:none;"
 
-            st.markdown(html_out, unsafe_allow_html=True)
+                # Cada botón en un contenedor para heredar estilo
+                with st.container():
+                    button_placeholder = st.empty()
+                    if button_placeholder.button(suc, key=f"btn_{suc}"):
+                        st.session_state["filtro_sucursal"] = suc
 
-            # ------------------ Revisar si se seleccionó algo ------------------
-            sel = st.query_params.get("set_sucursal", None)
-            if sel:
-                st.session_state["filtro_sucursal"] = sel
-                st.experimental_rerun()
+                    # CSS específico para cada botón
+                    st.markdown(f"""
+                        <style>
+                        div[data-testid="stButton"][key="btn_{suc}"] button {{
+                            {style}
+                        }}
+                        </style>
+                    """, unsafe_allow_html=True)
 
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # ------------------ Usar filtro ------------------
             filtro = st.session_state["filtro_sucursal"]
-            st.write("Filtro activo:", filtro)
-
-            # ------------------ Leer el filtro desde query_params ------------------
-            qp = st.query_params
-            filtro = qp.get("filtro_sucursal", st.session_state["filtro_sucursal"])
-            st.session_state["filtro_sucursal"] = filtro
-
             st.write("Filtro activo:", filtro)
 
             # ------------------ Aplicar filtro ------------------
