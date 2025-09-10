@@ -1376,62 +1376,45 @@ if authentication_status:
             st.markdown("### Filtrar por Sucursal")
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
-            # Contenedor flex para los botones
-            st.markdown("""
-                <style>
-                .botones-flex {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 8px;            /* espacio entre botones */
-                    margin-bottom: 4px;  /* espacio vertical hacia el gráfico */
-                    justify-content: flex-start;  /* alineación izquierda */
-                }
-                .botones-flex button {
-                    min-width: 110px;
-                    height: 32px;
-                    font-weight: 600;
-                    border-radius: 6px;
-                    padding: 4px 10px;
-                    white-space: nowrap;
-                }
-                </style>
-            """, unsafe_allow_html=True)
+            # Número de botones por fila (ajustable)
+            max_por_fila = 5
+            padding_horizontal = "4px"  # espacio entre botones
 
-            # Abrimos contenedor flex
-            st.markdown('<div class="botones-flex">', unsafe_allow_html=True)
+            for i in range(0, len(sucursales), max_por_fila):
+                fila = sucursales[i:i+max_por_fila]
+                cols = st.columns(len(fila))
+                
+                for j, suc in enumerate(fila):
+                    color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
+                    is_active = st.session_state.get("filtro_sucursal", "Todas") == suc
+                    borde = "3px solid black" if is_active else "none"
 
-            for suc in sucursales:
-                color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
-                is_active = st.session_state.get("filtro_sucursal", "Todas") == suc
-                borde = "3px solid black" if is_active else "none"
+                    # Estilo con HTML
+                    st.markdown(f"""
+                        <style>
+                        div[data-testid="stButton"] button[key="btn_{suc}"] {{
+                            background-color: {color};
+                            color: white;
+                            border-radius: 6px;
+                            padding: 4px 10px;
+                            font-weight: 600;
+                            min-width: 110px;
+                            height: 32px;
+                            border: {borde};
+                            margin-right: {padding_horizontal};
+                        }}
+                        </style>
+                    """, unsafe_allow_html=True)
 
-                # Botón de Streamlit
-                if st.button(suc, key=f"btn_{suc}"):
-                    st.session_state["filtro_sucursal"] = suc
-
-                # Estilo dinámico para cada botón activo
-                st.markdown(f"""
-                    <style>
-                    div[data-testid="stButton"] button[key="btn_{suc}"] {{
-                        background-color: {color};
-                        color: white;
-                        border: {borde};
-                    }}
-                    </style>
-                """, unsafe_allow_html=True)
-
-            # Cerramos contenedor flex
-            st.markdown('</div>', unsafe_allow_html=True)
+                    if cols[j].button(suc, key=f"btn_{suc}"):
+                        st.session_state["filtro_sucursal"] = suc
 
             # Filtro activo
             filtro = st.session_state.get("filtro_sucursal", "Todas")
             st.write("Filtro activo:", filtro)
 
             # Aplicar filtro al DataFrame
-            if filtro == "Todas":
-                df_filtrado = df_completo.copy()
-            else:
-                df_filtrado = df_completo[df_completo["sucursal"].fillna("") == filtro]
+            df_filtrado = df_completo.copy() if filtro == "Todas" else df_completo[df_completo["sucursal"].fillna("") == filtro]
 
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
