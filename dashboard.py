@@ -1378,7 +1378,7 @@ if authentication_status:
 
             # Número de botones por fila (ajustable)
             max_por_fila = 16
-            padding_horizontal = "4px"  # espacio entre botones
+            padding_horizontal = "2px"  # espacio entre botones
 
             for i in range(0, len(sucursales), max_por_fila):
                 fila = sucursales[i:i+max_por_fila]
