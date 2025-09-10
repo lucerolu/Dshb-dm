@@ -2910,16 +2910,23 @@ if authentication_status:
         df_grafico["mes_anio"] = pd.Categorical(df_grafico["mes_anio"], categories=orden_meses, ordered=True)
         df_grafico = df_grafico.sort_values("mes_anio")
 
+        # Selector de sucursales en lugar de cuentas
+        sucursales_disponibles = ["Todas"] + sorted(df_grafico["cuenta_sucursal"].apply(lambda x: x.split(" - ")[-1]).unique())
+
         # Selector de cuentas
-        cuentas_disponibles = sorted(df_grafico["cuenta_sucursal"].unique())
-        cuentas_seleccionadas = st.multiselect(
-            "Selecciona cuentas a mostrar:",
-            cuentas_disponibles,
-            default=cuentas_disponibles
+        sucursales_seleccionadas = st.multiselect(
+            "Selecciona sucursales a mostrar:",
+            sucursales_disponibles,
+            default=sucursales_disponibles
         )
 
         # Filtrar el DataFrame según selección
-        df_filtrado = df_grafico[df_grafico["cuenta_sucursal"].isin(cuentas_seleccionadas)]
+        df_filtrado = df_grafico[df_grafico["cuenta_sucursal"].isin(sucursales_seleccionadas)]
+        # Filtrar según sucursales seleccionadas
+        if "Todas" in sucursales_seleccionadas:
+            df_filtrado = df_grafico.copy()
+        else:
+            df_filtrado = df_grafico[df_grafico["cuenta_sucursal"].apply(lambda x: x.split(" - ")[-1]).isin(sucursales_seleccionadas)]
 
         # Construir un mapa de colores basado en el JSON de sucursales
         color_map = {}
