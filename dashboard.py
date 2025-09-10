@@ -1378,45 +1378,38 @@ if authentication_status:
                     return "Todas"
                 return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
-            # ------------------ Selector visual de sucursales con cuadritos ------------------
+            # ------------------ Selector de sucursales ------------------
             sucursales_disponibles = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
+            sucursales_seleccionadas = st.multiselect(
+                "Selecciona sucursales a mostrar:",
+                sucursales_disponibles,
+                default=sucursales_disponibles
+            )
 
-            # Inicializar estado si no existe
-            if "sucursales_seleccionadas" not in st.session_state:
-                st.session_state["sucursales_seleccionadas"] = ["Todas"]
+            # ------------------ Inyectar CSS para colorear los seleccionados ------------------
+            css = "<style>"
+            for suc in sucursales_disponibles:
+                color = get_color(suc)
+                # Streamlit envía los items seleccionados dentro de <div class="css-... multiValue"> con <span>
+                # Esto aplica el fondo solo a los items que contengan el texto exacto
+                css += f"""
+                div[data-baseweb='select'] span:has-text('{suc}') {{
+                    background-color: {color} !important;
+                    color: white !important;
+                    border-radius: 6px !important;
+                    padding: 2px 6px !important;
+                    font-weight: 600 !important;
+                }}
+                """
+            css += "</style>"
 
-            # Función para generar el HTML de cada cuadrito
-            def generar_cuadritos_html():
-                html = "<div style='display:flex; flex-wrap:wrap; gap:6px;'>"
-                for suc in sucursales_disponibles:
-                    color = get_color(suc)
-                    abrev = get_abrev(suc)
-                    activo = suc in st.session_state["sucursales_seleccionadas"]
-                    borde = "3px solid black" if activo else "1px solid #CCC"
-                    html += f"""
-                    <div 
-                        onclick="window.dispatchEvent(new CustomEvent('toggleSucursal', {{detail:'{suc}'}}))"
-                        style='background-color:{color}; border:{borde}; border-radius:6px;
-                            min-width:60px; max-width:70px; height:32px; display:flex;
-                            align-items:center; justify-content:center; font-weight:600;
-                            color:white; cursor:pointer; user-select:none; text-overflow:ellipsis;
-                            overflow:hidden; white-space:nowrap;'>
-                        {abrev}
-                    </div>
-                    """
-                html += "</div>"
-                return html
+            st.markdown(css, unsafe_allow_html=True)
 
-            st.markdown(generar_cuadritos_html(), unsafe_allow_html=True)
-            # ------------------ Captura de selección ------------------
-            # Esta parte requiere usar un trick con streamlit_javascript o st.session_state para actualizar
-            # Cuando se haga click, se actualiza st.session_state["sucursales_seleccionadas"]
-
-            seleccionadas = st.session_state["sucursales_seleccionadas"]
-            if "Todas" in seleccionadas:
+            # ------------------ Filtrar el DataFrame según selección ------------------
+            if "Todas" in sucursales_seleccionadas:
                 df_filtrado = df_completo.copy()
             else:
-                df_filtrado = df_completo[df_completo["sucursal"].isin(seleccionadas)]
+                df_filtrado = df_completo[df_completo["sucursal"].isin(sucursales_seleccionadas)]
 
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
