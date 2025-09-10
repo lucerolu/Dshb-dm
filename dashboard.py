@@ -1374,7 +1374,7 @@ if authentication_status:
             if "filtro_sucursal" not in st.session_state:
                 st.session_state["filtro_sucursal"] = "Todas"
 
-            st.markdown("### Filtrar por Sucursal (abreviaturas)")
+            st.markdown("## Filtrar por Sucursal")
 
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
@@ -1412,7 +1412,7 @@ if authentication_status:
                         border-radius: 4px;
                         padding: 2px 6px;
                         font-weight: 600;
-                        min-width: 70px;
+                        min-width: 50px;
                         height: 28px;
                         border: {borde};
                     }}
