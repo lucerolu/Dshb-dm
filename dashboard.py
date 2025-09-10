@@ -1412,7 +1412,7 @@ if authentication_status:
                         border-radius: 4px;
                         padding: 2px 6px;
                         font-weight: 600;
-                        min-width: 50px;
+                        min-width: 60px;
                         height: 28px;
                         border: {borde};
                     }}
