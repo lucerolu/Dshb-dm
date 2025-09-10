@@ -1406,6 +1406,9 @@ if authentication_status:
             filtro = qp.get("filtro_sucursal", st.session_state["filtro_sucursal"])
             st.session_state["filtro_sucursal"] = filtro
 
+            st.write("Filtro activo:", filtro)
+            st.write("Sucursales únicas en df:", df_completo["sucursal"].unique().tolist())
+
             # ------------------ Aplicar filtro ------------------
             if filtro == "Todas":
                 df_filtrado = df_completo.copy()
