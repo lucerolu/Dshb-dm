@@ -1374,25 +1374,41 @@ if authentication_status:
                 st.session_state["filtro_sucursal"] = "Todas"
 
             st.markdown("### Filtrar por Sucursal")
-
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
-            # Número máximo de botones por fila
-            max_por_fila = 5
+            # Contenedor flex-wrap con CSS
+            st.markdown("""
+                <style>
+                .flex-container {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    justify-content: flex-start;  /* alinea todo a la izquierda */
+                    margin-bottom: 12px;
+                }
+                .flex-container > div {
+                    flex: 0 0 auto;  /* no se estiren los botones */
+                }
+                </style>
+            """, unsafe_allow_html=True)
 
-            for i in range(0, len(sucursales), max_por_fila):
-                cols = st.columns(max_por_fila)
-                fila = sucursales[i:i+max_por_fila]
+            # Abrimos el contenedor
+            st.markdown('<div class="flex-container">', unsafe_allow_html=True)
 
-                for j, suc in enumerate(fila):
-                    color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
-                    is_active = st.session_state.get("filtro_sucursal", "Todas") == suc
-                    borde = "3px solid black" if is_active else "none"
+            # Botones
+            for suc in sucursales:
+                color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
+                is_active = st.session_state.get("filtro_sucursal", "Todas") == suc
+                borde = "3px solid black" if is_active else "none"
 
-                    # Se puede aplicar color con HTML en el botón
-                    button_html = f"""
+                # Aquí creamos un botón en cada columna “fantasma” dentro del contenedor
+                if st.button(suc, key=f"btn_{suc}"):
+                    st.session_state["filtro_sucursal"] = suc
+
+                # Aplicamos CSS individualmente
+                st.markdown(f"""
                     <style>
-                    div[data-testid="stButton"] button {{
+                    div[data-testid="stButton"][key="btn_{suc}"] button {{
                         background-color: {color};
                         color: white;
                         border-radius: 6px;
@@ -1403,17 +1419,16 @@ if authentication_status:
                         border: {borde};
                     }}
                     </style>
-                    """
-                    st.markdown(button_html, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
-                    if cols[j].button(suc, key=f"btn_{suc}"):
-                        st.session_state["filtro_sucursal"] = suc
+            # Cerramos el contenedor
+            st.markdown('</div>', unsafe_allow_html=True)
 
             # Filtro activo
             filtro = st.session_state.get("filtro_sucursal", "Todas")
             st.write("Filtro activo:", filtro)
 
-            # Aplicar filtro al DataFrame
+            # Aplicar filtro
             if filtro == "Todas":
                 df_filtrado = df_completo.copy()
             else:
