@@ -1387,7 +1387,7 @@ if authentication_status:
                     margin-bottom: 12px;
                 }
                 .flex-container > div {
-                    flex: 0 0 auto;  /* no se estiren los botones */
+                    flex: 0 0 auto;  /* los botones no se estiran */
                 }
                 </style>
             """, unsafe_allow_html=True)
@@ -1395,28 +1395,28 @@ if authentication_status:
             # Abrimos el contenedor
             st.markdown('<div class="flex-container">', unsafe_allow_html=True)
 
-            # Botones
+            # Botones con estilo individual
             for suc in sucursales:
                 color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
                 is_active = st.session_state.get("filtro_sucursal", "Todas") == suc
                 borde = "3px solid black" if is_active else "none"
 
-                # Aquí creamos un botón en cada columna “fantasma” dentro del contenedor
+                # Creamos botón
                 if st.button(suc, key=f"btn_{suc}"):
                     st.session_state["filtro_sucursal"] = suc
 
-                # Aplicamos CSS individualmente
+                # Aplicamos estilo CSS directamente al botón
                 st.markdown(f"""
                     <style>
                     div[data-testid="stButton"][key="btn_{suc}"] button {{
-                        background-color: {color};
-                        color: white;
-                        border-radius: 6px;
-                        padding: 4px 10px;
-                        font-weight: 600;
-                        min-width: 110px;
-                        height: 32px;
-                        border: {borde};
+                        background-color: {color} !important;
+                        color: white !important;
+                        border-radius: 6px !important;
+                        padding: 4px 10px !important;
+                        font-weight: 600 !important;
+                        min-width: 110px !important;
+                        height: 32px !important;
+                        border: {borde} !important;
                     }}
                     </style>
                 """, unsafe_allow_html=True)
@@ -1433,6 +1433,7 @@ if authentication_status:
                 df_filtrado = df_completo.copy()
             else:
                 df_filtrado = df_completo[df_completo["sucursal"].fillna("") == filtro]
+
 
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
