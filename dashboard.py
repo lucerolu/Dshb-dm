@@ -1378,46 +1378,67 @@ if authentication_status:
                     return "Todas"
                 return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
-            # ------------------ Selector de sucursales ------------------
+            # ------------------ Selector de sucursales personalizado ------------------
             sucursales_disponibles = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
-            sucursales_seleccionadas = st.multiselect(
-                "Selecciona sucursales a mostrar:",
-                sucursales_disponibles,
-                default=sucursales_disponibles
-            )
 
-            # ------------------ Inyectar CSS para colorear los seleccionados ------------------
-            css = "<style>"
+            # Inicializar filtro en sesión
+            if "sucursales_seleccionadas" not in st.session_state:
+                st.session_state["sucursales_seleccionadas"] = sucursales_disponibles.copy()
+
+            # Contenedor flex para los cuadros
+            st.markdown("<div style='display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;'>", unsafe_allow_html=True)
+
             for suc in sucursales_disponibles:
-                color = get_color(suc)
-                # Streamlit envía los items seleccionados dentro de <div class="css-... multiValue"> con <span>
-                # Esto aplica el fondo solo a los items que contengan el texto exacto
-                css += f"""
-                div[data-baseweb='select'] span:has-text('{suc}') {{
-                    background-color: {color} !important;
-                    color: white !important;
-                    border-radius: 6px !important;
-                    padding: 2px 6px !important;
-                    font-weight: 600 !important;
-                }}
-                """
-            css += "</style>"
+                color = colores_sucursales.get(suc, {}).get("color", "#808080")
+                selected = suc in st.session_state["sucursales_seleccionadas"]
+                borde = "3px solid black" if selected else "1px solid #ccc"
 
-            st.markdown(css, unsafe_allow_html=True)
+                # Botón invisible para controlar selección
+                if st.button("", key=f"btn_{suc}", help=f"Filtrar por {suc}"):
+                    if suc == "Todas":
+                        st.session_state["sucursales_seleccionadas"] = sucursales_disponibles.copy()
+                    else:
+                        if suc in st.session_state["sucursales_seleccionadas"]:
+                            st.session_state["sucursales_seleccionadas"].remove(suc)
+                        else:
+                            st.session_state["sucursales_seleccionadas"].append(suc)
+                        if "Todas" in st.session_state["sucursales_seleccionadas"] and suc != "Todas":
+                            st.session_state["sucursales_seleccionadas"].remove("Todas")
 
-            # ------------------ Filtrar el DataFrame según selección ------------------
-            if "Todas" in sucursales_seleccionadas:
+                # Cuadro coloreado con el nombre
+                st.markdown(f"""
+                    <div style='
+                        display:inline-flex;
+                        align-items:center;
+                        justify-content:center;
+                        width:70px;
+                        height:32px;
+                        border-radius:6px;
+                        border:{borde};
+                        background-color:{color};
+                        font-weight:600;
+                        color:white;
+                        cursor:pointer;
+                        '>
+                        {suc}
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # ------------------ Filtrar DataFrame según selección ------------------
+            if "Todas" in st.session_state["sucursales_seleccionadas"]:
                 df_filtrado = df_completo.copy()
             else:
-                df_filtrado = df_completo[df_completo["sucursal"].isin(sucursales_seleccionadas)]
+                df_filtrado = df_completo[df_completo["sucursal"].isin(st.session_state["sucursales_seleccionadas"])]
 
-            # ------------------ Colores por cuenta ------------------
+            # ------------------ Colores por cuenta para el gráfico ------------------
             color_cuentas = {
                 row["cuenta_sucursal"]: colores_sucursales.get(row["sucursal"], {}).get("color", "#808080")
                 for _, row in meta.iterrows()
             }
 
-            # ------------------ Gráfico ------------------
+            # ------------------ Gráfico de líneas ------------------
             fig = px.line(
                 df_filtrado,
                 x="fecha_exigibilidad_str",
@@ -1449,6 +1470,7 @@ if authentication_status:
             )
 
             st.plotly_chart(fig, use_container_width=True)
+
 
     # ==========================================================================================================
     # ============================== RESUMEN GENERAL ==========================================
