@@ -1370,9 +1370,6 @@ if authentication_status:
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
 
-            def _normalize(s):
-                return str(s).strip().lower()
-
             # Inicializar session_state
             if "filtro_sucursal" not in st.session_state:
                 st.session_state["filtro_sucursal"] = "Todas"
@@ -1386,7 +1383,6 @@ if authentication_status:
             # Construir HTML
             html_out = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px'>"
             for suc in sucursales:
-                # comprobar si es el activo
                 activo = st.session_state["filtro_sucursal"] == suc
                 outline = "3px solid rgba(0,0,0,0.12);" if activo else ""
                 color = colores_sucursales.get(suc, {}).get("color", "#555555") if suc != "Todas" else "#555555"
@@ -1405,14 +1401,17 @@ if authentication_status:
 
             st.markdown(html_out, unsafe_allow_html=True)
 
-            # ------------------ Aplicar filtro ------------------
-            filtro = st.experimental_get_query_params().get("filtro_sucursal", [st.session_state["filtro_sucursal"]])[0]
+            # ------------------ Leer el filtro desde query_params ------------------
+            qp = st.query_params
+            filtro = qp.get("filtro_sucursal", [st.session_state["filtro_sucursal"]])[0]
             st.session_state["filtro_sucursal"] = filtro
 
+            # ------------------ Aplicar filtro ------------------
             if filtro == "Todas":
                 df_filtrado = df_completo.copy()
             else:
                 df_filtrado = df_completo[df_completo["sucursal"].fillna("") == filtro]
+
 
             # ------------------ Colores por cuenta ------------------
             color_cuentas = {
