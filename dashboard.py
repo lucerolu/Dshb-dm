@@ -1366,6 +1366,17 @@ if authentication_status:
             df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
             fechas_ordenadas = sorted(df_completo["fecha_exigibilidad_str"].unique(),
                                     key=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
+            
+            # ------------------ Funciones auxiliares ------------------
+            def get_color(suc):
+                if suc == "Todas":
+                    return "#555555"
+                return colores_sucursales.get(suc, {}).get("color", "#555555")
+
+            def get_abrev(suc):
+                if suc == "Todas":
+                    return "Todas"
+                return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
 
             # ------------------ Segmentadores visuales ------------------
             st.markdown("### Segmentadores visuales")
@@ -1377,18 +1388,6 @@ if authentication_status:
             max_por_fila = 17  # ajustar según pantalla
 
             st.markdown("### Filtrar por Sucursal")
-
-            # Funciones
-            def get_color(suc):
-                if suc == "Todas":
-                    return "#555555"
-                return colores_sucursales.get(suc, {}).get("color", "#555555")
-
-            def get_abrev(suc):
-                if suc == "Todas":
-                    return "Todas"
-                return colores_sucursales.get(suc, {}).get("abreviatura", suc[:3])
-
             sucursales = ["Todas"] + sorted(df_completo["sucursal"].dropna().unique().tolist())
 
             html_out = "<div style='display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-start;'>"
@@ -1399,6 +1398,7 @@ if authentication_status:
                 activo = st.session_state.get("filtro_sucursal", "Todas") == suc
                 borde = "3px solid black" if activo else "none"
 
+                # Todo el botón dentro de un form
                 html_out += f"""
                 <form action="" method="get" style="margin:0;">
                     <input type="hidden" name="sucursal" value="{suc}">
@@ -1414,10 +1414,11 @@ if authentication_status:
 
             st.markdown(html_out, unsafe_allow_html=True)
 
-            # Revisar selección
+            # Capturar selección
             sel = st.experimental_get_query_params().get("sucursal", None)
             if sel:
                 st.session_state["filtro_sucursal"] = sel[0]
+
 
             # ------------------ Filtro activo ------------------
             filtro = st.session_state["filtro_sucursal"]
