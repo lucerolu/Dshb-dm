@@ -1394,12 +1394,15 @@ if authentication_status:
                 else:
                     return "> 90 días"
 
-            df_vencimientos["categoria"] = df_vencimientos["dias_diferencia"].apply(clasificar)
+            # --- Agrupamos por mes y categoría conservando fecha exacta ---
+            df_vencimientos["fecha_str"] = df_vencimientos["fecha_exigibilidad"].dt.strftime("%d-%m-%Y")
 
-            # Agrupamos por mes y categoría
             df_agrupado = (
-                df_vencimientos.groupby(["mes", "categoria"])["total"]
-                .sum()
+                df_vencimientos.groupby(["mes", "categoria"])  # agrupamos
+                .agg({
+                    "total": "sum",
+                    "fecha_str": lambda x: ", ".join(sorted(set(x)))  # guardamos fechas únicas del mes
+                })
                 .reset_index()
             )
 
@@ -1411,6 +1414,7 @@ if authentication_status:
                 "> 90 días": "#b3b3b3"
             }
 
+            # --- Gráfico ---
             fig_venc = px.bar(
                 df_agrupado,
                 x="mes",
@@ -1418,8 +1422,19 @@ if authentication_status:
                 color="categoria",
                 color_discrete_map=colores,
                 text="total",
+                custom_data=["fecha_str", "categoria"],  # 👈 agregamos customdata
                 labels={"mes": "Mes de exigibilidad", "total": "Monto total", "categoria": "Estado"},
                 title="📊 Montos a vencer agrupados por mes"
+            )
+
+            # --- Hovertemplate ---
+            fig_venc.update_traces(
+                hovertemplate=(
+                    "<b>Mes:</b> %{x|%b %Y}<br>"
+                    "<b>Estado:</b> %{customdata[1]}<br>"
+                    "<b>Fechas exactas:</b> %{customdata[0]}<br>"
+                    "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+                )
             )
 
             fig_venc.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
