@@ -30,6 +30,7 @@ import time
 from plotly.subplots import make_subplots
 from io import BytesIO
 import html
+from dateutil.relativedelta import relativedelta
 
 
 # Cargar configuración desde secrets y convertirla a dict normal
@@ -1370,37 +1371,69 @@ if authentication_status:
                     st.plotly_chart(fig, use_container_width=False, config={'displayModeBar': False})
 
             # --------------------------------- Gráfico: montos por fecha de exigibilidad ---------------------------------------------------------------------------------------
+            # --- Preparación de datos ---
+            hoy = pd.to_datetime("today").normalize()
+
             df_vencimientos = (
-                df_estado_cuenta.groupby("fecha_exigibilidad")["total"]
-                .sum()
-                .reset_index()
-                .sort_values("fecha_exigibilidad")
+                df_estado_cuenta.copy()
             )
 
-            if not df_vencimientos.empty:
-                fig_venc = go.Figure()
+            # Normalizamos la fecha al primer día del mes (para agrupar por mes)
+            df_vencimientos["mes"] = df_vencimientos["fecha_exigibilidad"].dt.to_period("M").dt.to_timestamp()
 
-                fig_venc.add_bar(
-                    x=df_vencimientos["fecha_exigibilidad"],
-                    y=df_vencimientos["total"],
-                    marker_color="#66b3ff",
-                    hovertemplate="<b>%{x|%d/%m/%Y}</b><br>Monto: %{y:,.2f}<extra></extra>"
-                )
+            # Clasificamos según el rango de días
+            df_vencimientos["dias_diferencia"] = (df_vencimientos["fecha_exigibilidad"] - hoy).dt.days
 
-                fig_venc.update_layout(
-                    title="📊 Montos que se vencen por fecha de exigibilidad",
-                    xaxis_title="Fecha de exigibilidad",
-                    yaxis_title="Monto total",
-                    xaxis=dict(tickformat="%d/%m/%Y"),
-                    bargap=0.2,
-                    height=400,
-                    margin=dict(l=40, r=20, t=60, b=40),
-                    template="plotly_white"
-                )
+            def clasificar(dias):
+                if dias < 0:
+                    return "Vencido"
+                elif dias <= 60:
+                    return "≤ 60 días"
+                elif dias <= 90:
+                    return "61–90 días"
+                else:
+                    return "> 90 días"
 
-                st.plotly_chart(fig_venc, use_container_width=True)
-            else:
-                st.info("No hay montos con fechas de exigibilidad registradas.")
+            df_vencimientos["categoria"] = df_vencimientos["dias_diferencia"].apply(clasificar)
+
+            # Agrupamos por mes y categoría
+            df_agrupado = (
+                df_vencimientos.groupby(["mes", "categoria"])["total"]
+                .sum()
+                .reset_index()
+            )
+
+            # --- Gráfico ---
+            colores = {
+                "Vencido": "#ff4d4d",
+                "≤ 60 días": "#ffd633",
+                "61–90 días": "#66cc66",
+                "> 90 días": "#b3b3b3"
+            }
+
+            fig_venc = px.bar(
+                df_agrupado,
+                x="mes",
+                y="total",
+                color="categoria",
+                color_discrete_map=colores,
+                text="total",
+                labels={"mes": "Mes de exigibilidad", "total": "Monto total", "categoria": "Estado"},
+                title="📊 Montos a vencer agrupados por mes"
+            )
+
+            fig_venc.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
+
+            fig_venc.update_layout(
+                xaxis=dict(tickformat="%b %Y"),
+                bargap=0.2,
+                height=500,
+                margin=dict(l=40, r=20, t=60, b=40),
+                template="plotly_white"
+            )
+
+            st.plotly_chart(fig_venc, use_container_width=True)
+
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
