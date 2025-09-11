@@ -1450,6 +1450,52 @@ if authentication_status:
 
             st.plotly_chart(fig_venc, use_container_width=True)
 
+            #----------------------------------
+            # --- Agrupamos por categoría (para el pastel) ---
+            df_pastel = (
+                df_vencimientos.groupby("categoria")["total"]
+                .sum()
+                .reset_index()
+            )
+
+            # --- Colores ---
+            colores = {
+                "Vencido": "#ff4d4d",
+                "≤ 60 días": "#ffd633",
+                "61–90 días": "#66cc66",
+                "> 90 días": "#b3b3b3"
+            }
+
+            # --- Gráfico de pastel ---
+            fig_pie = px.pie(
+                df_pastel,
+                names="categoria",
+                values="total",
+                color="categoria",
+                color_discrete_map=colores,
+                hole=0.4,  # 👈 si quieres tipo "dona"
+            )
+
+            # --- Hovertemplate ---
+            fig_pie.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                hovertemplate=(
+                    "<b>Estado:</b> %{label}<br>"
+                    "<b>Monto:</b> $%{value:,.2f}<br>"
+                    "<b>Porcentaje:</b> %{percent}<extra></extra>"
+                )
+            )
+
+            fig_pie.update_layout(
+                title="🥧 Distribución de montos por estado de exigibilidad",
+                height=500,
+                margin=dict(l=40, r=20, t=60, b=40),
+                template="plotly_white"
+            )
+
+            st.plotly_chart(fig_pie, use_container_width=True)
+
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
