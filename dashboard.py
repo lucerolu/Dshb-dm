@@ -2725,7 +2725,7 @@ if authentication_status:
             "Cuenta",
             pinned="left",
             minWidth=100,
-            width=170,
+            width=200,
             cellStyle=JsCode("""
                 function(params) {
                     if (params.node.rowPinned) {
