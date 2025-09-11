@@ -1395,6 +1395,7 @@ if authentication_status:
                     return "> 90 días"
 
             # --- Agrupamos por mes y categoría conservando fecha exacta ---
+            df_vencimientos["categoria"] = df_vencimientos["dias_diferencia"].apply(clasificar)
             df_vencimientos["fecha_str"] = df_vencimientos["fecha_exigibilidad"].dt.strftime("%d-%m-%Y")
 
             df_agrupado = (
