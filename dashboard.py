@@ -366,6 +366,56 @@ if authentication_status:
                 col.metric(titulo, valor)
 
 
+            
+            # --------------------------------------------- Indicador: próxima fecha de exigibilidad --------------------------------------------------------------------------------
+            hoy = datetime.today().date()
+            fechas_exig = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"]).dt.date
+
+            # Filtrar solo las fechas futuras o iguales a hoy
+            fechas_futuras = [f for f in fechas_exig if f >= hoy]
+
+            if fechas_futuras:
+                proxima_fecha = min(fechas_futuras)
+                dias_faltan = (proxima_fecha - hoy).days
+                st.markdown(
+                    f"""
+                    <div style="
+                        background-color:#0B083D; 
+                        color:white; 
+                        padding:12px; 
+                        border-radius:10px; 
+                        text-align:center; 
+                        font-weight:bold; 
+                        font-size:16px;
+                        margin-bottom:15px;
+                    ">
+                        📅 Próxima exigibilidad: {proxima_fecha.strftime("%d/%m/%Y")}  
+                        ⏳ Faltan <span style="color:#FFD700;">{dias_faltan} días</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    """
+                    <div style="
+                        background-color:#0B083D; 
+                        color:white; 
+                        padding:12px; 
+                        border-radius:10px; 
+                        text-align:center; 
+                        font-weight:bold; 
+                        font-size:16px;
+                        margin-bottom:15px;
+                    ">
+                        ✅ No hay fechas de exigibilidad futuras.
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            
+            
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
             # --- Preparar fechas y pivote ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
