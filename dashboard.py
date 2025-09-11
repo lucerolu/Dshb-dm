@@ -2725,7 +2725,7 @@ if authentication_status:
             "Cuenta",
             pinned="left",
             minWidth=100,
-            width=100,
+            width=150,
             cellStyle=JsCode("""
                 function(params) {
                     if (params.node.rowPinned) {
@@ -2766,7 +2766,7 @@ if authentication_status:
                 cellStyle=gradient_code,
                 valueFormatter=value_formatter,
                 headerClass='header-left',
-                minWidth=100,
+                minWidth=180,
             )
 
         # Columna Total
@@ -2976,8 +2976,6 @@ if authentication_status:
                 "displaylogo": False
             }
 
-            #st.markdown("<br><br>", unsafe_allow_html=True)
-            #st.markdown("### Compras mensuales por cuenta")
             st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True, config=config)
 
