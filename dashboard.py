@@ -2725,7 +2725,7 @@ if authentication_status:
             "Cuenta",
             pinned="left",
             minWidth=100,
-            width=150,
+            width=170,
             cellStyle=JsCode("""
                 function(params) {
                     if (params.node.rowPinned) {
@@ -2766,7 +2766,7 @@ if authentication_status:
                 cellStyle=gradient_code,
                 valueFormatter=value_formatter,
                 headerClass='header-left',
-                minWidth=180,
+                minWidth=120,
             )
 
         # Columna Total
@@ -2779,7 +2779,7 @@ if authentication_status:
                 'textAlign': 'left'
             },
             valueFormatter=value_formatter,
-            minWidth=100,
+            minWidth=160,
             headerClass='header-left'
         )
 
