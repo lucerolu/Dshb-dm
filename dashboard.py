@@ -414,8 +414,6 @@ if authentication_status:
                     unsafe_allow_html=True
                 )
 
-            
-            
             #------------------------------------------ TABLA: ESTADO DE CUENTA -----------------------------------------------------------------------
             # --- Preparar fechas y pivote ---
             df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
@@ -1370,6 +1368,39 @@ if authentication_status:
 
                     # --- Mostrar gráfico sin barra de herramientas ---
                     st.plotly_chart(fig, use_container_width=False, config={'displayModeBar': False})
+
+            # --------------------------------- Gráfico: montos por fecha de exigibilidad ---------------------------------------------------------------------------------------
+            df_vencimientos = (
+                df_estado_cuenta.groupby("fecha_exigibilidad")["total"]
+                .sum()
+                .reset_index()
+                .sort_values("fecha_exigibilidad")
+            )
+
+            if not df_vencimientos.empty:
+                fig_venc = go.Figure()
+
+                fig_venc.add_bar(
+                    x=df_vencimientos["fecha_exigibilidad"],
+                    y=df_vencimientos["total"],
+                    marker_color="#66b3ff",
+                    hovertemplate="<b>%{x|%d/%m/%Y}</b><br>Monto: %{y:,.2f}<extra></extra>"
+                )
+
+                fig_venc.update_layout(
+                    title="📊 Montos que se vencen por fecha de exigibilidad",
+                    xaxis_title="Fecha de exigibilidad",
+                    yaxis_title="Monto total",
+                    xaxis=dict(tickformat="%d/%m/%Y"),
+                    bargap=0.2,
+                    height=400,
+                    margin=dict(l=40, r=20, t=60, b=40),
+                    template="plotly_white"
+                )
+
+                st.plotly_chart(fig_venc, use_container_width=True)
+            else:
+                st.info("No hay montos con fechas de exigibilidad registradas.")
 
             #-------------------------------------- GRAFICO DE LÍNEAS DEL ESTADO DE CUENTA -----------------------------------------------------------
             # ------------------ Cargar configuración de colores y divisiones ------------------
