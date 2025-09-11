@@ -2913,6 +2913,8 @@ if authentication_status:
         # Selector de sucursales en lugar de cuentas
         sucursales_disponibles = ["Todas"] + sorted(df_grafico["cuenta_sucursal"].apply(lambda x: x.split(" - ")[-1]).unique())
 
+        st.markdown("### Compras mensuales por cuenta")
+
         # Selector de cuentas
         sucursales_seleccionadas = st.multiselect(
             "Selecciona sucursales a mostrar:",
@@ -2974,8 +2976,8 @@ if authentication_status:
                 "displaylogo": False
             }
 
-            st.markdown("<br><br>", unsafe_allow_html=True)
-            st.markdown("### Compras mensuales por cuenta")
+            #st.markdown("<br><br>", unsafe_allow_html=True)
+            #st.markdown("### Compras mensuales por cuenta")
             st.markdown("<div style='margin-top:-30px'></div>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True, config=config)
 
