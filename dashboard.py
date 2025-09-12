@@ -4036,6 +4036,7 @@ if authentication_status:
             colores_sucursales_map = {k: v["color"] for k, v in colores_sucursales.items()}
 
             if not df_suc.empty:
+                df_suc["sucursal"] = sucursal  # columna fija
                 fig_barras = px.bar(
                     df_suc,
                     x="mes_nombre",
