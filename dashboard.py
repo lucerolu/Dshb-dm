@@ -4042,7 +4042,7 @@ if authentication_status:
                     x="mes_nombre",
                     y="monto",
                     text="texto",
-                    color_discrete_sequence=[colores_sucursales.get(sucursal, "#636EFA")],
+                    #color_discrete_sequence=[colores_sucursales.get(sucursal, "#636EFA")],
                     title=f"Compras mensuales de {sucursal} en {titulo_periodo}"
                 )
 
