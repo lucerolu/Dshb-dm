@@ -3853,8 +3853,19 @@ if authentication_status:
 
         # ------------------------------- SELECTOR DE SUCURSALES ----------------------------------------------------------------------------------------------------
         sucursales_disponibles = sorted(df["sucursal"].unique())
-        sucursales_seleccionadas = st.multiselect("Selecciona una o varias sucursales", options=sucursales_disponibles, default=sucursales_disponibles)
-        st.markdown("<br><br>", unsafe_allow_html=True)
+
+        # Agregar opción "Todas" al inicio
+        opciones_multiselect = ["Todas"] + sucursales_disponibles
+
+        sucursales_seleccionadas = st.multiselect(
+            "Selecciona una o varias sucursales",
+            options=opciones_multiselect,
+            default=["Todas"]
+        )
+
+        # Si selecciona "Todas", reemplazar por todas las sucursales reales
+        if "Todas" in sucursales_seleccionadas:
+            sucursales_seleccionadas = sucursales_disponibles
         # ----------------------------- TARJETAS: TOTAL ACUMULADO ANUAL Y MES ACTUAL ------------------------------------------------------------------------------------------------------------------
         if sucursales_seleccionadas:  # si hay selección
             df_filtrado = df_filtrado[df_filtrado["sucursal"].isin(sucursales_seleccionadas)]
