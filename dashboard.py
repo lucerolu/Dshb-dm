@@ -3866,6 +3866,7 @@ if authentication_status:
         # Si selecciona "Todas", reemplazar por todas las sucursales reales
         if "Todas" in sucursales_seleccionadas:
             sucursales_seleccionadas = sucursales_disponibles
+        st.markdown("<br><br>", unsafe_allow_html=True)    
         # ----------------------------- TARJETAS: TOTAL ACUMULADO ANUAL Y MES ACTUAL ------------------------------------------------------------------------------------------------------------------
         if sucursales_seleccionadas:  # si hay selección
             df_filtrado = df_filtrado[df_filtrado["sucursal"].isin(sucursales_seleccionadas)]
