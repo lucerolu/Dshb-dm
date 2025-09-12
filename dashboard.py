@@ -1193,6 +1193,116 @@ if authentication_status:
                     col.plotly_chart(fig, use_container_width=True)
                     st.markdown("<br><br>", unsafe_allow_html=True)
 
+            #----------------------------------- GRAFICO DE ANILLOS: SOLO VENCIDAS -----------------------------------------------------------------------------------
+            st.markdown("### Distribución de la deuda vencida (todas las fechas)")
+
+            # --- helper para formato moneda ---
+            def fmt(v):
+                try:
+                    return f"${float(v):,.2f}"
+                except Exception:
+                    return "$0.00"
+
+            # Fecha de hoy para detectar vencidas
+            hoy = pd.Timestamp.today().normalize()
+
+            # Filtrar solo fechas vencidas
+            df_vencidas = df_completo[df_completo["fecha_exigibilidad"] < hoy].copy()
+
+            if not df_vencidas.empty:
+                # Agrupar por sucursal + cuenta
+                df_vencidas_group = (
+                    df_vencidas.groupby(["sucursal", "cuenta_sucursal", "codigo", "abreviatura"], as_index=False)["total"]
+                    .sum()
+                )
+
+                # Totales por sucursal (para nodos padres)
+                tot_por_suc = (
+                    df_vencidas_group.groupby("sucursal", as_index=False)["total"].sum()
+                    .rename(columns={"total": "total_sucursal"})
+                )
+                map_tot_suc = dict(zip(tot_por_suc["sucursal"], tot_por_suc["total_sucursal"]))
+
+                # --- construir nodos: ids, parents, values, labels, colors, text, hover ---
+                ids, parents, values, labels, colors, texts, hovertexts = [], [], [], [], [], [], []
+
+                # Nodos de sucursal (padres)
+                for _, r in tot_por_suc.iterrows():
+                    suc = r["sucursal"]
+                    t_suc = r["total_sucursal"]
+                    sid = f"S|{suc}"
+                    ids.append(sid)
+                    parents.append("")                  # raíz implícita
+                    values.append(t_suc)
+                    labels.append(suc)
+                    colors.append(colores_sucursales.get(suc, {}).get("color", "#808080"))
+                    texts.append(fmt(t_suc))
+                    hovertexts.append(
+                        f"<b>Sucursal:</b> {suc}<br>"
+                        f"<b>Total vencido sucursal:</b> {fmt(t_suc)}"
+                    )
+
+                # Nodos de cuenta (hijas)
+                df_vencidas_group = df_vencidas_group.sort_values(["sucursal", "cuenta_sucursal"]).reset_index(drop=True)
+                for _, r in df_vencidas_group.iterrows():
+                    suc = r["sucursal"]
+                    cuenta = r["cuenta_sucursal"]
+                    monto = float(r["total"])
+                    codigo = r["codigo"]
+                    abrev = r["abreviatura"]
+                    t_suc = map_tot_suc.get(suc, 0.0)
+
+                    cid = f"A|{suc}|{cuenta}"
+                    ids.append(cid)
+                    parents.append(f"S|{suc}")
+                    values.append(monto)
+                    labels.append(cuenta)
+                    colors.append(colores_sucursales.get(suc, {}).get("color", "#808080"))
+                    texts.append(fmt(monto))
+                    hovertexts.append(
+                        f"<b>Sucursal:</b> {suc}<br>"
+                        f"<b>Código:</b> {codigo}<br>"
+                        f"<b>División:</b> {abrev}<br>"
+                        f"<b>Monto vencido:</b> {fmt(monto)}<br>"
+                        f"<b>Total sucursal:</b> {fmt(t_suc)}"
+                    )
+
+                # --- Sunburst GO ---
+                fig_vencidas = go.Figure(
+                    go.Sunburst(
+                        ids=ids,
+                        parents=parents,
+                        values=values,
+                        labels=labels,
+                        text=texts,
+                        textinfo="label+text",
+                        insidetextorientation="horizontal",
+                        marker=dict(
+                            colors=colors,
+                            line=dict(color="white", width=1)
+                        ),
+                        branchvalues="total",
+                        hovertext=hovertexts,
+                        hovertemplate="%{hovertext}<extra></extra>"
+                    )
+                )
+
+                fig_vencidas.update_layout(
+                    title={
+                        'text': "Distribución de deuda vencida (todas las fechas)",
+                        'x': 0.5,
+                        'xanchor': 'center',
+                        'yanchor': 'top'
+                    },
+                    title_font=dict(size=18, color="#E1E1EC", family="Arial"),
+                    template="plotly_white",
+                    margin=dict(t=60, l=0, r=0, b=0)
+                )
+
+                st.plotly_chart(fig_vencidas, use_container_width=True)
+            else:
+                st.info("✅ No hay deuda vencida.")
+
             #------------------------------------------------------- CALENDARIO ------------------------------------------------------------------------------------------------------------------
             st.markdown("### Calendario de fechas de exigibilidad")
             # --- Leyenda de colores arriba ---
