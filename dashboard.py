@@ -1223,26 +1223,49 @@ if authentication_status:
                 )
                 map_tot_suc = dict(zip(tot_por_suc["sucursal"], tot_por_suc["total_sucursal"]))
 
-                # --- construir nodos: ids, parents, values, labels, colors, text, hover ---
+                # --- 🚀 Construcción de tabla para exportar ---
+                export_rows = []
+                for _, row in df_vencidas_group.iterrows():
+                    suc = row["sucursal"]
+                    cuenta = row["cuenta_sucursal"]
+                    monto_cuenta = row["total"]
+                    monto_sucursal = map_tot_suc.get(suc, 0.0)
+                    export_rows.append([suc, monto_sucursal, cuenta, monto_cuenta])
+
+                df_export = pd.DataFrame(export_rows, columns=["Sucursal", "Monto sucursal", "Cuenta sucursal", "Monto cuenta"])
+
+                # Crear Excel en memoria
+                buffer = io.BytesIO()
+                with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+                    df_export.to_excel(writer, index=False, sheet_name="Deuda vencida")
+
+                buffer.seek(0)
+
+                # Botón de descarga
+                st.download_button(
+                    label="📥 Descargar tabla en Excel",
+                    data=buffer,
+                    file_name="deuda_vencida.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+                # --- Sunburst GO ---
                 ids, parents, values, labels, colors, texts, hovertexts = [], [], [], [], [], [], []
 
-                # Nodos de sucursal (padres)
+                # Nodos de sucursal
                 for _, r in tot_por_suc.iterrows():
                     suc = r["sucursal"]
                     t_suc = r["total_sucursal"]
                     sid = f"S|{suc}"
                     ids.append(sid)
-                    parents.append("")                  # raíz implícita
+                    parents.append("")
                     values.append(t_suc)
                     labels.append(suc)
                     colors.append(colores_sucursales.get(suc, {}).get("color", "#808080"))
                     texts.append(fmt(t_suc))
-                    hovertexts.append(
-                        f"<b>Sucursal:</b> {suc}<br>"
-                        f"<b>Total vencido sucursal:</b> {fmt(t_suc)}"
-                    )
+                    hovertexts.append(f"<b>Sucursal:</b> {suc}<br><b>Total vencido sucursal:</b> {fmt(t_suc)}")
 
-                # Nodos de cuenta (hijas)
+                # Nodos de cuenta
                 df_vencidas_group = df_vencidas_group.sort_values(["sucursal", "cuenta_sucursal"]).reset_index(drop=True)
                 for _, r in df_vencidas_group.iterrows():
                     suc = r["sucursal"]
@@ -1267,7 +1290,6 @@ if authentication_status:
                         f"<b>Total sucursal:</b> {fmt(t_suc)}"
                     )
 
-                # --- Sunburst GO ---
                 fig_vencidas = go.Figure(
                     go.Sunburst(
                         ids=ids,
@@ -1277,10 +1299,7 @@ if authentication_status:
                         text=texts,
                         textinfo="label+text",
                         insidetextorientation="horizontal",
-                        marker=dict(
-                            colors=colors,
-                            line=dict(color="white", width=1)
-                        ),
+                        marker=dict(colors=colors, line=dict(color="white", width=1)),
                         branchvalues="total",
                         hovertext=hovertexts,
                         hovertemplate="%{hovertext}<extra></extra>"
@@ -1288,18 +1307,14 @@ if authentication_status:
                 )
 
                 fig_vencidas.update_layout(
-                    title={
-                        'text': "Monto vencido",
-                        'x': 0.5,
-                        'xanchor': 'center',
-                        'yanchor': 'top'
-                    },
+                    title={"text": "Monto vencido", "x": 0.5, "xanchor": "center", "yanchor": "top"},
                     title_font=dict(size=18, color="#E1E1EC", family="Arial"),
                     template="plotly_white",
                     margin=dict(t=60, l=0, r=0, b=0)
                 )
 
                 st.plotly_chart(fig_vencidas, use_container_width=True)
+
             else:
                 st.info("✅ No hay deuda vencida.")
 
