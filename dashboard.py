@@ -1238,6 +1238,18 @@ if authentication_status:
                 buffer = io.BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                     df_export.to_excel(writer, index=False, sheet_name="Deuda vencida")
+                    workbook  = writer.book
+                    worksheet = writer.sheets["Deuda vencida"]
+
+                    # Combinar celdas de sucursal y monto sucursal
+                    row_start = 1  # ExcelWriter escribe encabezados en la fila 0
+                    for suc in df_export["Sucursal"].unique():
+                        df_suc = df_export[df_export["Sucursal"] == suc]
+                        if len(df_suc) > 1:
+                            # Columna 0 = Sucursal, Columna 1 = Monto sucursal
+                            worksheet.merge_range(row_start, 0, row_start + len(df_suc) - 1, 0, suc)
+                            worksheet.merge_range(row_start, 1, row_start + len(df_suc) - 1, 1, df_suc["Monto sucursal"].iloc[0])
+                        row_start += len(df_suc)
 
                 buffer.seek(0)
 
