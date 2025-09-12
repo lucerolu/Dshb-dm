@@ -4032,7 +4032,8 @@ if authentication_status:
             df_suc["porcentaje"] = 100  
 
             # 👀 DEBUG
-            st.write("📊 DataFrame para gráfico de una sucursal:", df_suc)
+            #st.write("📊 DataFrame para gráfico de una sucursal:", df_suc)
+            colores_sucursales_map = {k: v["color"] for k, v in colores_sucursales.items()}
 
             if not df_suc.empty:
                 fig_barras = px.bar(
