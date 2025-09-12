@@ -1236,7 +1236,7 @@ if authentication_status:
 
                 # Crear Excel en memoria
                 buffer = io.BytesIO()
-                with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                     df_export.to_excel(writer, index=False, sheet_name="Deuda vencida")
 
                 buffer.seek(0)
