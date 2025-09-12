@@ -1289,7 +1289,7 @@ if authentication_status:
 
                 fig_vencidas.update_layout(
                     title={
-                        'text': "Distribución de deuda vencida (todas las fechas)",
+                        'text': "Monto vencido",
                         'x': 0.5,
                         'xanchor': 'center',
                         'yanchor': 'top'
