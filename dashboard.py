@@ -4018,6 +4018,11 @@ if authentication_status:
             )
 
         # ============================== GRÁFICA DE BARRAS POR SUCURSAL ==============================================================================================
+        # Asegurar que el filtrado tenga columnas de mes
+        df_filtrado = df_filtrado.copy()
+        df_filtrado["mes_dt"] = pd.to_datetime(df_filtrado["fecha"]).dt.to_period("M").dt.to_timestamp()
+        df_filtrado["mes_nombre"] = df_filtrado["fecha"].dt.strftime("%b")
+
         if len(sucursales_seleccionadas) == 1:
             sucursal = sucursales_seleccionadas[0]
             df_suc = df_filtrado[df_filtrado["sucursal"] == sucursal].copy()
@@ -4025,14 +4030,14 @@ if authentication_status:
             df_suc = df_suc.sort_values("mes_dt", ascending=False)  # orden descendente
             df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
             df_suc["porcentaje"] = 100  # 👈 siempre añade esta columna
-            
+
             fig_barras = px.bar(
                 df_suc,
                 x="mes_nombre",
                 y="monto",
                 text="texto",
                 color_discrete_sequence=[colores_sucursales.get(sucursal, "#636EFA")],
-                title=f"Compras mensuales de {sucursal} en 2025"
+                title=f"Compras mensuales de {sucursal} en {titulo_periodo}"
             )
 
             fig_barras.update_traces(
@@ -4047,8 +4052,8 @@ if authentication_status:
 
             fig_barras.update_layout(showlegend=False, xaxis_title="Mes", yaxis_title="Total Comprado")
             st.plotly_chart(fig_barras, use_container_width=True)
+
         else:
-            #st.markdown("### Compras por Sucursal, mes a mes")
             for mes in orden_meses_desc:  # <- aquí el cambio para orden descendente
                 df_mes = df_filtrado[df_filtrado["mes_nombre"] == mes].copy()
                 df_mes = df_mes[df_mes["sucursal"].isin(sucursales_seleccionadas)].copy()
@@ -4087,8 +4092,6 @@ if authentication_status:
                 fig_mes.update_traces(textposition='inside', texttemplate='%{text}')
                 fig_mes.update_layout(showlegend=False)
                 st.plotly_chart(fig_mes, use_container_width=True, key=f"mes_{mes}")
-
-
 
     # ==========================================================================================================
     # ================================ ESTADO DE LIGADO ========================================
