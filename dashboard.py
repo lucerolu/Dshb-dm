@@ -4020,12 +4020,12 @@ if authentication_status:
         # ============================== GRÁFICA DE BARRAS POR SUCURSAL ==============================================================================================
         if len(sucursales_seleccionadas) == 1:
             sucursal = sucursales_seleccionadas[0]
-            df_suc = df_filtrado[df["sucursal"] == sucursal].copy()
+            df_suc = df_filtrado[df_filtrado["sucursal"] == sucursal].copy()
             df_suc = df_suc.groupby(["mes_nombre", "mes_dt"], as_index=False).agg({"monto": "sum"})
             df_suc = df_suc.sort_values("mes_dt", ascending=False)  # orden descendente
             df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
             df_suc["porcentaje"] = 100  # 👈 siempre añade esta columna
-
+            
             fig_barras = px.bar(
                 df_suc,
                 x="mes_nombre",
@@ -4035,7 +4035,6 @@ if authentication_status:
                 title=f"Compras mensuales de {sucursal} en 2025"
             )
 
-            # Agregamos hovertemplate
             fig_barras.update_traces(
                 textposition='inside',
                 texttemplate='%{text}',
@@ -4043,10 +4042,9 @@ if authentication_status:
                     "<b>Sucursal:</b> " + sucursal + "<br>"
                     "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
                 ),
-                customdata=df_suc[["porcentaje"]] if "porcentaje" in df_suc.columns else df_suc.assign(porcentaje=100)[["porcentaje"]]
+                customdata=df_suc[["porcentaje"]]
             )
 
-            fig_barras.update_traces(textposition='inside', texttemplate='%{text}')
             fig_barras.update_layout(showlegend=False, xaxis_title="Mes", yaxis_title="Total Comprado")
             st.plotly_chart(fig_barras, use_container_width=True)
         else:
