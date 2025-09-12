@@ -4024,6 +4024,7 @@ if authentication_status:
             df_suc = df_suc.groupby(["mes_nombre", "mes_dt"], as_index=False).agg({"monto": "sum"})
             df_suc = df_suc.sort_values("mes_dt", ascending=False)  # orden descendente
             df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
+            df_suc["porcentaje"] = 100  # 👈 siempre añade esta columna
 
             fig_barras = px.bar(
                 df_suc,
