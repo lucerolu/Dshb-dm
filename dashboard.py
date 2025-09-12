@@ -4018,41 +4018,44 @@ if authentication_status:
             )
 
         # ============================== GRÁFICA DE BARRAS POR SUCURSAL ==============================================================================================
-        # Asegurar que el filtrado tenga columnas de mes
-        df_filtrado = df_filtrado.copy()
-        df_filtrado["mes_dt"] = pd.to_datetime(df_filtrado["fecha"]).dt.to_period("M").dt.to_timestamp()
-        df_filtrado["mes_nombre"] = df_filtrado["fecha"].dt.strftime("%b")
 
         if len(sucursales_seleccionadas) == 1:
             sucursal = sucursales_seleccionadas[0]
             df_suc = df_filtrado[df_filtrado["sucursal"] == sucursal].copy()
+
+            # Agrupamos y ordenamos
             df_suc = df_suc.groupby(["mes_nombre", "mes_dt"], as_index=False).agg({"monto": "sum"})
-            df_suc = df_suc.sort_values("mes_dt", ascending=False)  # orden descendente
+            df_suc = df_suc.sort_values("mes_dt", ascending=False)
+
+            # Crear columnas auxiliares
             df_suc["texto"] = df_suc["monto"].apply(lambda x: f"${x:,.0f}")
-            df_suc["porcentaje"] = 100  # 👈 siempre añade esta columna
+            df_suc["porcentaje"] = 100  
 
-            fig_barras = px.bar(
-                df_suc,
-                x="mes_nombre",
-                y="monto",
-                text="texto",
-                color_discrete_sequence=[colores_sucursales.get(sucursal, "#636EFA")],
-                title=f"Compras mensuales de {sucursal} en {titulo_periodo}"
-            )
+            # 👀 DEBUG
+            st.write("📊 DataFrame para gráfico de una sucursal:", df_suc)
 
-            fig_barras.update_traces(
-                textposition='inside',
-                texttemplate='%{text}',
-                hovertemplate=(
-                    "<b>Sucursal:</b> " + sucursal + "<br>"
-                    "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
-                ),
-                customdata=df_suc[["porcentaje"]]
-            )
+            if not df_suc.empty:
+                fig_barras = px.bar(
+                    df_suc,
+                    x="mes_nombre",
+                    y="monto",
+                    text="texto",
+                    color_discrete_sequence=[colores_sucursales.get(sucursal, "#636EFA")],
+                    title=f"Compras mensuales de {sucursal} en {titulo_periodo}"
+                )
 
-            fig_barras.update_layout(showlegend=False, xaxis_title="Mes", yaxis_title="Total Comprado")
-            st.plotly_chart(fig_barras, use_container_width=True)
+                fig_barras.update_traces(
+                    textposition='inside',
+                    texttemplate='%{text}',
+                    hovertemplate=(
+                        "<b>Sucursal:</b> " + sucursal + "<br>"
+                        "<b>Monto:</b> $%{y:,.2f}<extra></extra>"
+                    ),
+                    customdata=df_suc[["porcentaje"]]
+                )
 
+                fig_barras.update_layout(showlegend=False, xaxis_title="Mes", yaxis_title="Total Comprado")
+                st.plotly_chart(fig_barras, use_container_width=True)
         else:
             for mes in orden_meses_desc:  # <- aquí el cambio para orden descendente
                 df_mes = df_filtrado[df_filtrado["mes_nombre"] == mes].copy()
