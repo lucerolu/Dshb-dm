@@ -66,12 +66,14 @@ if authentication_status:
 
     colores_sucursales = config["sucursales"]
 
-    API_BASE = "https://fastapi-api-454780168370.us-central1.run.app"
+    API_TOKEN = st.secrets["API_TOKEN"]
+    API_BASE = st.secrets["API_BASE"]
 
     def obtener_datos_api():
         url = f"{API_BASE}/datos"
+        headers = {"Authorization": f"Bearer {API_TOKEN}"}
         try:
-            response = requests.get(url)
+            response = requests.get(url, headers=headers)
             response.raise_for_status()
             data = response.json()
             return pd.DataFrame(data)
@@ -81,8 +83,9 @@ if authentication_status:
 
     def obtener_estado_cuenta_api():
         url = f"{API_BASE}/estado_cuenta"
+        headers = {"Authorization": f"Bearer {API_TOKEN}"}
         try:
-            response = requests.get(url)
+            response = requests.get(url, headers=headers)
             response.raise_for_status()
             data = response.json()
 
@@ -103,24 +106,29 @@ if authentication_status:
 
 
     def mostrar_fecha_actualizacion():
+        url = f"{API_BASE}/ultima_actualizacion"
+        headers = {"Authorization": f"Bearer {API_TOKEN}"}
         try:
-            respuesta = requests.get(f"{API_BASE}/ultima_actualizacion")
-            if respuesta.status_code == 200:
-                data = respuesta.json()
-                fecha_dt = datetime.fromisoformat(data['fecha'])
-                
-                fecha_formateada = format_datetime(fecha_dt, "d 'de' MMMM 'de' yyyy, h:mm a", locale="es")
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            fecha_dt = datetime.fromisoformat(data['fecha'])
 
-                st.markdown(
-                    f'<p style="background-color:#DFF2BF; color:#4F8A10; padding:10px; border-radius:5px;">'
-                    f'🕒 <b>Última actualización de datos:</b> {fecha_formateada}<br>'
-                    f'📋 <i>{data["descripcion"]}</i>'
-                    f'</p>', unsafe_allow_html=True
-                )
-            else:
-                st.warning("No se pudo obtener la fecha de última actualización.")
+            fecha_formateada = format_datetime(
+                fecha_dt,
+                "d 'de' MMMM 'de' yyyy, h:mm a",
+                locale="es"
+            )
+
+            st.markdown(
+                f'<p style="background-color:#DFF2BF; color:#4F8A10; padding:10px; border-radius:5px;">'
+                f'🕒 <b>Última actualización de datos:</b> {fecha_formateada}<br>'
+                f'📋 <i>{data["descripcion"]}</i>'
+                f'</p>',
+                unsafe_allow_html=True
+            )
         except Exception as e:
-            st.error(f"Error de conexión con la API: {e}")
+            st.error(f"Error al obtener la fecha de última actualización de la API: {e}")
 
     # ----------------------------------------------- OBTENER DATOS -------------------------------------------------------------------------------
     df = obtener_datos_api()
