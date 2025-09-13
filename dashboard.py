@@ -32,8 +32,8 @@ from io import BytesIO
 import html
 from dateutil.relativedelta import relativedelta
 
-API_TOKEN = st.secrets["API_TOKEN"]
-API_BASE = st.secrets["API_BASE"]
+API_TOKEN = st.secrets["api"]["API_TOKEN"]
+API_BASE = st.secrets["api"]["API_BASE"]
 
 # Cargar configuración desde secrets y convertirla a dict normal
 auth_config = dict(st.secrets["auth"])
