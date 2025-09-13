@@ -32,6 +32,8 @@ from io import BytesIO
 import html
 from dateutil.relativedelta import relativedelta
 
+API_TOKEN = st.secrets["API_TOKEN"]
+API_BASE = st.secrets["API_BASE"]
 
 # Cargar configuración desde secrets y convertirla a dict normal
 auth_config = dict(st.secrets["auth"])
@@ -65,9 +67,6 @@ if authentication_status:
         config = json.load(f)
 
     colores_sucursales = config["sucursales"]
-
-    API_TOKEN = st.secrets["API_TOKEN"]
-    API_BASE = st.secrets["API_BASE"]
 
     def obtener_datos_api():
         url = f"{API_BASE}/datos"
