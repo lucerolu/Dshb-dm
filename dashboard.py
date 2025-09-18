@@ -159,22 +159,29 @@ if authentication_status:
         orden_meses_desc = orden_meses_asc[::-1]
         orden_meses = orden_meses_asc
 
-        # ------------------------------------------ DIVISIONES ----------------------------------------------------
+        # ------------------------------------------ DIVISIONES Y MAPEO DE COLORES ----------------------------------------------------
         divisiones = config["divisiones"]
-        # Crear mapas para códigos y colores
-        mapa_codigos = {
-            codigo: division
-            for division, info in divisiones.items()
-            for codigo in info["codigos"]
-        }
-        colores_divisiones = {
-            division: info["color"]
-            for division, info in divisiones.items()
-        }
-        # Asignar división a cada fila
+
+        mapa_codigos = {}
+        colores_divisiones = {}
+        codigo_division_map = {}
+
+        for division, datos in divisiones.items():
+            colores_divisiones[division] = datos["color"]
+            for cod in datos["codigos"]:
+                mapa_codigos[cod] = division
+                codigo_division_map[cod] = {
+                    "color": datos["color"],
+                    "abreviatura": datos["abreviatura"],
+                    "division": division
+                }
+
+        # Asignar división
         df["division"] = df["codigo_normalizado"].map(mapa_codigos)
-        # Filtrar cuentas con división válida
+
+        # Filtrar válidos
         df_divisiones = df.dropna(subset=["division"]).copy()
+
         # Agregar columnas de fecha/mes
         df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["mes"])
         df_divisiones["mes_nombre"] = (
@@ -182,25 +189,12 @@ if authentication_status:
             + " "
             + df_divisiones["mes_dt"].dt.year.astype(str)
         )
-    else:
-        st.warning("No hay datos disponibles para mostrar.")
 
-    
-    #------------------------------ MAPEO COLOR ABREVIATURA -------------------------------------------------------------------------
-    # Crear un dict {codigo: (color, abreviatura)}
-    codigo_division_map = {}
-    for division, datos in config["divisiones"].items():
-        for cod in datos["codigos"]:
-            codigo_division_map[cod] = {
-                "color": datos["color"],
-                "abreviatura": datos["abreviatura"],
-                "division": division
-            }
+        # Diccionario plano solo con colores por sucursal
+        colores_sucursales_map = {
+            suc: data["color"] for suc, data in colores_sucursales.items()
+        }
 
-    # Diccionario plano solo con colores
-    colores_sucursales_map = {
-        suc: data["color"] for suc, data in colores_sucursales.items()
-    }
     # ------------------- MENU LATERAL -------------------------------------------------
     with st.sidebar:
         # Mostrar bienvenida
