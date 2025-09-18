@@ -32,6 +32,8 @@ from io import BytesIO
 import html
 from dateutil.relativedelta import relativedelta
 
+st.set_page_config(page_title="Dashboard Compras 2025", layout="wide")
+
 API_TOKEN = st.secrets["api"]["API_TOKEN"]
 API_BASE = st.secrets["api"]["API_BASE"]
 
@@ -61,13 +63,17 @@ if authentication_status:
     #==========================================================================================================
     # -------------- CONFIGURACION GENERAL --------------------------------------------------------------------
     #==========================================================================================================
-    st.set_page_config(page_title="Dashboard Compras 2025", layout="wide")
+    #st.set_page_config(page_title="Dashboard Compras 2025", layout="wide")
 
-    with open("config_colores.json", "r", encoding="utf-8") as f:
-        config = json.load(f)
+    @st.cache_data
+    def cargar_config():
+        with open("config_colores.json", "r", encoding="utf-8") as f:
+            return json.load(f)
 
+    config = cargar_config()
     colores_sucursales = config["sucursales"]
 
+    @st.cache_data(ttl=300)
     def obtener_datos_api():
         url = f"{API_BASE}/datos"
         headers = {"Authorization": f"Bearer {API_TOKEN}"}
@@ -79,7 +85,7 @@ if authentication_status:
         except Exception as e:
             st.error(f"Error al obtener datos de la API: {e}")
             return pd.DataFrame()
-
+    @st.cache_data(ttl=300)
     def obtener_estado_cuenta_api():
         url = f"{API_BASE}/estado_cuenta"
         headers = {"Authorization": f"Bearer {API_TOKEN}"}
@@ -102,7 +108,6 @@ if authentication_status:
         except Exception as e:
             st.error(f"Error al obtener estado de cuenta de la API: {e}")
             return pd.DataFrame(), None
-
 
     def mostrar_fecha_actualizacion():
         url = f"{API_BASE}/ultima_actualizacion"
