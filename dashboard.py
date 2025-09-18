@@ -63,7 +63,6 @@ if authentication_status:
     #==========================================================================================================
     # -------------- CONFIGURACION GENERAL --------------------------------------------------------------------
     #==========================================================================================================
-    #st.set_page_config(page_title="Dashboard Compras 2025", layout="wide")
 
     @st.cache_data
     def cargar_config():
@@ -162,28 +161,32 @@ if authentication_status:
 
         # ------------------------------------------ DIVISIONES ----------------------------------------------------
         divisiones = config["divisiones"]
-        mapa_codigos = {}
-        colores_divisiones = {}
-        for division, info in divisiones.items():
-            for codigo in info["codigos"]:
-                mapa_codigos[codigo] = division
-            colores_divisiones[division] = info["color"]
-
+        # Crear mapas para códigos y colores
+        mapa_codigos = {
+            codigo: division
+            for division, info in divisiones.items()
+            for codigo in info["codigos"]
+        }
+        colores_divisiones = {
+            division: info["color"]
+            for division, info in divisiones.items()
+        }
+        # Asignar división a cada fila
         df["division"] = df["codigo_normalizado"].map(mapa_codigos)
-        df_divisiones = df.dropna(subset=["division"])  # descarta cuentas sin división
+        # Filtrar cuentas con división válida
+        df_divisiones = df.dropna(subset=["division"]).copy()
+        # Agregar columnas de fecha/mes
         df_divisiones["mes_dt"] = pd.to_datetime(df_divisiones["mes"])
-        df_divisiones["mes_nombre"] = df_divisiones["mes_dt"].dt.month_name().map(meses_es) + " " + df_divisiones["mes_dt"].dt.year.astype(str)
+        df_divisiones["mes_nombre"] = (
+            df_divisiones["mes_dt"].dt.month_name().map(meses_es)
+            + " "
+            + df_divisiones["mes_dt"].dt.year.astype(str)
+        )
     else:
         st.warning("No hay datos disponibles para mostrar.")
 
     
     #------------------------------ MAPEO COLOR ABREVIATURA -------------------------------------------------------------------------
-    # Cargar configuración de colores
-    with open("config_colores.json", "r", encoding="utf-8") as f:
-        config = json.load(f)
-
-    #colores_divisiones = {div: data["color"] for div, data in config["divisiones"].items()}
-
     # Crear un dict {codigo: (color, abreviatura)}
     codigo_division_map = {}
     for division, datos in config["divisiones"].items():
