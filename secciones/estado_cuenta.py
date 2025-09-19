@@ -88,89 +88,123 @@ def mostrar():
     
     st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
     
-    # ----------------- Preparar DataFrame -----------------
+    # ------------------ Cargar configuración ------------------
+    with open("config_colores.json", "r", encoding="utf-8") as f:
+        config = json.load(f)
 
+    divisiones = config["divisiones"]
+    colores_sucursales = config["sucursales"]
+
+    # ------------------ Función para abreviatura ------------------
     def obtener_abreviatura(codigo):
         for division, info in divisiones.items():
             if codigo in info["codigos"]:
                 return info["abreviatura"]
         return ""
     
+    # --- Tema ---
+    modo = st.get_option("theme.base")  # 'dark' o 'light'
+    template = "plotly_dark" if modo == "dark" else "plotly_white"
+
+    # ------------------ Preparar DataFrame base ------------------
     df = df_estado_cuenta.copy()
+
     df["fecha_exigibilidad"] = pd.to_datetime(df["fecha_exigibilidad"], errors="coerce")
-    df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
     df["codigo"] = df["codigo_6digitos"].astype(str)
+    df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
     df["abreviatura"] = df["codigo"].apply(obtener_abreviatura)
     df["cuenta_sucursal"] = df["codigo"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
-    df = generar_cuenta_sucursal(df)
-    df = formatear_fechas(df, "fecha_exigibilidad")
 
-    # Meta info para merge posterior
     meta = df[["cuenta_sucursal", "codigo", "sucursal", "abreviatura"]].drop_duplicates()
 
-    # Pivot table
     tabla = df.pivot_table(
         index="fecha_exigibilidad",
         columns="cuenta_sucursal",
         values="total",
         aggfunc="sum"
     )
+
     fechas = sorted(df["fecha_exigibilidad"].dropna().unique())
     tabla = tabla.reindex(fechas).fillna(0)
-    
+
     df_completo = tabla.stack(dropna=False).reset_index(name="total")
     df_completo = df_completo.rename(columns={"level_2": "cuenta_sucursal"})
     df_completo = df_completo.merge(meta, on="cuenta_sucursal", how="left")
+
     df_completo[["sucursal","codigo","abreviatura"]] = df_completo[["sucursal","codigo","abreviatura"]].fillna({
         "sucursal":"Desconocida",
         "codigo":"Desconocido",
         "abreviatura":""
     })
 
-    # Mostrar tabla
-    st.dataframe(df_completo)
+    df_completo["fecha_exigibilidad_str"] = df_completo["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
+    fechas_ordenadas = sorted(
+        df_completo["fecha_exigibilidad_str"].unique(),
+        key=lambda x: pd.to_datetime(x, format="%d/%m/%Y")
+    )
+    # ------------------------------------- TARJETAS DE CRÉDITO DISPONIBLE --------------------------------------------------
+    # Límite de crédito
+    CREDITO_MAX = 180_000_000
 
-    # ----------------- Tarjetas de crédito -----------------
-    total_estado_cuenta = df_estado_cuenta["total"].sum()
-    credito_disponible = CREDITO_MAX - total_estado_cuenta
-    porcentaje_disponible = (credito_disponible / CREDITO_MAX) * 100
-    porcentaje_usado = (total_estado_cuenta / CREDITO_MAX) * 100
+    # Obtener los datos
+    df_estado_cuenta, fecha_corte = obtener_estado_cuenta_api()
 
-    col1, col2, col3 = st.columns([1,1,1])
-    for col, (titulo, valor) in zip(
-        [col1, col2, col3],
-        [
+    if not df_estado_cuenta.empty:
+        total_estado_cuenta = df_estado_cuenta["total"].sum()
+        credito_disponible = CREDITO_MAX - total_estado_cuenta
+        porcentaje_disponible = (credito_disponible / CREDITO_MAX) * 100
+        porcentaje_usado = (total_estado_cuenta / CREDITO_MAX) * 100
+
+        # Crear las tarjetas de crédito centradas
+        col1, col2, col3 = st.columns([1, 1, 1])
+        valores_credito = [
             ("💰 Crédito disponible", f"${credito_disponible:,.2f}"),
             ("📊 % Crédito disponible", f"{porcentaje_disponible:.2f}%"),
             ("📈 % Crédito usado", f"{porcentaje_usado:.2f}%")
         ]
-    ):
-        col.metric(titulo, valor)
+
+        for col, (titulo, valor) in zip([col1, col2, col3], valores_credito):
+            col.metric(titulo, valor)
+    else:
+        st.info("No hay datos disponibles para mostrar el crédito.")
 
     st.markdown("<div class='spacer'></div>", unsafe_allow_html=True)
 
-    # ----------------- Tarjetas de vencimiento -----------------
+    # ----------------------------------------- TARJETAS DE VENCIMIENTO -----------------------------------------------------
+    df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
     hoy = pd.to_datetime(datetime.today().date())
-    total_vencido, por_vencer_30, por_vencer_90 = calcular_vencimientos(df_estado_cuenta, hoy)
 
-    col1, col2, col3 = st.columns([1,1,1])
-    for col, (titulo, valor) in zip(
-        [col1, col2, col3],
-        [
-            ("🔴 Total vencido", f"${total_vencido:,.2f}"),
-            ("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}"),
-            ("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
-        ]
-    ):
+    total_vencido = df_estado_cuenta[df_estado_cuenta["fecha_exigibilidad"] < hoy]["total"].sum()
+    por_vencer_30 = df_estado_cuenta[
+        (df_estado_cuenta["fecha_exigibilidad"] >= hoy) &
+        (df_estado_cuenta["fecha_exigibilidad"] <= hoy + timedelta(days=30))
+    ]["total"].sum()
+    por_vencer_90 = df_estado_cuenta[
+        df_estado_cuenta["fecha_exigibilidad"] > hoy + timedelta(days=90)
+    ]["total"].sum()
+
+    col1, col2, col3 = st.columns([1, 1, 1])
+    valores_vencimiento = [
+        ("🔴 Total vencido", f"${total_vencido:,.2f}"),
+        ("🟡 Por vencer en 30 días", f"${por_vencer_30:,.2f}"),
+        ("🟢 Por vencer >90 días", f"${por_vencer_90:,.2f}")
+    ]
+
+    for col, (titulo, valor) in zip([col1, col2, col3], valores_vencimiento):
         col.metric(titulo, valor)
 
-    # ----------------- Próxima exigibilidad -----------------
-    fechas_exig = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"]).dt.date
-    fechas_futuras = [f for f in fechas_exig if f >= hoy.date()]
+
     
+    # --------------------------------------------- Indicador: próxima fecha de exigibilidad --------------------------------------------------------------------------------
+    hoy = datetime.today().date()
+    fechas_exig = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"]).dt.date
+
+    # Filtrar solo las fechas futuras o iguales a hoy
+    fechas_futuras = [f for f in fechas_exig if f >= hoy]
+
     if fechas_futuras:
         proxima_fecha = min(fechas_futuras)
-        dias_faltan = (proxima_fecha - hoy.date()).days
+        dias_faltan = (proxima_fecha - hoy).days
         st.markdown(
             f"""
             <div style="
@@ -213,7 +247,11 @@ def mostrar():
     df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
     df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
     hoy_str = pd.Timestamp(datetime.today().date()).strftime("%Y-%m-%d")  # para JS
-
+    def obtener_abreviatura(codigo):
+        for division, info in divisiones.items():
+            if codigo in info["codigos"]:
+                return info["abreviatura"]
+        return ""
     # --- Enriquecer código con abreviatura ---
     df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
     df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
