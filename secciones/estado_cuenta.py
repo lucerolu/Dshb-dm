@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from io import BytesIO
 from datetime import datetime, timedelta
+from config import cargar_config
 from utils.api_utils import obtener_estado_cuenta_api
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, JsCode, AgGridTheme
 
@@ -25,6 +26,7 @@ def cargar_config():
         return json.load(f)
     
 # ================== CONFIGURACIÓN =====================
+
 config = cargar_config()
 divisiones = config["divisiones"]          # abreviaturas y códigos
 colores_sucursales = config["sucursales"]  # colores por sucursal
@@ -69,8 +71,13 @@ def formatear_fechas(df, columna="fecha_exigibilidad"):
     return df
 
 #=============================================
-def mostrar(df=None, config=None):
+def mostrar():
     st.title("Cuadro de estado de cuenta")
+
+    # Cargar configuración propia
+    config = cargar_config()
+    divisiones = config["divisiones"]
+    colores_sucursales = config["sucursales"]
     
     df_estado_cuenta, fecha_corte = cargar_estado_cuenta()
     if df_estado_cuenta.empty or fecha_corte is None:
