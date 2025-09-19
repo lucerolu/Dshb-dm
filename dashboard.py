@@ -197,7 +197,7 @@ if authentication_status:
     )
 
     if opcion == "Estado de cuenta":
-        estado_cuenta.mostrar(df, config)
+        estado_cuenta.mostrar()
     elif opcion == "Resumen General":
         resumen_general.mostrar(df, config)
     elif opcion == "Compra por División":
