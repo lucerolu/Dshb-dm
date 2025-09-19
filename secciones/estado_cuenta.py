@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from io import BytesIO
 from datetime import datetime, timedelta
-from config import cargar_config
+from utils.config import cargar_config
 from utils.api_utils import obtener_estado_cuenta_api
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, JsCode, AgGridTheme
 

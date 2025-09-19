@@ -4,9 +4,9 @@ from datetime import datetime
 import streamlit_authenticator as stauth
 
 # ------------------- IMPORTS PROPIOS -------------------
-from config import cargar_config
+from utils.config import cargar_config
 from utils.api_utils import obtener_datos_api, mostrar_fecha_actualizacion
-from helpers import meses_es
+from utils.helpers import meses_es
 
 # Configuración de la página
 st.set_page_config(page_title="Dashboard Compras 2025", layout="wide")
