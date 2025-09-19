@@ -87,6 +87,13 @@ def mostrar():
     st.markdown(f"### Estado de cuenta actualizado a {fecha_corte.strftime('%d/%m/%Y')}")
     
     # ----------------- Preparar DataFrame -----------------
+
+    def obtener_abreviatura(codigo):
+        for division, info in divisiones.items():
+            if codigo in info["codigos"]:
+                return info["abreviatura"]
+        return ""
+    
     df = df_estado_cuenta.copy()
     df["fecha_exigibilidad"] = pd.to_datetime(df["fecha_exigibilidad"], errors="coerce")
     df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
@@ -201,11 +208,7 @@ def mostrar():
     df_estado_cuenta["fecha_exigibilidad"] = pd.to_datetime(df_estado_cuenta["fecha_exigibilidad"])
     df_estado_cuenta["fecha_exigibilidad_str"] = df_estado_cuenta["fecha_exigibilidad"].dt.strftime("%d/%m/%Y")
     hoy_str = pd.Timestamp(datetime.today().date()).strftime("%Y-%m-%d")  # para JS
-    def obtener_abreviatura(codigo):
-        for division, info in divisiones.items():
-            if codigo in info["codigos"]:
-                return info["abreviatura"]
-        return ""
+
     # --- Enriquecer código con abreviatura ---
     df_estado_cuenta["codigo"] = df_estado_cuenta["codigo_6digitos"].astype(str)
     df_estado_cuenta["abreviatura"] = df_estado_cuenta["codigo"].apply(obtener_abreviatura)
