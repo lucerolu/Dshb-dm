@@ -14,7 +14,6 @@ from utils.api_utils import obtener_estado_cuenta_api
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, JsCode, AgGridTheme
 
 
-
 #================= CARGA DE DATOS ====================
 @st.cache_data(ttl=300)
 def cargar_estado_cuenta():
