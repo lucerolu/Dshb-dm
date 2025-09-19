@@ -42,6 +42,7 @@ def obtener_abreviatura(codigo):
             return info["abreviatura"]
     return ""
 
+
 # Función para color según días de vencimiento
 def color_por_vencimiento(fecha_str, hoy):
     try:
@@ -53,6 +54,7 @@ def color_por_vencimiento(fecha_str, hoy):
         else: return "green"
     except:
         return "transparent"
+    
     
 def generar_cuenta_sucursal(df):
     df = df.copy()
@@ -97,6 +99,8 @@ def mostrar():
     df = df_estado_cuenta.copy()
     df["fecha_exigibilidad"] = pd.to_datetime(df["fecha_exigibilidad"], errors="coerce")
     df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
+    df["codigo"] = df["codigo_6digitos"].astype(str)
+    df["abreviatura"] = df["codigo"].apply(obtener_abreviatura)
     df = generar_cuenta_sucursal(df)
     df = formatear_fechas(df, "fecha_exigibilidad")
 
