@@ -101,6 +101,7 @@ def mostrar():
     df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
     df["codigo"] = df["codigo_6digitos"].astype(str)
     df["abreviatura"] = df["codigo"].apply(obtener_abreviatura)
+    df["cuenta_sucursal"] = df["codigo"] + " (" + df["abreviatura"] + ") - " + df["sucursal"]
     df = generar_cuenta_sucursal(df)
     df = formatear_fechas(df, "fecha_exigibilidad")
 
