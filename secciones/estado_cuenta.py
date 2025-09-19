@@ -69,7 +69,7 @@ def formatear_fechas(df, columna="fecha_exigibilidad"):
     return df
 
 #=============================================
-def mostrar():
+def mostrar(df=None, config=None):
     st.title("Cuadro de estado de cuenta")
     
     df_estado_cuenta, fecha_corte = cargar_estado_cuenta()
