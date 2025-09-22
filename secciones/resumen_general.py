@@ -110,17 +110,17 @@ def mostrar(df_filtrado, config):
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ------------------------------------ GÁFICA DE LÍNEAS DEL TOTAL GENERAL  -----------------------------------------------------------------------------------------------------------------
-    # Agrupar y conservar solo los meses que realmente existen en df_filtrado
-    df_total_mes = df_filtrado.groupby("mes_nombre")["monto"].sum()
-
-    # Ordenar los meses que sí están presentes
-    df_total_mes = df_total_mes.reindex([m for m in orden_meses if m in df_total_mes.index])
+    # Agrupar y ordenar por mes_period (cronológico)
+    df_total_mes = (
+        df_filtrado.groupby(["mes_period", "mes_nombre"])["monto"].sum().reset_index()
+        .sort_values("mes_period")
+    )
 
     # Crear figura
     fig_total = go.Figure()
     fig_total.add_trace(go.Scatter(
-        x=df_total_mes.index,
-        y=df_total_mes.values,
+        x=df_total_mes["mes_nombre"],   # etiquetas "Enero 2024"
+        y=df_total_mes["monto"],
         mode="lines+markers",
         name="Total",
         line=dict(color="blue"),
