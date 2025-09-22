@@ -26,12 +26,25 @@ def mostrar(df_filtrado, config):
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
     ]
 
-    # Normalizamos la fecha y el nombre del mes
-    df_filtrado["mes_dt"] = pd.to_datetime(df_filtrado["mes"])
+    # Recalcular mes_nombre y mes_period después del filtrado
+    df_filtrado["mes_dt"] = pd.to_datetime(df_filtrado["fecha"])
+    df_filtrado["mes_period"] = df_filtrado["mes_dt"].dt.to_period("M")
     df_filtrado["mes_nombre"] = (
-        df_filtrado["mes_dt"].dt.month_name()
-        .map(meses_es) + " " + df_filtrado["mes_dt"].dt.year.astype(str)
+        df_filtrado["mes_dt"].dt.month_name().map(meses_es)
+        + " " + df_filtrado["mes_dt"].dt.year.astype(str)
     )
+
+    # Agrupar montos por mes
+    df_total_mes = (
+        df_filtrado.groupby(["mes_period", "mes_nombre"])["monto"].sum().reset_index()
+        .sort_values("mes_period")
+    )
+
+    # Crear un orden dinámico en base a lo que realmente existe en los datos
+    orden_meses = df_total_mes["mes_nombre"].tolist()
+
+    # Reindexar con el orden correcto
+    df_total_mes = df_total_mes.set_index("mes_nombre").reindex(orden_meses).reset_index()
 
     # ================== AGRUPACIONES ÚNICAS (reutilizables) =====================
     df_mensual = (
