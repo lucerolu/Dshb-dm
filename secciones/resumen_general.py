@@ -4,6 +4,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 from utils.api_utils import obtener_datos_api
 
+@st.cache_data(ttl=300)
+def cargar_estado_cuenta():
+    return obtener_datos_api()
+
 # ================== FUNCIÓN PRINCIPAL =====================
 def mostrar(df_filtrado, config):
     """
