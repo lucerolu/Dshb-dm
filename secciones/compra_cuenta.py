@@ -56,6 +56,7 @@ def mostrar(df_filtrado, config):
         suc: data["color"] for suc, data in colores_sucursales.items()
     }
     
+    df_filtrado["cuenta_id"] = df_filtrado["codigo_normalizado"]  
     df_cuenta = df_filtrado.groupby(["mes_nombre", "cuenta_id"])["monto"].sum().reset_index()
     
     fig = px.line(df_cuenta, x="mes_nombre", y="monto", color="cuenta_id",
