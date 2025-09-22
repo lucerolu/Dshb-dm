@@ -5,7 +5,11 @@ from datetime import datetime
 from utils.api_utils import obtener_datos_api
 
 def mostrar(df_filtrado, config):
-    st.write("Columnas disponibles:", df_filtrado.columns.tolist())
+    df_filtrado = obtener_datos_api()
+
+    # Revisar qué columnas llegaron
+    st.write("Columnas obtenidas de la API:", df_filtrado.columns.tolist())
+    st.write(df_filtrado.head())
 
     st.title("Estado de Ligado")
     
