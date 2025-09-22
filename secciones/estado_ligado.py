@@ -34,8 +34,7 @@ def mostrar(df, config):
     # Orden descendente (para gráficas que van de mes más reciente al más antiguo)
     orden_meses_desc = orden_meses_asc[::-1]
     orden_meses = orden_meses_asc
-    
-    st.title("Estado de Ligado de Facturas")
+
     # ----------- Información General - Estado de Ligado  (TARJETAS) -----------
     st.markdown("### Información general")
     # Filtramos el dataframe para obtener totales según el ligado_sistema
