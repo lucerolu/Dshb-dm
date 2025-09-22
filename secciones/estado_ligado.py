@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from utils.api_utils import obtener_datos_api
 
-def mostrar(df_filtrado, config):
+def mostrar(df, config):
 
     st.title("Estado de Ligado")
     
