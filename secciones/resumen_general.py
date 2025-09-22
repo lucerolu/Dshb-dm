@@ -99,6 +99,9 @@ def mostrar(df_filtrado, config):
     # ------------------------------------ GÁFICA DE LÍNEAS DEL TOTAL GENERAL  -----------------------------------------------------------------------------------------------------------------
     # Agrupar y conservar solo los meses que realmente existen en df_filtrado
     #df_total_mes = df_filtrado.groupby("mes_nombre")["monto"].sum()
+    df_total_mes = (
+        df_filtrado.groupby("mes_nombre", as_index=False)["monto"].sum()
+    )
 
     # Ordenar los meses que sí están presentes
     df_total_mes = df_total_mes.reindex([m for m in orden_meses if m in df_total_mes.index])
