@@ -36,12 +36,6 @@ def mostrar(df_filtrado, config):
                 "abreviatura": datos["abreviatura"],
                 "division": division
             }
-    
-    df_suc = df_filtrado.groupby(["mes_nombre", "sucursal"])["monto"].sum().reset_index()
-    
-    fig = px.bar(df_suc, x="mes_nombre", y="monto", color="sucursal",
-                 title="Compras por Sucursal")
-    st.plotly_chart(fig, use_container_width=True)
 
     st.title("Total de Compras por Mes y Sucursal")
     # ----------------- Selector de periodo compacto -----------------
