@@ -5,9 +5,7 @@ from datetime import datetime
 from utils.api_utils import obtener_datos_api
 
 def mostrar(df_filtrado, config):
-    st.write("Columnas disponibles:", df.columns.tolist())
-    print(df_filtrado.columns.tolist())
-
+    st.write("Columnas disponibles:", df_filtrado.columns.tolist())
 
     st.title("Estado de Ligado")
     
