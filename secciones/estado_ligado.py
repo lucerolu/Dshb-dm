@@ -5,11 +5,6 @@ from datetime import datetime
 from utils.api_utils import obtener_datos_api
 
 def mostrar(df_filtrado, config):
-    df_filtrado = obtener_datos_api()
-
-    # Revisar qué columnas llegaron
-    st.write("Columnas obtenidas de la API:", df_filtrado.columns.tolist())
-    st.write(df_filtrado.head())
 
     st.title("Estado de Ligado")
     
@@ -40,8 +35,6 @@ def mostrar(df_filtrado, config):
     orden_meses_desc = orden_meses_asc[::-1]
     orden_meses = orden_meses_asc
     
-    # Aquí puedes mostrar los estados de ligado (supongo que los tienes en df)
-    st.dataframe(df[["folio", "estado_ligado", "monto"]])
     st.title("Estado de Ligado de Facturas")
     # ----------- Información General - Estado de Ligado  (TARJETAS) -----------
     st.markdown("### Información general")
