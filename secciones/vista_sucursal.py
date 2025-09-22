@@ -13,8 +13,6 @@ import matplotlib.colors as mcolors
 from matplotlib.colors import LinearSegmentedColormap
 
 def mostrar(df_filtrado, config):
-    st.title("Vista por Sucursal")
-    
     if df_filtrado.empty:
         st.warning("No hay datos para mostrar.")
         return
@@ -84,9 +82,6 @@ def mostrar(df_filtrado, config):
         suc: data["color"] for suc, data in colores_sucursales.items()
     }
     
-    # Tabla detallada por sucursal
-    st.dataframe(df_filtrado.sort_values(["sucursal", "mes_dt"]))
-
     st.title("Vista detallada por Sucursal")
 
     # ----------------- Selector de periodo compacto -----------------
@@ -109,7 +104,6 @@ def mostrar(df_filtrado, config):
         fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
         df_filtrado = df_filtrado[(df_filtrado["fecha"] >= inicio_fiscal) & (df_filtrado["fecha"] <= fin_fiscal)]
         titulo_periodo = f"Fiscal {año_seleccionado}"
-    st.markdown("<br><br>", unsafe_allow_html=True)
     # Usar df_filtrado en lugar del df original
     df_divisiones_filtrado = df_filtrado.dropna(subset=["division"])
 
