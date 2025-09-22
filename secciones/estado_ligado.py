@@ -5,6 +5,8 @@ from datetime import datetime
 from utils.api_utils import obtener_datos_api
 
 def mostrar(df, config):
+    st.write("Columnas disponibles:", df.columns.tolist())
+
     st.title("Estado de Ligado")
     
     if df.empty:
