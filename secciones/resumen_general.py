@@ -4,9 +4,6 @@ import plotly.graph_objects as go
 from datetime import datetime
 from utils.api_utils import obtener_datos_api
 
-@st.cache_data(ttl=300)
-def cargar_estado_cuenta():
-    return obtener_datos_api()
 
 # ================== FUNCIÓN PRINCIPAL =====================
 def mostrar(df_filtrado, config):
@@ -68,6 +65,14 @@ def mostrar(df_filtrado, config):
         fin_fiscal = pd.Timestamp(año_seleccionado, 10, 31)
         df_filtrado = df_filtrado[(df_filtrado["fecha"] >= inicio_fiscal) & (df_filtrado["fecha"] <= fin_fiscal)]
         titulo_periodo = f"Fiscal {año_seleccionado}"
+
+    # Recalcular mes_nombre y mes_period después del filtrado
+    df_filtrado["mes_dt"] = pd.to_datetime(df_filtrado["fecha"])
+    df_filtrado["mes_period"] = df_filtrado["mes_dt"].dt.to_period("M")
+    df_filtrado["mes_nombre"] = (
+        df_filtrado["mes_dt"].dt.month_name().map(meses_es)
+        + " " + df_filtrado["mes_dt"].dt.year.astype(str)
+    )
 
     #--------------- TARJETAS: total comprado en el año y en el mes corriente  ------------------------------------------
     ahora = datetime.now()
