@@ -4,7 +4,6 @@ import plotly.graph_objects as go
 from datetime import datetime
 from utils.api_utils import obtener_datos_api
 
-
 # ================== FUNCIÓN PRINCIPAL =====================
 def mostrar(df_filtrado, config):
     """
@@ -74,6 +73,11 @@ def mostrar(df_filtrado, config):
         + " " + df_filtrado["mes_dt"].dt.year.astype(str)
     )
 
+    df_total_mes = (
+        df_filtrado.groupby(["mes_dt","mes_nombre"])["monto"].sum().reset_index()
+        .sort_values("mes_dt")
+    )
+
     #--------------- TARJETAS: total comprado en el año y en el mes corriente  ------------------------------------------
     ahora = datetime.now()
     ahora_pd = pd.Timestamp(ahora)
@@ -102,8 +106,8 @@ def mostrar(df_filtrado, config):
     # Crear figura
     fig_total = go.Figure()
     fig_total.add_trace(go.Scatter(
-        x=df_total_mes.index,
-        y=df_total_mes.values,
+        x=df_total_mes["mes_nombre"],
+        y=df_total_mes["monto"],
         mode="lines+markers",
         name="Total",
         line=dict(color="blue"),
