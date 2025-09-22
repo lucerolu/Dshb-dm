@@ -20,15 +20,7 @@ def mostrar(df_filtrado, config):
     with open("config_colores.json", "r", encoding="utf-8") as f:
         config = json.load(f)
     colores_divisiones = {k: v["color"] for k, v in config["divisiones"].items()}
-    
-    df_div = df_filtrado.groupby(["mes_nombre", "division"])["monto"].sum().reset_index()
-    
-    fig = px.bar(df_div, x="mes_nombre", y="monto", color="division",
-                 labels={"mes_nombre": "Mes", "monto": "Monto"},
-                 title="Compras por División")
-    st.plotly_chart(fig, use_container_width=True)
 
-    #-------------------
     orden_meses_asc = (
         df_filtrado.drop_duplicates(subset="mes_period")
         .sort_values("mes_period", ascending=True)["mes_nombre"]
